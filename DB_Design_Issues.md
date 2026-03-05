@@ -93,3 +93,8 @@ the capacity shoud increase as the students added for that batch (dynamically i 
 - [[Database Design]]
 - [[Requirements Audit]]
 - [[SQL_Test_Issues]]
+
+
+
+
+1. what happens if suddenly add the  five column to the attendance record for row for five hour  in time table 

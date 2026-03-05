@@ -58,50 +58,52 @@ flowchart TD
 
 **Visible to**: Principal only
 
-| Section | Content |
-|---|---|
-| **Attendance Graphs** | College-wide %, per-year %, per-batch %, trend chart |
-| **Key Stats Cards** | Total students, # below 80%, recent corrections count |
-| **Quick Actions** | Add Staff, Add Subject, Holiday Marking, Attendance Correction |
-| **Recent Audit Entries** | Last 5 manual changes |
+| Section               | Content                                                        |
+| --------------------- | -------------------------------------------------------------- |
+| **Attendance Graphs** | College-wide %, per-year %, per-batch %, trend chart           |
+| **Key Stats Cards**   | Total students                                                 |
+| **Side Bar**          | Add Staff, Add Subject, Holiday Marking, Attendance Correction |
+| **Side Bar**          | Last 5 manual changes                                          |
 
 ---
 
 ## 4. Screen: Principal — Add Staff
 
-| Element | Details |
-|---|---|
-| Staff Name | Text input |
-| Phone Number | Text input |
-| Role | Dropdown: Year Co-ordinator / Subject Staff |
-| Save button | Creates account with default password |
+| Element      | Details                               |
+| ------------ | ------------------------------------- |
+| email        |                                       |
+| Phone Number | Text input                            |
+| Staff Name   | Text input                            |
+| Role         | Subject Staff                         |
+| Save button  | Creates account with default password |
 
 ---
 
 ## 5. Screen: Principal — Add Subject
 
-| Element | Details |
-|---|---|
-| Subject Name | Text input |
-| Year | Dropdown: 1st / 2nd / 3rd / 4th |
-| Description | Text area |
-| Credits | Number input |
-| Semester | Dropdown: Odd / Even |
-| Save button | Creates subject globally |
+| Element      | Details                         |
+| ------------ | ------------------------------- |
+| Subject Name | Text input                      |
+| subject code | Text input                      |
+| Year         | Dropdown: 1st / 2nd / 3rd / 4th |
+| Description  | Text area                       |
+| Credits      | Number input                    |
+| Semester     | Dropdown: Odd / Even            |
+| Save button  | Creates subject globally        |
 
 ---
 
 ## 6. Screen: Principal — Holiday Marking
 
-| Element | Details |
-|---|---|
-| **Calendar View** | Monthly calendar, colour-coded (Working = white, Holiday = red, Saturday enabled = green) |
-| Select a date | Click on any **future** date |
-| Holiday Name | Text input (e.g., "Republic Day") |
-| Holiday Description | Text area (e.g., "National Holiday") |
-| Mark Holiday button | Saves to College Calendar, blocks attendance for that day |
-| Enable Saturday button | For Saturdays only — marks as working day |
-| Cannot modify past dates | Past dates greyed out |
+| Element                  | Details                                                                                   |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| **Calendar View**        | Monthly calendar, colour-coded (Working = white, Holiday = red, Saturday enabled = green) |
+| Select a date            | Click on any **future** date                                                              |
+| Holiday Name             | Text input (e.g., "Republic Day")                                                         |
+| Holiday Description      | Text area (e.g., "National Holiday")                                                      |
+| Mark Holiday button      | Saves to College Calendar, blocks attendance for that day                                 |
+| Enable Saturday button   | For Saturdays only — marks as working day                                                 |
+| Cannot modify past dates | Past dates greyed out                                                                     |
 
 ---
 
@@ -109,17 +111,18 @@ flowchart TD
 
 **Same layout as the staff attendance page**, with extra powers:
 
-| Element | Details |
-|---|---|
-| Year selector | 1st / 2nd / 3rd / 4th |
-| Batch selector | All batches for that year |
-| Period selector | 1–5 |
-| **Date picker** | Can select **any date — past or future** |
-| Fetch Students button | Returns all students in that batch |
-| Attendance table | Same columns as staff table, but **all rows editable** |
-| Status dropdown per row | Present / Absent / OD / Informed Leave |
-| OD Reason field | Text — shown when OD selected |
-| Save button | Saves changes + triggers Audit Log entries |
+| Element                 | Details                                                |
+| ----------------------- | ------------------------------------------------------ |
+| Year selector           | 1st / 2nd / 3rd / 4th                                  |
+| Batch selector          | All batches for that year                              |
+| Period selector         | 1–5                                                    |
+| **Date picker**         | Can select **any date — past or future**               |
+| Fetch Students button   | Returns all students in that batch                     |
+| Attendance table        | Same columns as staff table, but **all rows editable** |
+| Status dropdown per row | Present / Absent / OD / Informed Leave                 |
+| OD Reason field         | Text — shown when OD selected                          |
+| Save button             | Saves changes + triggers Audit Log entries             |
+
 
 ---
 
@@ -131,15 +134,16 @@ Same multi-view as YC (see below) but for the **entire college**, not just one y
 
 ## 9. Screen: Principal — Audit Log
 
-| Column | Details |
-|---|---|
-| Timestamp | Date and time of change |
-| Student | Name + Roll No |
-| Date (of period) | Which date was changed |
-| Period | Which slot |
-| Old Status | Previous value |
-| New Status | New value |
-| Changed By | Always "Principal" |
+
+| Column           | Details                 |
+| ---------------- | ----------------------- |
+| Timestamp        | Date and time of change |
+| Student          | Name + Roll No          |
+| Date (of period) | Which date was changed  |
+| Period           | Which slot              |
+| Old Status       | Previous value          |
+| New Status       | New value               |
+| Changed By       | Always "Principal"      |
 
 - Filter by date range
 - Shows what the Principal has saved — read-only, no undo
@@ -160,6 +164,7 @@ Same multi-view as YC (see below) but for the **entire college**, not just one y
 ---
 
 ## 11. Screen: YC — Add Student
+see the div lap
 
 | Element          | Details                                              |
 | ---------------- | ---------------------------------------------------- |
@@ -170,22 +175,11 @@ Same multi-view as YC (see below) but for the **entire college**, not just one y
 | Save button      | Adds student to the year                             |
 |                  |                                                      |
 
-Also supports bulk upload via CSV/file.
 
 ---
 
 ## 12. Screen: YC — OD / Informed Leave Entry
-
-| Steps  | Element           | Details                                                        |
-| ------ | ----------------- | -------------------------------------------------------------- |
-| step 1 | Student search    | roll number (within YC's year)                                 |
-| step 2 | Student card      | Shows current attendance % prominently                         |
-|        | % Indicator       | 🟢 ≥ 80% (can proceed) / 🔴 < 80% (Principal will not sign IL) |
-|        | Leave type        | Dropdown: OD / Informed Leave                                  |
-|        | OD Reason         | Text — required if OD                                          |
-|        | **Date selector** | **Future dates only**                                          |
-|        | Period selector   | Which slot(s)                                                  |
-|        | Submit button     | Locks the row for that student in the staff's table            |
+see the divagaran lap for furture detials
 
 ---
 
@@ -249,18 +243,10 @@ all Done
 
 ---
 
-## 15. Screen: Reports (Principal & YC)
+Theme 
+1. dark blue ,green ,white 
+2. 
 
-| Filter | Options |
-|---|---|
-| By Year | 1st / 2nd / 3rd / 4th (Principal: all; YC: own year) |
-| By Batch | All / Batch A / Batch B / Batch 1–4 |
-| By Subject | Subject dropdown |
-| By Date Range | Date picker |
-| By Semester | Semester selector |
-| By Status | All / Below 80% / Above 80% |
-
-Export: PDF / Excel
 
 ## Links
 - [[attendance Donbosco]]
