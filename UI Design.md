@@ -245,7 +245,11 @@ all Done
 
 Theme 
 1. dark blue ,green ,white 
-2. 
+2. the table  for all the view should e simular to google sheets 
+3. then the Welcome,  name  should be at the top right corner for each login 
+4.  in the   from the left corner to the middle we should  have a "Attendance meangement System + logo "
+5. color of the text should be black 
+6. the theme should be profeessional and classic (like microsoft excel) not glossy looking
 
 
 ## Links
