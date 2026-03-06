@@ -1,7 +1,7 @@
 # Architecture Design
-**Project**: Donbosco Attendance System | **Version**: 2.0 (Updated) | **Date**: 2026-03-03
+**Project**: Donbosco Attendance System | **Version**: 3.0 (Node.js) | **Date**: 2026-03-05
 
-> Updated: removed subject-staff mapping from all components and services.
+> Updated v3.0: Migrated from Spring Boot to Node.js + Express.js backend. Removed subject-staff mapping.
 
 ---
 
@@ -13,24 +13,26 @@ graph TD
         WEB["Web Browser\n(Chrome, Firefox, Mobile)"]
     end
 
-    subgraph App["Application Tier (Spring Boot Server)"]
-        CTRL["REST Controllers"]
+    subgraph App["Application Tier (Node.js Server)"]
+        ROUTER["Express Routers"]
+        MW["Middleware\n(JWT Auth + Role Guard)"]
+        CTRL["Controllers"]
         SVC["Service Layer"]
-        SEC["Spring Security\n(Role-based Access)"]
-        SCHED["Scheduled Jobs\n(SMS triggers)"]
+        SCHED["Scheduled Jobs\n(node-cron — SMS triggers)"]
     end
 
     subgraph Data["Data Tier"]
-        DB["MySQL Database"]
+        DB["MySQL Database\n(mysql2 prepared stmts)"]
     end
 
     subgraph External["External Services"]
         SMS_API["SMS Gateway API\n(MSG91 / Twilio)"]
     end
 
-    WEB -->|HTTPS| CTRL
-    CTRL --> SEC
-    SEC --> SVC
+    WEB -->|HTTPS / REST JSON| ROUTER
+    ROUTER --> MW
+    MW --> CTRL
+    CTRL --> SVC
     SVC --> DB
     SCHED --> SVC
     SVC --> SMS_API
@@ -43,15 +45,17 @@ graph TD
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Thymeleaf (server-rendered) + Bootstrap 5 |
-| **Backend** | Java 17 + Spring Boot 3 |
-| **Security** | Spring Security (session-based + role RBAC) |
-| **ORM** | Spring Data JPA + Hibernate |
+| **Frontend** | HTML + Vanilla JS + CSS (served separately) |
+| **Runtime** | Node.js v20 LTS |
+| **Framework** | Express.js v5 |
+| **Auth / Security** | JWT (`jsonwebtoken`) + `bcryptjs` + `helmet` |
+| **Database Driver** | `mysql2` (promise-based, prepared statements) |
 | **Database** | MySQL 8 |
-| **SMS** | MSG91 API (DLT compliant) |
-| **Build** | Maven |
-| **Server** | Embedded Tomcat |
-| **Deployment** | Single server (Linux VPS or on-premise) |
+| **Validation** | `express-validator` |
+| **SMS** | MSG91 REST API via `axios` |
+| **Scheduler** | `node-cron` |
+| **Process Manager** | PM2 (production) / nodemon (dev) |
+| **Deployment** | Linux VPS or on-premise (Nginx + PM2) |
 
 ---
 
@@ -59,44 +63,47 @@ graph TD
 
 ```mermaid
 graph LR
-    subgraph Controllers
-        AUTH["AuthController"]
-        ATT["AttendanceController"]
-        STUDENT["StudentController"]
-        REPORT["ReportController"]
-        ADMIN["AdminController\n(add staff, add subject)"]
-        CAL["CalendarController\n(holiday marking)"]
+    subgraph Routes["Express Routes"]
+        AUTH_R["auth.routes.js"]
+        ATT_R["attendance.routes.js"]
+        STUDENT_R["student.routes.js"]
+        REPORT_R["report.routes.js"]
+        USER_R["user.routes.js"]
+        CAL_R["calendar.routes.js"]
     end
 
-    subgraph Services
-        AUTH_SVC["AuthService\n(OTP, password reset)"]
-        ATT_SVC["AttendanceService\n(submit, lock check,\nfetch by batch/period)"]
-        STUDENT_SVC["StudentService\n(add with batch no)"]
-        REPORT_SVC["ReportService\n(PDF, Excel, multi-view)"]
-        SMS_SVC["SMSService\n(per-period, daily, monthly)"]
-        AUDIT_SVC["AuditService"]
-        ENROLL_SVC["EnrollmentService\n(auto + manual)"]
-        CALENDAR_SVC["CalendarService\n(holiday name + desc)"]
+    subgraph Controllers["Controllers"]
+        AUTH_C["auth.controller.js"]
+        ATT_C["attendance.controller.js"]
+        STUDENT_C["student.controller.js"]
+        REPORT_C["report.controller.js"]
+        USER_C["user.controller.js"]
+        CAL_C["calendar.controller.js"]
     end
 
-    subgraph Repositories
-        USER_REPO["UserRepository"]
-        STUDENT_REPO["StudentRepository"]
-        ATT_REPO["AttendanceRepository"]
-        BATCH_REPO["BatchRepository"]
-        SUBJECT_REPO["SubjectRepository"]
-        NOTIF_REPO["NotificationRepository"]
-        AUDIT_REPO["AuditRepository"]
-        SEM_REPO["SemesterRepository"]
-        CAL_REPO["CalendarRepository"]
+    subgraph Services["Services"]
+        AUTH_SVC["auth.service.js\n(JWT, OTP, bcrypt)"]
+        ATT_SVC["attendance.service.js\n(submit, lock, 20-min window)"]
+        STUDENT_SVC["student.service.js"]
+        REPORT_SVC["report.service.js\n(%, summaries)"]
+        SMS_SVC["sms.service.js\n(per-period, monthly)"]
+        CALENDAR_SVC["calendar.service.js"]
     end
 
+    subgraph Middleware["Middleware"]
+        AUTH_MW["auth.js\n(JWT verify)"]
+        ROLE_MW["roleGuard.js\n(RBAC)"]
+        VAL_MW["validate.js\n(express-validator)"]
+    end
+
+    Routes --> Middleware
+    Middleware --> Controllers
     Controllers --> Services
-    Services --> Repositories
-    SMS_SVC -->|External| MSG91["MSG91 API"]
+    Services -->|mysql2| DB["MySQL"]
+    SMS_SVC -->|axios| MSG91["MSG91 API"]
 ```
 
-> **Removed**: `AssignmentService` and `AssignmentRepository` — no subject-staff mapping needed.
+> **No ORM**: Raw SQL via `mysql2` prepared statements. No subject-staff mapping.
 
 ---
 
@@ -128,8 +135,9 @@ graph LR
 graph TB
     CLIENT["👨 Staff / Principal / YC\n(Browser)"]
 
-    subgraph Server["College Server / VPS"]
-        TOMCAT["Spring Boot App\n(Port 8080)"]
+    subgraph Server["College Server / VPS (Linux)"]
+        NGINX["Nginx\n(Port 443 — reverse proxy + SSL)"]
+        NODE["Node.js App\n(PM2 — Port 3000)"]
         MYSQL["MySQL\n(Port 3306)"]
     end
 
@@ -137,9 +145,10 @@ graph TB
         MSG91["MSG91 SMS Gateway"]
     end
 
-    CLIENT -->|HTTPS| TOMCAT
-    TOMCAT <-->|JDBC| MYSQL
-    TOMCAT -->|REST| MSG91
+    CLIENT -->|HTTPS| NGINX
+    NGINX -->|Proxy| NODE
+    NODE <-->|mysql2| MYSQL
+    NODE -->|REST| MSG91
     MSG91 -->|SMS| PHONES["📱 Parents"]
 ```
 
@@ -150,22 +159,28 @@ graph TB
 ```mermaid
 sequenceDiagram
     actor Staff as 👨‍🏫 Subject Staff
-    participant App as Spring Boot
+    participant App as Node.js/Express
     participant DB as MySQL
     participant SMS as MSG91
 
-    Staff->>App: Login
-    App->>DB: Validate credentials
-    Staff->>App: Select Year → Batch → Period
-    Staff->>App: Click "Fetch Students"
-    App->>DB: Get students in that batch
-    App->>Staff: Table (locked OD/IL pre-filled)
-    Staff->>App: Mark Present/Absent → Submit
-    App->>App: Server: within 20 min?
-    App->>DB: Save records + auto-set UL
-    App->>SMS: Send SMS for each UL
+    Staff->>App: POST /api/auth/login
+    App->>DB: SELECT user WHERE email = ?
+    App-->>Staff: JWT access token
+    Staff->>App: POST /api/attendance/fetch-students (Bearer token)
+    App->>App: auth.js — jwt.verify(token)
+    App->>App: roleGuard.js — check SUBJECT_STAFF
+    App->>DB: Get students in batch + OD/IL locks
+    App-->>Staff: Student list (locked rows flagged)
+    Staff->>App: POST /api/attendance/submit
+    App->>App: Check: now − slot_start ≤ 20 min?
+    App->>DB: INSERT attendance_records (bulk, prepared stmt)
+    App->>SMS: axios.post(MSG91) for each ABSENT
+    App-->>Staff: 201 { submitted: N, absent_sms_sent: M }
 ```
 
 ## Links
 - [[attendance Donbosco]]
 - [[BRS]]
+- [[Backend Architecture]]
+- [[Backend Development Workflow]]
+- [[API Reference]]

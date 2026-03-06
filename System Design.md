@@ -1,7 +1,7 @@
 # System Design
-**Project**: Donbosco Attendance System | **Version**: 4.0 (Updated) | **Date**: 2026-03-03
+**Project**: Donbosco Attendance System | **Version**: 5.0 (Node.js) | **Date**: 2026-03-05
 
-> Reflects latest changes: no daily SMS, simplified Users, restructured Subjects.
+> Reflects latest changes: no daily SMS, simplified Users, restructured Subjects. Backend migrated to Node.js + Express.js.
 
 ---
 
@@ -54,8 +54,8 @@ graph TD
 ```mermaid
 sequenceDiagram
     actor Staff as 👨‍🏫 Subject Staff
-    participant App as System
-    participant DB as Database
+    participant App as Node.js/Express
+    participant DB as MySQL
     participant SMS as SMS Gateway
 
     Staff->>App: Login
@@ -216,3 +216,5 @@ graph LR
 - [[SRS]]
 - [[Database Design]]
 - [[Architecture Design]]
+- [[Backend Architecture]]
+- [[API Reference]]

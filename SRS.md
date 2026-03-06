@@ -1,6 +1,6 @@
 # Software Requirements Specification (SRS)
 **Project**: Donbosco Agricultural College — Attendance Management System
-**Version**: 2.0 (Updated) | **Date**: 2026-03-03
+**Version**: 3.0 (Node.js) | **Date**: 2026-03-05
 
 ---
 
@@ -31,8 +31,8 @@ A web-based attendance management system supporting per-period attendance entry,
 | ID | Requirement |
 |---|---|
 | FR-A1 | System shall support three roles: PRINCIPAL, YEAR_COORDINATOR, SUBJECT_STAFF |
-| FR-A2 | Users shall log in with username and password |
-| FR-A3 | Passwords shall be bcrypt hashed; minimum 8 characters |
+| FR-A2 | Users shall log in with **email** and password |
+| FR-A3 | Passwords shall be bcrypt hashed (rounds ≥ 10); minimum 8 characters |
 | FR-A4 | Users shall reset passwords via OTP sent to registered phone |
 | FR-A5 | Principal account shall be pre-seeded at deployment |
 | FR-A6 | Failed login shall show generic error (not reveal which field is wrong) |
@@ -124,13 +124,14 @@ A web-based attendance management system supporting per-period attendance entry,
 | NFR-1 | Performance | Attendance page load < 2 seconds |
 | NFR-2 | Performance | SMS triggered within 30 seconds of submission |
 | NFR-3 | Security | Passwords stored as bcrypt hashes |
-| NFR-4 | Security | Role-based access enforced server-side |
-| NFR-5 | Security | Sessions invalidated on logout |
+| NFR-4 | Security | Role-based access enforced server-side on every API route |
+| NFR-5 | Security | JWT tokens used for stateless auth; refresh tokens stored as HttpOnly cookies |
 | NFR-6 | Availability | Available during college hours (7:00 AM – 6:00 PM) |
 | NFR-7 | Data Integrity | Staff cannot submit attendance retroactively |
 | NFR-8 | Audit | Every Principal edit → audit log entry |
 | NFR-9 | Scalability | Up to 500 concurrent student records per year |
 | NFR-10 | Compliance | SMS gateway DLT-registered (TRAI-compliant) |
+| NFR-11 | Security | All DB queries use prepared statements (`mysql2`) — no SQL injection |
 
 ---
 
@@ -142,3 +143,5 @@ A web-based attendance management system supporting per-period attendance entry,
 ## Links
 - [[BRS]]
 - [[attendance Donbosco]]
+- [[Backend Architecture]]
+- [[API Reference]]
