@@ -1,0 +1,99 @@
+/* Responsive enhancements for AMS */
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  /* Reduce header padding on mobile */
+  .mobile-header {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Stack cards vertically on mobile */
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Make tables scrollable on mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Adjust table text size on mobile */
+  .table-container table {
+    font-size: 0.875rem;
+  }
+
+  .table-container td,
+  .table-container th {
+    padding: 0.5rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Two column layout for cards on tablet */
+  .card-grid-tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1025px) {
+  /* Ensure sidebar is always visible */
+  .sidebar-desktop {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  /* Four column layout for stats cards */
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Print styles */
+@media print {
+  /* Hide navigation and buttons when printing */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Optimize table printing */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Ensure proper margins for printing */
+  @page {
+    margin: 1cm;
+  }
+}
+
+/* Better touch targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  input,
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .border-slate-300 {
+    border-width: 2px;
+  }
+
+  button,
+  .card {
+    border-width: 2px;
+  }
+}
