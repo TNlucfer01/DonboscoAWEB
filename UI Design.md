@@ -93,6 +93,9 @@ flowchart TD
 | Role | Year Co-ordinator / Subject Staff |
 | Actions | Edit ✏️ / Deactivate 🗑️ |
 
+
+these tables should be blow the add staff form
+witht he folowing columns
 ### Add / Edit Staff Form
 | Element | Details |
 |---|---|
@@ -116,6 +119,8 @@ flowchart TD
 | Credits | Number |
 | Actions | Edit ✏️ / Delete 🗑️ |
 
+
+same as the staff 
 ### Add / Edit Subject Form
 | Element | Details |
 |---|---|

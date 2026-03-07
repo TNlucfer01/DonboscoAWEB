@@ -3,19 +3,34 @@
 import { apiClient } from './apiClient';
 
 export interface StaffMember {
-    id: number;
+    user_id: number;
     name: string;
     email: string;
-    phone: string;
+    phone_number: string;
     role: string;
+    managed_year: number | null;
 }
 
-const USE_MOCK = true;
+/** GET /users — List all staff (non-principal) */
+export async function fetchStaffMembers(): Promise<StaffMember[]> {
+    return apiClient.get<StaffMember[]>('/users');
+}
 
-/** POST /staff — Add new staff member */
+/** POST /users — Add new staff member */
 export async function addStaffMember(
-    name: string, email: string, phone: string
+    name: string, email: string, phone_number: string, role: string
 ): Promise<void> {
-    if (USE_MOCK) return;
-    await apiClient.post('/staff', { name, email, phone, role: 'Subject Staff' });
+    await apiClient.post('/users', { name, email, phone_number, role });
+}
+
+/** PUT /users/:id — Update staff member */
+export async function updateStaffMember(
+    id: number, data: Partial<StaffMember>
+): Promise<void> {
+    await apiClient.put(`/users/${id}`, data);
+}
+
+/** DELETE /users/:id — Deactivate staff member */
+export async function deleteStaffMember(id: number): Promise<void> {
+    await apiClient.delete(`/users/${id}`);
 }
