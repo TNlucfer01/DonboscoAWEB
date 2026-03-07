@@ -1,5 +1,5 @@
 # Backend Architecture
-**Project**: Donbosco Attendance System | **Version**: 1.0 | **Date**: 2026-03-05
+**Project**: Donbosco Attendance System | **Version**: 1.1 | **Date**: 2026-03-06
 **Stack**: Node.js + Express.js + MySQL
 
 ---
@@ -72,7 +72,7 @@ donbosco-backend/
 │   ├── middleware/
 │   │   ├── auth.js            # JWT verify → req.user
 │   │   ├── roleGuard.js       # Role-based access (Principal/YC/Staff)
-│   │   ├── validate.js        # express-validator error handler
+│   │   ├── validate.j`s        # express-validator error handler
 │   │   └── rateLimiter.js     # Login rate limiting
 │   ├── routes/
 │   │   ├── auth.routes.js
@@ -156,9 +156,9 @@ sequenceDiagram
 
 | Role | Allowed Routes |
 |---|---|
-| `PRINCIPAL` | All routes |
-| `YEAR_COORDINATOR` | `/students`, `/batches`, `/subjects`, `/attendance/od-il`, `/attendance/view`, `/reports` (own year) |
-| `SUBJECT_STAFF` | `/attendance/fetch-students`, `/attendance/submit`, `/attendance/my-submissions` |
+| `PRINCIPAL` | All routes including `/users`, `/subjects`, `/calendar/holiday` (GET/POST/PUT/DELETE), `/attendance/correct`, `/audit` |
+| `YEAR_COORDINATOR` | `/students` (full CRUD), `/batches`, `/subjects` (GET), `/attendance/od-il` (GET/POST/PUT/DELETE), `/attendance/view`, `/reports` (own year) |
+| `SUBJECT_STAFF` | `/attendance/fetch-students` (GET), `/attendance/submit` (POST) |
 
 Enforced by `roleGuard.js` middleware:
 ```js

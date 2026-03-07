@@ -1,7 +1,20 @@
-   # UI Design
-**Project**: Donbosco Attendance System | **Version**: 2.0 (Updated) | **Date**: 2026-03-03
+# UI Design
+**Project**: Donbosco Attendance System | **Version**: 2.1 | **Date**: 2026-03-06
 
-> Updated to reflect: no subject-staff mapping, dashboards for YC and Principal, multi-view attendance, holiday with name+desc.
+> Updated (06-03-26): CRUD screens added for student/staff/subject/attendance/holiday; attendance view batch column removed; attendance correction changed to 5-period columns; OD leave read+update added; theme defined; date selecting and sidebar issues noted.
+
+---
+
+## Theme
+
+| Property | Value |
+|---|---|
+| **Colors** | Dark blue, green, white |
+| **Table style** | Similar to Google Sheets — grid lines, alternating row shading |
+| **Header bar (left → center)** | "Attendance Management System" + college logo |
+| **Header bar (top right)** | "Welcome, \<Name\>" for every role |
+| **Text color** | Black |
+| **Overall aesthetic** | Professional and classic — like Microsoft Excel, **not** glossy |
 
 ---
 
@@ -14,24 +27,22 @@ flowchart TD
     AUTH -- Year Co-ordinator --> YC_DASH["YC Dashboard"]
     AUTH -- Subject Staff --> SS_DASH["Staff Home"]
 
-    P_DASH --> P1["Add Staff"]
-    P_DASH --> P2["Add Subject"]
-    P_DASH --> P3["Holiday Marking"]
+    P_DASH --> P1["Staff CRUD"]
+    P_DASH --> P2["Subject CRUD"]
+    P_DASH --> P3["Holiday CRUD"]
     P_DASH --> P4["Attendance Correction"]
     P_DASH --> P5["Attendance View"]
     P_DASH --> P6["Audit Log"]
     P_DASH --> P7["Reports"]
-    P_DASH --> P8["Batch Approval"]
 
-    YC_DASH --> YC1["Add Student"]
+    YC_DASH --> YC1["Student CRUD"]
     YC_DASH --> YC2["Batch Management"]
     YC_DASH --> YC3["Subject Mapping"]
-    YC_DASH --> YC4["OD / IL Entry (future only)"]
-    YC_DASH --> YC5["Attendance View (multi-view)"]
+    YC_DASH --> YC4["OD / IL Entry + View"]
+    YC_DASH --> YC5["Attendance View"]
     YC_DASH --> YC6["Reports"]
 
     SS_DASH --> SS1["Take Attendance\n(Year → Batch → Period → Fetch)"]
-    SS_DASH --> SS2["My Past Submissions"]
 ```
 
 ---
@@ -43,11 +54,13 @@ flowchart TD
 | Element | Details |
 |---|---|
 | College logo + name | Top center |
-| Username field | Text input |
+| Email field | Text input (email address) |
 | Password field | Password input (masked) |
 | Login button | Primary CTA |
 | Forgot Password link | OTP reset flow |
 | Error message | "Invalid credentials" (generic) |
+
+> ⚠️ **Known Issue (06-03-26)**: Date selecting problem to be fixed — ensure date pickers use a consistent, future-only-capable calendar component across all screens.
 
 ### Forgot Password Flow
 1. Enter registered phone number → OTP sent → Enter OTP → Set new password → Redirect to login.
@@ -62,36 +75,61 @@ flowchart TD
 |---|---|
 | **Attendance Graphs** | College-wide %, per-year %, per-batch %, trend chart |
 | **Key Stats Cards** | Total students, # below 80%, recent corrections count |
-| **Quick Actions** | Add Staff, Add Subject, Holiday Marking, Attendance Correction |
+| **Sidebar** | Staff CRUD, Subject CRUD, Holiday CRUD, Attendance Correction, Attendance View, Audit Log, Reports |
 | **Recent Audit Entries** | Last 5 manual changes |
+
+> ⚠️ **Known Issue (06-03-26)**: Sidebar blackout bug — sidebar must remain visible and not go dark/disappear on navigation.
 
 ---
 
-## 4. Screen: Principal — Add Staff
+## 4. Screen: Principal — Staff CRUD
 
+### Staff List (Read)
+| Column | Details |
+|---|---|
+| Name | Text |
+| Email | Text |
+| Phone | Text |
+| Role | Year Co-ordinator / Subject Staff |
+| Actions | Edit ✏️ / Deactivate 🗑️ |
+
+### Add / Edit Staff Form
 | Element | Details |
 |---|---|
 | Staff Name | Text input |
+| Email | Text input |
 | Phone Number | Text input |
 | Role | Dropdown: Year Co-ordinator / Subject Staff |
-| Save button | Creates account with default password |
+| Save button | Creates account with default password (on Add) |
 
 ---
 
-## 5. Screen: Principal — Add Subject
+## 5. Screen: Principal — Subject CRUD
 
+### Subject List (Read)
+| Column | Details |
+|---|---|
+| Subject Name | Text |
+| Subject Code | Text |
+| Year | 1st–4th |
+| Semester | Odd / Even |
+| Credits | Number |
+| Actions | Edit ✏️ / Delete 🗑️ |
+
+### Add / Edit Subject Form
 | Element | Details |
 |---|---|
 | Subject Name | Text input |
+| Subject Code | Text input |
 | Year | Dropdown: 1st / 2nd / 3rd / 4th |
 | Description | Text area |
 | Credits | Number input |
 | Semester | Dropdown: Odd / Even |
-| Save button | Creates subject globally |
+| Save button | Creates / updates subject globally |
 
 ---
 
-## 6. Screen: Principal — Holiday Marking
+## 6. Screen: Principal — Holiday CRUD
 
 | Element | Details |
 |---|---|
@@ -101,6 +139,8 @@ flowchart TD
 | Holiday Description | Text area (e.g., "National Holiday") |
 | Mark Holiday button | Saves to College Calendar, blocks attendance for that day |
 | Enable Saturday button | For Saturdays only — marks as working day |
+| Edit Holiday | Click existing holiday → edit name/description → Save |
+| Delete Holiday | Click existing holiday → Delete button (future dates only) |
 | Cannot modify past dates | Past dates greyed out |
 
 ---
@@ -112,20 +152,27 @@ flowchart TD
 | Element | Details |
 |---|---|
 | Year selector | 1st / 2nd / 3rd / 4th |
-| Batch selector | All batches for that year |
-| Period selector | 1–5 |
 | **Date picker** | Can select **any date — past or future** |
-| Fetch Students button | Returns all students in that batch |
-| Attendance table | Same columns as staff table, but **all rows editable** |
-| Status dropdown per row | Present / Absent / OD / Informed Leave |
-| OD Reason field | Text — shown when OD selected |
-| Save button | Saves changes + triggers Audit Log entries |
+| Fetch Students button | Returns all students in that year for that date |
+| **Attendance Table** | Rows = Students; Columns = Period 1, Period 2, Period 3, Period 4, Period 5 |
+| Cell value | Present / Absent / OD / Informed Leave (editable dropdown per cell) |
+| OD Reason | Shown inline when OD selected |
+| Save button | Saves all changes + triggers Audit Log entries |
+
+> **Note**: Batch selector removed. All students in the selected year are shown. The 5 periods appear as columns, not rows.
 
 ---
 
 ## 8. Screen: Principal — Attendance View
 
-Same multi-view as YC (see below) but for the **entire college**, not just one year.
+| Element | Details |
+|---|---|
+| Year selector | 1st / 2nd / 3rd / 4th (or All) |
+| Date range picker | From / To |
+| **Attendance Table** | Rows = Students; Columns = Period 1–5 per day |
+| Attendance % | Shown per student as final column |
+
+> Batch column removed from this view. Year-wise data is the primary grouping.
 
 ---
 
@@ -142,7 +189,7 @@ Same multi-view as YC (see below) but for the **entire college**, not just one y
 | Changed By | Always "Principal" |
 
 - Filter by date range
-- Shows what the Principal has saved — read-only, no undo
+- Read-only, no undo
 
 ---
 
@@ -152,29 +199,39 @@ Same multi-view as YC (see below) but for the **entire college**, not just one y
 
 | Section | Content |
 |---|---|
-| **Attendance Graphs** | Year-wide %, per-batch %, trend chart |
+| **Attendance Graphs** | Year-wide %, trend chart |
 | **Key Stats Cards** | Total students in year, # below 80%, pending OD/IL entries |
-| **Quick Actions** | Add Student, Enter OD/Leave, View Attendance |
-| **Batch Overview** | Batch A, B (theory), Batch 1–4 (lab) with student counts |
+| **Sidebar** | Student CRUD, OD / IL Entry + View, Attendance View, Reports |
 
 ---
 
-## 11. Screen: YC — Add Student
+## 11. Screen: YC — Student CRUD
 
+### Student List (Read)
+| Column | Details |
+|---|---|
+| Roll Number | Text |
+| Name | Text |
+| Batch | Assigned batch |
+| Parent Phone | Text |
+| Actions | Edit ✏️ / Remove 🗑️ |
+
+### Add / Edit Student Form
 | Element | Details |
 |---|---|
 | Student Name | Text input |
 | Roll Number | Text input |
 | Parent Phone | Text input |
-| **Batch Number** | Dropdown — assign the student to a batch immediately |
-| Save button | Adds student to the year |
+| **Batch Number** | Dropdown — assign batch immediately |
+| Save button | Adds / updates student in the year |
 
 Also supports bulk upload via CSV/file.
 
 ---
 
-## 12. Screen: YC — OD / Informed Leave Entry
+## 12. Screen: YC — OD / Informed Leave Entry + View
 
+### Entry (Create)
 | Element | Details |
 |---|---|
 | Student search | Search by name or roll number (within YC's year) |
@@ -186,18 +243,31 @@ Also supports bulk upload via CSV/file.
 | Period selector | Which slot(s) |
 | Submit button | Locks the row for that student in the staff's table |
 
+### View (Read + Update)
+| Column | Details |
+|---|---|
+| Student | Name + Roll No |
+| Date | Leave date |
+| Period | Slot number |
+| Type | OD / Informed Leave |
+| Reason | OD reason text |
+| Actions | Edit ✏️ (reason/date, future only) / Cancel 🗑️ |
+
+- **Edit**: YC can update the OD reason or date (future dates only, before staff submission)
+- **Cancel**: Removes the OD/IL lock — row becomes editable again for staff
+
 ---
 
-## 13. Screen: YC — Attendance View (Multi-View)
+## 13. Screen: YC — Attendance View
 
-| View Tab | How it works |
+| Element | Details |
 |---|---|
-| **By Batch** | Select batch → See all students + attendance summary |
-| **By Subject** | Select subject → See total hours + per-student attendance |
-| **By Calendar + Period** | Select date from calendar → Select period → See who was present/absent |
-| **Attendance %** | All students in the year ranked by attendance % |
+| Year | Fixed to YC's assigned year |
+| Date range picker | From / To |
+| **Attendance Table** | Rows = Students; Columns = Period 1–5 per day |
+| Attendance % | Shown per student as final column |
 
-> Each view shows the attendance percentage as the key metric.
+> Batch column removed. Year-wide view; student list shows all students in the year.
 
 ---
 
@@ -232,30 +302,34 @@ Also supports bulk upload via CSV/file.
 
 ---
 
-<<<<<<< HEAD
-Theme 
-1. dark blue ,green ,white 
-2. the table  for all the view should e simular to google sheets 
-3. then the Welcome,  name  should be at the top right corner for each login 
-4.  in the   from the left corner to the middle we should  have a "Attendance meangement System + logo "
-5. color of the text should be black 
-6. the theme should be profeessional and classic (like microsoft excel) not glossy looking
-=======
-## 15. Screen: Reports (Principal & YC)
->>>>>>> 8f9c69265b68a468fbb36d0e583cd05c3984087a
+## 15. Screen: Semester Management
+
+**Visible to**: Principal
+
+> **Who updates the semester?** The Principal activates a new semester manually. This is done at the start of each academic term. Activating a semester deactivates the current active one.
+
+| Element | Details |
+|---|---|
+| Semester list | Shows all semesters (year + Odd/Even + status: Active/Inactive) |
+| Activate button | Sets selected semester as active (only one active at a time) |
+
+---
+
+## 16. Screen: Reports (Principal & YC)
 
 | Filter | Options |
 |---|---|
 | By Year | 1st / 2nd / 3rd / 4th (Principal: all; YC: own year) |
-| By Batch | All / Batch A / Batch B / Batch 1–4 |
-| By Subject | Subject dropdown |
 | By Date Range | Date picker |
 | By Semester | Semester selector |
 | By Status | All / Below 80% / Above 80% |
 
 Export: PDF / Excel
 
+---
+
 ## Links
 - [[attendance Donbosco]]
 - [[SRS]]
 - [[Architecture Design]]
+- [[API Reference]]

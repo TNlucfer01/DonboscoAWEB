@@ -1,6 +1,6 @@
 # Backend Development Workflow
-**Project**: Donbosco Attendance System | **Version**: 1.0 | **Date**: 2026-03-05
-**Tech**: Node.js + Express.js + MySQL
+**Project**: Donbosco Attendance System | **Version**: 2.0 | **Date**: 2026-03-07
+**Tech**: Node.js + Express.js + MySQL + **Sequelize ORM**
 
 ---
 
@@ -33,7 +33,7 @@ mkdir donbosco-backend && cd donbosco-backend
 npm init -y
 
 # 2. Install production dependencies
-npm install express mysql2 jsonwebtoken bcryptjs express-validator \
+npm install express sequelize mysql2 jsonwebtoken bcryptjs express-validator \
             dotenv cors helmet morgan winston node-cron axios
 
 # 3. Install dev dependencies
@@ -43,10 +43,12 @@ npm install -D nodemon
 #    "type": "module"
 ```
 
+> ℹ️ Note: `sequelize` is the ORM layer. `mysql2` is still required — Sequelize uses it under the hood as the MySQL dialect driver. Both packages must be installed.
+
 ### Files to Create
 - `server.js` — HTTP server entry (`app.listen`)
 - `src/app.js` — Express app, mount routers, global middleware
-- `src/config/db.js` — MySQL pool
+- `src/config/db.js` — Sequelize instance + sync
 - `src/config/env.js` — Validate and export env vars
 - `.env` — Environment variables (see below)
 - `.env.example` — Template (committed to git)
@@ -76,7 +78,43 @@ NODE_ENV=development
 
 ## Phase 2 — Database + Schema
 
-**Goal**: Connect to MySQL and apply the schema + seed data.
+**Goal**: Connect to MySQL via Sequelize and apply the schema + seed data.
+
+---
+
+### Why Sequelize and Not Raw mysql2?
+
+> **Short answer**: The workflow originally planned raw `mysql2`. We switched to **Sequelize ORM** because it is a better fit for this project's scale, team size, and development speed. Here is the full reasoning.
+
+#### Background — The Original Plan
+
+The `Backend Architecture.md` originally specified raw `mysql2` with `pool.execute()` and hand-written SQL prepared statements. That approach gives maximum control over SQL but requires significant boilerplate for every CRUD operation.
+
+#### Comparison Table
+
+| Concern | Raw `mysql2` | Sequelize ORM |
+|---|---|---|
+| **Schema management** | Must write and run `.sql` migration files manually | `sequelize.sync()` auto-creates / updates tables from Model definitions |
+| **Boilerplate SQL** | Every route needs `INSERT`, `SELECT`, `UPDATE`, `DELETE` written by hand | Model methods (`findAll`, `create`, `update`, `destroy`) handle standard CRUD |
+| **Relationships / JOINs** | JOINs must be written manually for every query | Associations (`hasMany`, `belongsTo`) defined once; Sequelize generates JOINs |
+| **SQL Injection safety** | Requires strict discipline — always use `?` placeholders | Parameterization built-in and enforced by default |
+| **Validation** | Relies entirely on `express-validator` | Model-level validations (`allowNull`, `isEmail`, `len`) as a second safety layer |
+| **Developer speed** | Slower — write SQL for every entity | Faster — define a Model once and get full CRUD for free |
+
+#### Tradeoffs We Accept
+
+- **Performance overhead**: Sequelize adds a small query-building cost. Negligible for school-scale data (< 1000 students).
+- **Complex queries**: Attendance reports and aggregations are not ideal for Sequelize's query builder. These use `sequelize.query()` with raw SQL (still parameterised — never string-interpolated).
+- **Hidden SQL**: Sequelize hides the SQL it generates. Enable `logging: console.log` in dev to see the generated queries when debugging.
+
+#### Decision: Hybrid Approach
+
+| Use case | Tool |
+|---|---|
+| Standard CRUD (users, students, batches, subjects, semesters) | Sequelize Models + model methods |
+| Complex attendance reports, aggregations, window-time checks | `sequelize.query()` with raw SQL + `replacements` |
+
+---
 
 ### Steps
 
@@ -84,24 +122,51 @@ NODE_ENV=development
 # 1. Create the database
 mysql -u root -p -e "CREATE DATABASE donbosco_attendance;"
 
-# 2. Run schema
-mysql -u root -p donbosco_attendance < SQL/01_schema.sql
+# 2. Define models in src/models/ — Sequelize syncs the schema automatically on startup
+# No need to run raw .sql files for table creation in development
 
-# 3. Run seed data
-mysql -u root -p donbosco_attendance < SQL/02_seed_test_data.sql
+# 3. Run seed script after sync
+node src/seeders/index.js
 ```
 
-### Verify Connection
+### Database Connection (`src/config/db.js`)
 ```js
-// src/config/db.js — test query
-const [rows] = await pool.execute('SELECT 1 + 1 AS result');
-console.log(rows); // [{ result: 2 }]
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASS,
+  {
+    host: process.env.DB_HOST,
+    dialect: 'mysql',
+    port: 3306,
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  }
+);
+
+module.exports = sequelize;
 ```
+
+### Sync in `server.js`
+```js
+const sequelize = require('./src/config/db');
+
+sequelize.authenticate()
+  .then(() => console.log('→ DB connection established'))
+  .catch(err => { console.error('Unable to connect:', err); process.exit(1); });
+
+sequelize.sync({ force: false })
+  .then(() => console.log('→ Database synced'))
+  .catch(err => console.error('Sync failed:', err));
+```
+
+> ⚠️ **`force: false`** — Sequelize only creates tables that don't exist. It will **not** drop existing data. Use `force: true` only in a fresh dev environment to wipe and recreate all tables.
 
 ### Success Criteria
-- [ ] All tables created (12 tables)
-- [ ] Seed data inserted (Principal, semesters, timetable_slots, batches)
-- [ ] `pool.execute` works from Node.js
+- [ ] All tables created via `sequelize.sync()` (no manual `.sql` files needed in dev)
+- [ ] Seed data inserted
+- [ ] `sequelize.authenticate()` passes on startup
 
 ---
 
@@ -163,15 +228,35 @@ src/middleware/rateLimiter.js ← Login rate limit
 
 ### Files per Entity (pattern)
 ```
+src/models/[Entity].model.js        ← NEW: Sequelize model definition
 src/routes/[entity].routes.js
 src/controllers/[entity].controller.js
 src/services/[entity].service.js
 ```
 
+### Standard Model Pattern (Sequelize)
+```js
+// src/models/Student.model.js
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
+
+const Student = sequelize.define('Student', {
+  student_id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name:        { type: DataTypes.STRING(100), allowNull: false },
+  reg_no:      { type: DataTypes.STRING(20), unique: true },
+  batch_id:    { type: DataTypes.INTEGER, allowNull: false },
+}, {
+  tableName: 'students',
+  timestamps: false,
+});
+
+module.exports = Student;
+```
+
 ### Standard Controller Pattern
 ```js
 // GET all — with role guard
-export const getAll = async (req, res, next) => {
+const getAll = async (req, res, next) => {
   try {
     const data = await entityService.getAll(req.query);
     return res.json({ success: true, data });
@@ -186,7 +271,7 @@ export const getAll = async (req, res, next) => {
 - [ ] Principal can add subjects
 - [ ] YC can add students and assign to batch
 - [ ] YC can enroll students in subjects
-- [ ] All prepared statements, no raw string interpolation
+- [ ] All Sequelize calls use model methods or `replacements` — never raw string interpolation
 
 ---
 
@@ -206,11 +291,15 @@ export const getAll = async (req, res, next) => {
 
 ### 20-Min Window Logic
 ```js
-// Inside attendanceService.submit()
-const [slot] = await pool.execute(
-  'SELECT start_time FROM timetable_slots WHERE slot_id = ?', [slotId]
+// Use sequelize.query() for time-based raw SQL (more readable than Sequelize query builder)
+const { QueryTypes } = require('sequelize');
+const sequelize = require('../config/db');
+
+const slots = await sequelize.query(
+  'SELECT start_time FROM timetable_slots WHERE slot_id = ?',
+  { replacements: [slotId], type: QueryTypes.SELECT }
 );
-const slotStart = dayjs(`${date} ${slot[0].start_time}`);
+const slotStart = dayjs(`${date} ${slots[0].start_time}`);
 const now = dayjs();
 const diff = now.diff(slotStart, 'minute');
 
@@ -221,16 +310,16 @@ if (diff > 20) {
 
 ### Holiday Lock Logic
 ```js
-// Check before allowing fetch-students
-const [holiday] = await pool.execute(
-  "SELECT day_type FROM college_calendar WHERE date = ? AND day_type = 'HOLIDAY'",
-  [date]
-);
-if (holiday.length > 0) throw new AppError('HOLIDAY', 'Attendance blocked for this date.', 422);
+// Use Sequelize findOne for simple lookups
+const holiday = await CollegeCalendar.findOne({
+  where: { date, day_type: 'HOLIDAY' }
+});
+if (holiday) throw new AppError('HOLIDAY', 'Attendance blocked for this date.', 422);
 ```
 
 ### Files to Build
 ```
+src/models/Attendance.model.js
 src/routes/attendance.routes.js
 src/controllers/attendance.controller.js
 src/services/attendance.service.js
@@ -252,9 +341,9 @@ src/services/attendance.service.js
 ### SMS Service
 ```js
 // src/services/sms.service.js
-import axios from 'axios';
+const axios = require('axios');
 
-export const sendSMS = async (phone, message) => {
+const sendSMS = async (phone, message) => {
   const res = await axios.post('https://api.msg91.com/api/v5/flow/', {
     template_id: process.env.MSG91_TEMPLATE_ID,
     short_url: '0',
@@ -265,13 +354,15 @@ export const sendSMS = async (phone, message) => {
   });
   return res.data;
 };
+
+module.exports = { sendSMS };
 ```
 
 ### Scheduled Job
 ```js
 // src/jobs/monthlyWarning.job.js
-import cron from 'node-cron';
-import { sendMonthlyWarnings } from '../services/sms.service.js';
+const cron = require('node-cron');
+const { sendMonthlyWarnings } = require('../services/sms.service');
 
 // Run at 11 PM on the last day of the month
 cron.schedule('0 23 28-31 * *', async () => {
@@ -290,6 +381,8 @@ cron.schedule('0 23 28-31 * *', async () => {
 | `GET` | `/api/reports/below-threshold` | Students < 80% |
 | `GET` | `/api/reports/by-student/:id` | Individual student |
 
+> 📝 Report queries use `sequelize.query()` with raw SQL for performance and flexibility on complex aggregations.
+
 ### Success Criteria
 - [ ] SMS sent immediately when ABSENT student is submitted
 - [ ] Monthly cron job triggers correctly
@@ -304,7 +397,7 @@ cron.schedule('0 23 28-31 * *', async () => {
 
 ### Security Checklist
 - [ ] All inputs validated with `express-validator`
-- [ ] No raw SQL string interpolation (prepared statements only)
+- [ ] No raw SQL string interpolation — use Sequelize model methods or `replacements`
 - [ ] Passwords hashed with `bcrypt` (rounds ≥ 10)
 - [ ] JWT stored in HttpOnly cookie (refresh) + memory/header (access)
 - [ ] `helmet()` middleware enabled (security headers)
@@ -382,12 +475,14 @@ server {
 
 ## Development Rules
 
-1. **Prepared statements always** — No string interpolation in SQL
-2. **Services handle business logic** — Controllers only parse request/response
-3. **Role guard on every protected route** — Never trust client-side role
-4. **Always use `pool.execute()`** — never `pool.query()` for parameterized queries
-5. **Never hardcode secrets** — Always read from `.env`
-6. **Consistent response format** — Always `{ success, data }` or `{ success, error }`
+1. **Sequelize Models for standard CRUD** — Use `Model.create()`, `Model.findAll()`, `Model.update()`, `Model.destroy()` for all entity operations
+2. **`sequelize.query()` with `replacements` for complex queries** — Attendance reports and time-based logic that don't fit neatly into Sequelize's query builder
+3. **Never use raw string interpolation in SQL** — Always `replacements` or Sequelize model methods
+4. **Services handle business logic** — Controllers only parse request/response
+5. **Role guard on every protected route** — Never trust client-side role
+6. **Never hardcode secrets** — Always read from `.env`
+7. **Consistent response format** — Always `{ success, data }` or `{ success, error }`
+8. **`logging: false` in production** — Enable `logging: console.log` only in development to see Sequelize-generated SQL
 
 ---
 

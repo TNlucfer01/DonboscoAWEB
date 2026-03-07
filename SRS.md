@@ -44,18 +44,19 @@ A web-based attendance management system supporting per-period attendance entry,
 | ID | Requirement |
 |---|---|
 | FR-P1 | Principal shall see a **dashboard** (homepage) with college-wide attendance graphs, stats, and quick actions |
-| FR-P2 | Principal shall have an **Add Staff** page: input name, phone number, role |
-| FR-P3 | Principal shall have an **Add Subject** page: input subject name, year, description, credits, semester |
-| FR-P4 | Principal shall have a **Holiday Marking** page: select date from calendar → enter holiday name + description |
+| FR-P2 | Principal shall have a **Staff CRUD** page: create, view, edit, and deactivate staff accounts |
+| FR-P3 | Principal shall have a **Subject CRUD** page: create, view, edit, and delete subjects |
+| FR-P4 | Principal shall have a **Holiday CRUD** page: select date from calendar → enter/edit holiday name + description; delete future holidays |
 | FR-P5 | Only future dates can be marked as holidays; system blocks attendance for holiday dates |
 | FR-P6 | Principal shall enable specific Saturdays as working days (before that Saturday) |
-| FR-P7 | Principal shall have an **Attendance Correction** page: same as staff page, but can select any date (past/future) and set: **Present, Absent, OD, Informed Leave** |
+| FR-P7 | Principal shall have an **Attendance Correction** page: select Year + Date → table shows all students with Period 1–5 as columns; each cell is an editable dropdown (Present / Absent / OD / Informed Leave); no batch selector |
 | FR-P8 | Every correction shall be saved in the Audit Log |
-| FR-P9 | Principal shall have an **Attendance View** page: same multi-view as YC (by batch, subject, calendar+period, %) but for the **entire college** |
+| FR-P9 | Principal shall have an **Attendance View** page: Year-wise table, students as rows, periods as columns; Batch is not a grouping column |
 | FR-P10 | Principal shall have an **Audit Log** page: shows all their saved changes, filterable by date |
 | FR-P11 | Principal shall approve batch groupings proposed by YC |
 | FR-P12 | Principal shall set the attendance threshold (default 80%) |
 | FR-P13 | Principal shall export reports (PDF/Excel) for any class/year/semester |
+| FR-P14 | Principal shall **activate a semester** manually at the start of each academic term; only one semester is active at a time |
 
 ---
 
@@ -64,16 +65,17 @@ A web-based attendance management system supporting per-period attendance entry,
 | ID | Requirement |
 |---|---|
 | FR-Y1 | YC shall see a **dashboard** (homepage) with attendance graphs, key stats, and quick actions for their year |
-| FR-Y2 | YC shall manage all students and batches in their assigned year |
-| FR-Y3 | YC shall **add students** with student details + batch number assignment |
+| FR-Y2 | YC shall have a **Student CRUD** page: add, view, edit, and remove students in their assigned year |
+| FR-Y3 | YC shall assign students to a batch when adding or editing a student record |
 | FR-Y4 | YC shall bulk-upload students via form/file |
 | FR-Y5 | YC shall map Regular subjects to their year (triggers auto-enrollment) |
 | FR-Y6 | YC shall manually enroll students in Elective (3rd year) and ELM (4th year) |
 | FR-Y7 | YC shall pre-enter OD for **future days only** with a mandatory reason field |
 | FR-Y8 | YC shall pre-enter Informed Leave for **future days only** |
 | FR-Y9 | Pre-entered OD/IL shall lock the student's row in the staff's attendance table |
-| FR-Y10 | YC shall view attendance in **multiple views**: by batch, by subject, by calendar+period, and attendance % |
-| FR-Y11 | YC shall generate and export attendance reports for their year (PDF/Excel) |
+| FR-Y10 | YC shall **view, update, and cancel** existing OD/IL entries (future dates only, before staff submission) |
+| FR-Y11 | YC shall view attendance year-wide — **no batch column**; students as rows, periods as columns |
+| FR-Y12 | YC shall generate and export attendance reports for their year (PDF/Excel) |
 
 ---
 
