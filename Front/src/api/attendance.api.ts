@@ -1,8 +1,3 @@
-// ─── Attendance API ───────────────────────────────────────────────────────────
-// All attendance-related backend calls.
-// Currently returns mock data so the UI works before the backend is ready.
-// To connect to real backend: replace the mock return with apiClient calls.
-
 import { apiClient } from './apiClient';
 import {
     AttendanceStudent,
@@ -11,88 +6,159 @@ import {
     ODLeaveStudent,
 } from '../features/shared/attendance.types';
 
-// ─── Mock Data (replace with real API calls when backend is ready) ────────────
-const MOCK_ATTENDANCE_STUDENTS: AttendanceStudent[] = [
-    { id: 1, sno: 1, rollNo: '2021001', name: 'John Doe', batch: 'A', period1: 'P', period2: 'P', period3: 'P', period4: 'P', period5: 'P' },
-    { id: 2, sno: 2, rollNo: '2021002', name: 'Jane Smith', batch: 'A', period1: 'P', period2: 'P', period3: 'A', period4: 'P', period5: 'P' },
-    { id: 3, sno: 3, rollNo: '2021003', name: 'Mike Johnson', batch: 'B', period1: 'P', period2: 'P', period3: 'P', period4: 'P', period5: 'P' },
-    { id: 4, sno: 4, rollNo: '2021004', name: 'Sarah Williams', batch: 'B', period1: 'P', period2: 'OD', period3: 'OD', period4: 'OD', period5: 'OD' },
-    { id: 5, sno: 5, rollNo: '2021005', name: 'Tom Brown', batch: 'C', period1: 'P', period2: 'P', period3: 'IL', period4: 'P', period5: 'P' },
-    { id: 6, sno: 6, rollNo: '2021006', name: 'Emma Davis', batch: 'C', period1: 'A', period2: 'A', period3: 'A', period4: 'P', period5: 'P' },
-];
-
-const USE_MOCK = true; // ← Set to false when backend is ready
+const USE_MOCK = false;
 
 // ─── API Functions ────────────────────────────────────────────────────────────
 
 /** GET /attendance/view?year=1&date=2026-03-06 */
 export async function fetchAttendanceView(year: string, date: string): Promise<AttendanceStudent[]> {
-    if (USE_MOCK) return MOCK_ATTENDANCE_STUDENTS;
-    return apiClient.get<AttendanceStudent[]>('/attendance/view', { year, date });
+    if (USE_MOCK) return [];
+
+    // Backend: GET /reports/attendance-summary?year=...&date_from=...&date_to=...
+    // Or GET /attendance/view
+    const data = await apiClient.get<any[]>('/attendance/view', { year, date_from: date, date_to: date });
+
+    // Transform backend AttendanceRecord format to frontend AttendanceStudent format
+    const studentMap: Record<number, AttendanceStudent> = {};
+
+    data.forEach((record, index) => {
+        const sid = record.student.student_id;
+        if (!studentMap[sid]) {
+            studentMap[sid] = {
+                id: sid,
+                sno: index + 1,
+                rollNo: record.student.roll_number,
+                name: record.student.name,
+                batch: record.student.batch?.name || '-',
+                period1: '-', period2: '-', period3: '-', period4: '-', period5: '-'
+            };
+        }
+
+        const slotKey = `period${record.slot.slot_number}` as keyof AttendanceStudent;
+        const statusMap: Record<string, string> = {
+            'PRESENT': 'P',
+            'ABSENT': 'A',
+            'OD': 'OD',
+            'INFORMED_LEAVE': 'IL'
+        };
+        (studentMap[sid] as any)[slotKey] = statusMap[record.status] || record.status;
+    });
+
+    return Object.values(studentMap);
 }
 
-/** GET /attendance/correction?year=1&batch=A&period=1&date=2026-03-06 */
+/** GET /attendance/correction?record_id=... */
 export async function fetchCorrectionStudents(
     year: string, batch: string, period: string, date: string
 ): Promise<CorrectionStudent[]> {
-    if (USE_MOCK) {
-        return [
-            { id: 1, rollNo: '2021001', name: 'John Doe', status: 'Present', odReason: '' },
-            { id: 2, rollNo: '2021002', name: 'Jane Smith', status: 'Present', odReason: '' },
-            { id: 3, rollNo: '2021003', name: 'Mike Johnson', status: 'Absent', odReason: '' },
-            { id: 4, rollNo: '2021004', name: 'Sarah W.', status: 'Present', odReason: '' },
-            { id: 5, rollNo: '2021005', name: 'Tom Brown', status: 'OD', odReason: 'Sports Event' },
-        ];
-    }
-    return apiClient.get<CorrectionStudent[]>('/attendance/correction', { year, batch, period, date });
+    if (USE_MOCK) return [];
+
+    // The backend /attendance/view already returns records. 
+    // We can filter it here or use the same view logic.
+    const data = await apiClient.get<any[]>('/attendance/view', { year, date_from: date, date_to: date });
+
+    return data
+        .filter(r => r.slot.slot_number === parseInt(period))
+        .map(r => ({
+            id: r.record_id,
+            rollNo: r.student.roll_number,
+            name: r.student.name,
+            status: r.status,
+            odReason: r.od_reason || ''
+        }));
 }
 
-/** POST /attendance/correction — Save corrected attendance */
+/** PUT /attendance/correct — Save corrected attendance */
 export async function saveAttendanceCorrection(students: CorrectionStudent[]): Promise<void> {
     if (USE_MOCK) return;
-    await apiClient.post('/attendance/correction', { students });
-}
 
-/** GET /attendance/staff?year=1&batch=A&period=1&subject=CS101 */
-export async function fetchStaffStudents(
-    year: string, batch: string, period: string, subject: string
-): Promise<StaffStudent[]> {
-    if (USE_MOCK) {
-        return [
-            { id: 1, rollNo: '2021001', name: 'John Doe', status: 'Present' },
-            { id: 2, rollNo: '2021002', name: 'Jane Smith', status: 'Present' },
-            { id: 3, rollNo: '2021003', name: 'Mike Johnson', status: 'Present' },
-            { id: 4, rollNo: '2021004', name: 'Sarah Williams', status: 'Present' },
-            { id: 5, rollNo: '2021005', name: 'Tom Brown', status: 'Present' },
-            { id: 6, rollNo: '2021006', name: 'Emma Davis', status: 'Present' },
-            { id: 7, rollNo: '2021007', name: 'David Wilson', status: 'Present' },
-            { id: 8, rollNo: '2021008', name: 'Olivia Martinez', status: 'Present' },
-        ];
+    // Backend expects individual corrections via PUT /attendance/correct { record_id, new_status, od_reason }
+    for (const student of students) {
+        await apiClient.put('/attendance/correct', {
+            record_id: student.id,
+            new_status: student.status.toUpperCase(),
+            od_reason: student.odReason
+        });
     }
-    return apiClient.get<StaffStudent[]>('/attendance/staff', { year, batch, period, subject });
 }
 
-/** POST /attendance/staff — Submit attendance */
+/** POST /attendance/fetch-students — Staff fetch */
+export async function fetchStaffStudents(
+    year: string, batch_id: string, slot_id: string, date: string
+): Promise<StaffStudent[]> {
+    if (USE_MOCK) return [];
+
+    // Backend: POST /attendance/fetch-students { year, batch_id, slot_id, date }
+    const data = await apiClient.post<any[]>('/attendance/fetch-students', {
+        year: parseInt(year),
+        batch_id: parseInt(batch_id),
+        slot_id: parseInt(slot_id),
+        date
+    });
+
+    return data.map(s => ({
+        id: s.student_id,
+        rollNo: s.roll_number,
+        name: s.name,
+        status: s.status || 'Present',
+        is_locked: s.is_locked
+    }));
+}
+
+/** POST /attendance/submit — Submit attendance */
 export async function submitStaffAttendance(
-    year: string, batch: string, period: string, subject: string,
-    students: StaffStudent[]
+    _year: string, _batch: string, slot_id: string, subject_id: string,
+    students: StaffStudent[], date: string
 ): Promise<void> {
     if (USE_MOCK) return;
-    await apiClient.post('/attendance/staff', { year, batch, period, subject, students });
+
+    // Backend: POST /attendance/submit { records: [{ student_id, status }], slot_id, date, subject_id }
+    const records = students.map(s => ({
+        student_id: s.id,
+        status: s.status.toUpperCase()
+    }));
+
+    await apiClient.post('/attendance/submit', {
+        records,
+        slot_id: parseInt(slot_id),
+        date,
+        subject_id: parseInt(subject_id)
+    });
 }
 
-/** GET /attendance/od-leave?date=2026-03-06 */
-export async function fetchODLeaveStudents(date: string): Promise<ODLeaveStudent[]> {
-    if (USE_MOCK) return MOCK_ATTENDANCE_STUDENTS.map((s) => ({
-        ...s,
-        remarks: '',
-        attendancePercentage: 90.0,
+/** GET /attendance/od-leave?year=... */
+export async function fetchODLeaveStudents(year: string): Promise<ODLeaveStudent[]> {
+    if (USE_MOCK) return [];
+
+    // Backend: GET /attendance/od-il?year=...
+    const data = await apiClient.get<any[]>('/attendance/od-il', { year });
+
+    return data.map((r, index) => ({
+        id: r.record_id,
+        sno: index + 1,
+        rollNo: r.student.roll_number,
+        name: r.student.name,
+        batch: r.student.batch?.name || '-',
+        period1: '-', period2: '-', period3: '-', period4: '-', period5: '-',
+        status: r.status,
+        remarks: r.od_reason || '',
+        date: r.date,
+        slot_id: r.slot_id,
+        attendancePercentage: 0
     }));
-    return apiClient.get<ODLeaveStudent[]>('/attendance/od-leave', { date });
 }
 
 /** POST /attendance/od-leave — Save OD/leave entries */
-export async function saveODLeaveEntries(students: ODLeaveStudent[]): Promise<void> {
+export async function saveODLeaveEntries(student: any): Promise<void> {
     if (USE_MOCK) return;
-    await apiClient.post('/attendance/od-leave', { students });
+
+    // Backend: POST /attendance/od-il { student_id, slot_id, date, status, od_reason, semester_id }
+    await apiClient.post('/attendance/od-il', {
+        student_id: student.student_id,
+        slot_id: parseInt(student.slot_id),
+        date: student.date,
+        status: student.status,
+        od_reason: student.remarks,
+        semester_id: 1 // TODO: Dynamic semester
+    });
 }
