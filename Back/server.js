@@ -6,7 +6,6 @@ const morgan = require('morgan');
 const sequelize = require('./src/config/db');
 
 const app = express();
-
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));

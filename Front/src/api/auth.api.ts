@@ -6,15 +6,23 @@ export interface UserResponse {
     role: string;
 }
 
-export interface LoginResponse {
+// ─── What the backend actually returns ───────────────────────────────────────
+// { success: true, data: { token: string, user: UserResponse } }
+interface LoginResponse {
     token: string;
     user: UserResponse;
 }
 
+
 export async function login(email: string, password: string): Promise<UserResponse> {
-    const data = await apiClient.post<LoginResponse>('/auth/login', { email, password });
-    setToken(data.token);
-    return data.user;
+    // apiClient.post returns the parsed JSON body (the full envelope)
+   const raw = await apiClient.post<LoginResponse>('/auth/login', { email, password });
+console.log('raw response:', raw); // check what shape actually arrives
+const { token, user } = raw; // if log shows {token, user} directly
+    // Store access token for subsequent requests (Authorization: Bearer <token>)
+    setToken(token);
+
+    return user;
 }
 
 export async function logout(): Promise<void> {

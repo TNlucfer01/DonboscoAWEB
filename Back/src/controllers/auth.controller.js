@@ -1,7 +1,7 @@
 // src/controllers/auth.controller.js
 const authService = require('../services/auth.service');
 const { success } = require('../utils/apiResponse');
-
+// isn't the refresh time is 15mintues
 const REFRESH_COOKIE_OPTS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -15,6 +15,7 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
         const result = await authService.login(email, password);
         res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTS);
+       //idk why are we having to return the res and tken what does the res contains
         return success(res, { token: result.accessToken, user: result.user });
     } catch (err) {
         next(err);

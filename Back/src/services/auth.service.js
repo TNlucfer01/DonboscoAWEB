@@ -10,10 +10,10 @@ const otpStore = new Map(); // phone → { otp, expiresAt }
 // ── Login ──────────────────────────────────────────────────────
 async function login(email, password) {
     const user = await User.findOne({ where: { email } });
-    if (!user) throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
+    if (!user) throw new AppError('AUTH_FAILED', 'Invalid credentia', 401);
 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
+    if (!valid) throw new AppError('AUTH_FAILED', 'Invalid credential', 401);
 
     const accessToken = jwt.sign(
         { userId: user.user_id, role: user.role, managedYear: user.managed_year, name: user.name },

@@ -9,12 +9,12 @@ const { loginLimiter } = require('../middleware/rateLimiter');
 // POST /api/auth/login
 router.post('/login',
     loginLimiter,
-    [
+    [// what is the validate  
         body('email').isEmail().withMessage('Valid email required'),
         body('password').notEmpty().withMessage('Password required'),
     ],
     validate,
-    ctrl.login
+    ctrl.login // is the defualt thrid function id the error handling function 
 );
 
 // POST /api/auth/refresh
