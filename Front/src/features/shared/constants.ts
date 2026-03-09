@@ -15,10 +15,10 @@ export const YEAR_OPTIONS: SelectOption[] = [
 ];
 
 export const BATCH_OPTIONS: SelectOption[] = [
-    { value: 'A', label: 'Batch A' },
-    { value: 'B', label: 'Batch B' },
-    { value: 'C', label: 'Batch C' },
-    { value: 'D', label: 'Batch D' },
+    { value: '1', label: 'Batch A' },
+    { value: '2', label: 'Batch B' },
+    { value: '3', label: 'Batch C' },
+    { value: '4', label: 'Batch D' },
 ];
 
 export const PERIOD_OPTIONS: SelectOption[] = [
@@ -48,3 +48,10 @@ export const ATTENDANCE_STATUS_OPTIONS: SelectOption[] = [
     { value: 'OD', label: 'OD' },
     { value: 'IL', label: 'IL' },
 ];
+
+export const GENDER_OPTIONS: SelectOption[] = [
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+    { value: 'Other', label: 'Other' },
+];
+

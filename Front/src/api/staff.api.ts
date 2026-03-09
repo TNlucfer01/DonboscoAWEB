@@ -18,9 +18,9 @@ export async function fetchStaffMembers(): Promise<StaffMember[]> {
 
 /** POST /users — Add new staff member */
 export async function addStaffMember(
-    name: string, email: string, phone_number: string, role: string
+    name: string, email: string, phone_number: string, role: string, managed_year: number | null
 ): Promise<void> {
-    await apiClient.post('/users', { name, email, phone_number, role });
+    await apiClient.post('/users', { name, email, phone_number, role, managed_year });
 }
 
 /** PUT /users/:id — Update staff member */

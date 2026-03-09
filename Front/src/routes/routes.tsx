@@ -30,57 +30,57 @@ import StaffTakeAttendance from '../features/staff/TakeAttendance';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 interface ProtectedProps {
-    user: User | null;
-    requiredRole: string;
-    children: ReactNode;
+	user: User | null;
+	requiredRole: string;
+	children: ReactNode;
 }
 
 function Protected({ user, requiredRole, children }: ProtectedProps) {
-    if (!user || user.role !== requiredRole) return <Navigate to="/" replace />;
-    return <>{children}</>;
+	if (!user || user.role !== requiredRole) return <Navigate to="/" replace />;
+	return <>{children}</>;
 }
 
 // ─── Route Definitions ───────────────────────────────────────────────────────
 
 interface AppRoutesProps {
-    user: User | null;
-    onLogin: (role: string, username: string) => void;
-    onLogout: () => void;
+	user: User | null;
+	onLogin: (role: string, username: string) => void;
+	onLogout: () => void;
 }
 
 export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
-    const pp = { user: user!, onLogout }; // page props shorthand (only passed to Protected routes)
+	const pp = { user: user!, onLogout }; // page props shorthand (only passed to Protected routes)
 
-    return (
-        <Routes>
-            {/* Root — redirect by role or show login */}
-            <Route
-                path="/"
-                element={
-                    !user ? <Login onLogin={onLogin} /> :
-                        user.role === 'principal' ? <Navigate to="/principal/dashboard" replace /> :
-                            user.role === 'yc' ? <Navigate to="/yc/dashboard" replace /> :
-                                <Navigate to="/staff/attendance" replace />
-                }
-            />
+	return (
+		<Routes>
+			{/* Root — redirect by role or show login */}
+			<Route
+				path="/"
+				element={
+					!user ? <Login onLogin={onLogin} /> :
+						user.role === 'principal' ? <Navigate to="/principal/dashboard" replace /> :
+							user.role === 'year_coordinator' ? <Navigate to="/yc/dashboard" replace /> :
+								<Navigate to="/staff/attendance" replace />
+				}
+			/>
 
-            {/* Principal Routes */}
-            <Route path="/principal/dashboard" element={<Protected user={user} requiredRole="principal"><PrincipalDashboard     {...pp} /></Protected>} />
-            <Route path="/principal/add-staff" element={<Protected user={user} requiredRole="principal"><AddStaff               {...pp} /></Protected>} />
-            <Route path="/principal/add-subject" element={<Protected user={user} requiredRole="principal"><AddSubject             {...pp} /></Protected>} />
-            <Route path="/principal/holidays" element={<Protected user={user} requiredRole="principal"><HolidayMarking         {...pp} /></Protected>} />
-            <Route path="/principal/attendance-correction" element={<Protected user={user} requiredRole="principal"><AttendanceCorrection {...pp} /></Protected>} />
-            <Route path="/principal/attendance-view" element={<Protected user={user} requiredRole="principal"><PrincipalAttendanceView {...pp} /></Protected>} />
-            <Route path="/principal/audit-log" element={<Protected user={user} requiredRole="principal"><AuditLog              {...pp} /></Protected>} />
+			{/* Principal Routes */}
+			<Route path="/principal/dashboard" element={<Protected user={user} requiredRole="principal"><PrincipalDashboard     {...pp} /></Protected>} />
+			<Route path="/principal/add-staff" element={<Protected user={user} requiredRole="principal"><AddStaff               {...pp} /></Protected>} />
+			<Route path="/principal/add-subject" element={<Protected user={user} requiredRole="principal"><AddSubject             {...pp} /></Protected>} />
+			<Route path="/principal/holidays" element={<Protected user={user} requiredRole="principal"><HolidayMarking         {...pp} /></Protected>} />
+			<Route path="/principal/attendance-correction" element={<Protected user={user} requiredRole="principal"><AttendanceCorrection {...pp} /></Protected>} />
+			<Route path="/principal/attendance-view" element={<Protected user={user} requiredRole="principal"><PrincipalAttendanceView {...pp} /></Protected>} />
+			<Route path="/principal/audit-log" element={<Protected user={user} requiredRole="principal"><AuditLog              {...pp} /></Protected>} />
 
-            {/* YC Routes */}
-            <Route path="/yc/dashboard" element={<Protected user={user} requiredRole="yc"><YCDashboard      {...pp} /></Protected>} />
-            <Route path="/yc/add-student" element={<Protected user={user} requiredRole="yc"><AddStudent       {...pp} /></Protected>} />
-            <Route path="/yc/od-leave" element={<Protected user={user} requiredRole="yc"><ODLeaveEntry     {...pp} /></Protected>} />
-            <Route path="/yc/attendance-view" element={<Protected user={user} requiredRole="yc"><YCAttendanceView {...pp} /></Protected>} />
+			{/* YC Routes */}
+			<Route path="/yc/dashboard" element={<Protected user={user} requiredRole="year_coordinator"><YCDashboard      {...pp} /></Protected>} />
+			<Route path="/yc/add-student" element={<Protected user={user} requiredRole="year_coordinator"><AddStudent       {...pp} /></Protected>} />
+			<Route path="/yc/od-leave" element={<Protected user={user} requiredRole="year_coordinator"><ODLeaveEntry     {...pp} /></Protected>} />
+			<Route path="/yc/attendance-view" element={<Protected user={user} requiredRole="year_coordinator"><YCAttendanceView {...pp} /></Protected>} />
 
-            {/* Staff Routes */}
-            <Route path="/staff/attendance" element={<Protected user={user} requiredRole="staff"><StaffTakeAttendance {...pp} /></Protected>} />
-        </Routes>
-    );
+			{/* Staff Routes */}
+			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
+		</Routes>
+	);
 }

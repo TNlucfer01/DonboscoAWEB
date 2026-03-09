@@ -23,7 +23,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 	const [email, setEmail] = useState('');
 	const [phone, setPhone] = useState('');
 	const [role, setRole] = useState('');
-	const [managed_year, setmanaged_year] = useState('');
+	const [managed_year, setmanaged_year] = useState(0);
 	const [loading, setLoading] = useState(false);
 
 	// ── Staff List ────────────────────────────────────────────────
@@ -50,9 +50,9 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 		if (!name || !email || !phone || !role) return toast.error('Please fill in all fields');
 		setLoading(true);
 		try {
-			await addStaffMember(name, email, phone, role);
+			await addStaffMember(name, email, phone, role, managed_year);
 			toast.success(`Staff member ${name} added! Default password: Password@123`);
-			setName(''); setEmail(''); setPhone(''); setRole(''); setmanaged_year();
+			setName(''); setEmail(''); setPhone(''); setRole(''); setmanaged_year(0);
 			await loadStaff(); // refresh table
 		} catch (err: any) {
 			toast.error(err.message || 'Failed to add staff member');
@@ -105,7 +105,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 								{role == "YEAR_COORDINATOR" ?
 									<div>
 										<Label htmlFor="phone" className="text-slate-700">Managing Year *</Label>
-										<input id="managed_year" value={managed_year} onChange={(e) => setmanaged_year(e.target.value)} className="mt-1 border-slate-300" placeholder='enter the Year 1 - 4' type='number' /> </div> : <br />
+										<input id="managed_year" value={managed_year} onChange={(e) => setmanaged_year(Number(e.target.value))} className="mt-1 border-slate-300" placeholder='enter the Year 1 - 4' type='number' /> </div> : <br />
 								}
 								<div className="pt-4">
 									<Button type="submit" disabled={loading} className="w-full sm:w-auto bg-slate-700 hover:bg-slate-800 text-white">

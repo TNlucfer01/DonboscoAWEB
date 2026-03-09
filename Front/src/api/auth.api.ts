@@ -16,9 +16,8 @@ interface LoginResponse {
 
 export async function login(email: string, password: string): Promise<UserResponse> {
     // apiClient.post returns the parsed JSON body (the full envelope)
-   const raw = await apiClient.post<LoginResponse>('/auth/login', { email, password });
-console.log('raw response:', raw); // check what shape actually arrives
-const { token, user } = raw; // if log shows {token, user} directly
+    const raw = await apiClient.post<LoginResponse>('/auth/login', { email, password });
+    const { token, user } = raw;
     // Store access token for subsequent requests (Authorization: Bearer <token>)
     setToken(token);
 
