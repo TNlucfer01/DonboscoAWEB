@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-
+//add the subject code 
 const Subject = sequelize.define('Subject', {
     subject_id: {
         type: DataTypes.INTEGER,

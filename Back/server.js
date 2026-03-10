@@ -19,13 +19,14 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/users', require('./src/routes/user.routes'));
 app.use('/api/semesters', require('./src/routes/semester.routes'));
-app.use('/api/batches', require('./src/routes/batch.routes'));
+
+ //app.use('/api/batches', require('./src/routes/batch.routes'));
 app.use('/api/subjects', require('./src/routes/subject.routes'));
 app.use('/api/students', require('./src/routes/student.routes'));
 app.use('/api/attendance', require('./src/routes/attendance.routes'));
 app.use('/api/calendar', require('./src/routes/calendar.routes'));
 app.use('/api/audit', require('./src/routes/audit.routes'));
-app.use('/api/reports', require('./src/routes/report.routes'));
+app.use('/api/reports', require('./src/routes/report.routes'));//fix this routes entrirly 
 
 // ── Global Error Handler ─────────────────────────────────────
 app.use(require('./src/middleware/errorHandler'));

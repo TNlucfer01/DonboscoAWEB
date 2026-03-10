@@ -15,14 +15,15 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
         const result = await authService.login(email, password);
         res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTS);
-       //idk why are we having to return the res and tken what does the res contains
-        return success(res, { token: result.accessToken, user: result.user });
+       //this is the for the login token 
+								return success(res, { token: result.accessToken, user: result.user });
     } catch (err) {
         next(err);
     }
 };
 
 // POST /api/auth/refresh
+// when does this even used 
 const refresh = async (req, res, next) => {
     try {
         const refreshToken = req.cookies?.refreshToken;
@@ -33,7 +34,7 @@ const refresh = async (req, res, next) => {
         next(err);
     }
 };
-
+//how can i test this for now
 // POST /api/auth/forgot-password
 const forgotPassword = async (req, res, next) => {
     try {
@@ -44,7 +45,7 @@ const forgotPassword = async (req, res, next) => {
         next(err);
     }
 };
-
+//how can i test this 
 // POST /api/auth/reset-password
 const resetPassword = async (req, res, next) => {
     try {

@@ -1,8 +1,8 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-//ok
-const Semester = sequelize.define('Semester', {
-    semester_id: {
+
+const LabBatch = sequelize.define('LabBatch', {
+    lab_batch_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
@@ -11,19 +11,23 @@ const Semester = sequelize.define('Semester', {
         type: DataTypes.STRING(50),
         allowNull: false,
     },
-    academic_year: {
+    year: {
         type: DataTypes.TINYINT,
         allowNull: false,
         validate: { min: 1, max: 4 },
     },
-    is_active: {
-        type: DataTypes.BOOLEAN,
+    capacity: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: false,
+    },
+    student_count: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
     },
 }, {
-    tableName: 'semesters',
+    tableName: 'lab_batches',
     timestamps: false,
 });
-
-module.exports = Semester;
+//ok i think 
+module.exports = LabBatch;

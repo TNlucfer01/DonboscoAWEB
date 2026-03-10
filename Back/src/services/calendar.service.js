@@ -6,22 +6,22 @@ const AppError = require('../utils/AppError');
 async function getAll(year, month) {
     const where = {};
     if (year && month) {
-        const start = `${year}-${String(month).padStart(2, '0')}-01`;
-        const end = dayjs(start).endOf('month').format('YYYY-MM-DD');
+        const start = `${year}-${String(month).padStart(2, '0')}-01`; //start  i think 
+        const end = dayjs(start).endOf('month').format('YYYY-MM-DD'); //end 
         const { Op } = require('sequelize');
-        where.date = { [Op.between]: [start, end] };
+        where.date = { [Op.between]: [start, end] }; //what OP
     }
     return CollegeCalendar.findAll({ where, order: [['date', 'ASC']] });
 }
 
-async function create({ date, day_type, holiday_name, holiday_description, declared_by }) {
+async function create({ date, day_type, holiday_name, holiday_description, declared_by }) { //working great 
     if (dayjs(date).isBefore(dayjs(), 'day')) {
         throw new AppError('PAST_DATE', 'Cannot mark holidays on past dates', 400);
     }
     return CollegeCalendar.create({ date, day_type, holiday_name, holiday_description, declared_by, declared_on: new Date() });
 }
 
-async function update(id, { day_type, holiday_name, holiday_description }) {
+async function update(id, { day_type, holiday_name, holiday_description }) { //working but not orking on the frontend 
     const entry = await CollegeCalendar.findByPk(id);
     if (!entry) throw new AppError('NOT_FOUND', 'Calendar entry not found', 404);
     if (dayjs(entry.date).isBefore(dayjs(), 'day')) {
@@ -31,7 +31,7 @@ async function update(id, { day_type, holiday_name, holiday_description }) {
     return entry;
 }
 
-async function remove(id) {
+async function remove(id) { //working properly 
     const entry = await CollegeCalendar.findByPk(id);
     if (!entry) throw new AppError('NOT_FOUND', 'Calendar entry not found', 404);
     if (dayjs(entry.date).isBefore(dayjs(), 'day')) {

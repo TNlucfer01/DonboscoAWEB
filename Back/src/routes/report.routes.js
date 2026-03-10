@@ -12,9 +12,9 @@ const yearScope = (currentUser, query) => {
     if (currentUser.role === 'YEAR_COORDINATOR') return currentUser.managedYear;
     return query.year ? Number(query.year) : null;
 };
-
-// GET /api/reports/attendance-summary
-router.get('/attendance-summary',
+//what is the reports may be for the dasjboard 
+// GET /api/reports/attendance-summary 
+router.get('/attendance-summary', //need the semester_id ,user //why does the below two routes are very differnt 
     auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
     async (req, res, next) => {
         try {
@@ -26,6 +26,7 @@ router.get('/attendance-summary',
             if (req.query.date_from && req.query.date_to) {
                 conditions.push(`ar.date BETWEEN '${req.query.date_from}' AND '${req.query.date_to}'`);
             }
+												//good but i can't understand 
 
             const results = await sequelize.query(`
         SELECT
@@ -49,7 +50,7 @@ router.get('/attendance-summary',
 );
 
 // GET /api/reports/below-threshold
-router.get('/below-threshold',
+router.get('/below-threshold',//can see by the year and the semster too 
     auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
     async (req, res, next) => {
         try {
@@ -79,7 +80,7 @@ router.get('/below-threshold',
     }
 );
 
-// GET /api/reports/by-student/:id
+// GET /api/reports/by-student/:id not need for today's use but we will updat the rollno 
 router.get('/by-student/:id',
     auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
     async (req, res, next) => {
@@ -99,5 +100,7 @@ router.get('/by-student/:id',
         } catch (e) { next(e); }
     }
 );
+//why does this only uses the sql query for the quering 
+
 
 module.exports = router;

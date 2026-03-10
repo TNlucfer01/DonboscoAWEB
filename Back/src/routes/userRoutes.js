@@ -4,13 +4,13 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middlewares/auth');
 const roleCheck = require('../middlewares/roleCheck');
-
-// Public route
+ //understand why this file needs 
+// Public route 
 router.all('/principal', auth, roleCheck('principal'), (req, res) => {
     res.json({ message: 'Principal', user: req.user });
 });
 
-// Moderator + Admin only
+//  Moderator + Admin only
 router.all('/yearCoordinator', auth, roleCheck('yearCoordinator'), (req, res) => {
     res.json({ message: 'Year Coordinator' });
 });

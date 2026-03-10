@@ -51,7 +51,7 @@ async function refreshAccessToken(refreshToken) {
 }
 
 // ── Forgot Password (OTP) ──────────────────────────────────────
-async function sendOTP(phone) {
+async function sendOTP(phone) {//how can i test these thing
     const user = await User.findOne({ where: { phone_number: phone } });
     if (!user) throw new AppError('NOT_FOUND', 'No account with this phone number', 404);
 
@@ -64,7 +64,7 @@ async function sendOTP(phone) {
 }
 
 // ── Reset Password ─────────────────────────────────────────────
-async function resetPassword(phone, otp, newPassword) {
+async function resetPassword(phone, otp, newPassword) { //how can i test this 
     const entry = otpStore.get(phone);
     if (!entry || entry.otp !== otp || Date.now() > entry.expiresAt) {
         throw new AppError('OTP_INVALID', 'OTP is invalid or has expired', 400);

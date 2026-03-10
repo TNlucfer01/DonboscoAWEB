@@ -14,7 +14,7 @@ router.post('/login',
         body('password').notEmpty().withMessage('Password required'),
     ],
     validate,
-    ctrl.login // is the defualt thrid function id the error handling function 
+    ctrl.login // is the defualt thrid function id the next function  handling function 
 );
 
 // POST /api/auth/refresh

@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-
+//idk hw to make the update the db for the tsudent  attendance_audit_log
 const AttendanceAuditLog = sequelize.define('AttendanceAuditLog', {
     audit_id: {
         type: DataTypes.INTEGER,

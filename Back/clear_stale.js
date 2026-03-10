@@ -1,7 +1,7 @@
 // clear_stale.js
 require('./src/config/env');
 const { sequelize, User } = require('./src/models/index');
-
+//why does this even need 
 async function clear() {
     try {
         await sequelize.authenticate();

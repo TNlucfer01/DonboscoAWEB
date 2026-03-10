@@ -10,7 +10,7 @@ const userService = require('../services/user.service');
 
 const ctrl = makeController(userService);
 
-const userValidation = [
+const userValidation = [ //if possible add other detials in the future 
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('phone_number').isMobilePhone().withMessage('Valid phone number is required'),

@@ -3,26 +3,30 @@
 const sequelize = require('../config/db');
 
 const User = require('./User');
-const Batch = require('./Batch');
+const TheoryBatch = require('./TheoryBatch');
+const LabBatch = require('./LabBatch');
 const Semester = require('./Semester');
 const Subject = require('./Subject');
 const TimetableSlot = require('./TimetableSlot');
 const Student = require('./Student');
 const CollegeCalendar = require('./CollegeCalendar');
-const StudentBatchEnrollment = require('./StudentBatchEnrollment');
+// const StudentBatchEnrollment = require('./StudentBatchEnrollment'); // Removing or we can keep depending on necessity
 const StudentSubjectEnrollment = require('./StudentSubjectEnrollment');
 const AttendanceRecord = require('./AttendanceRecord');
 const AttendanceAuditLog = require('./AttendanceAuditLog');
 const NotificationLog = require('./NotificationLog');
 
-// ── Student ↔ Batch ────────────────────────────────────────────
-Student.belongsTo(Batch, { foreignKey: 'batch_id', as: 'batch' });
-Batch.hasMany(Student, { foreignKey: 'batch_id', as: 'students' });
+// ── Student ↔ Theory/Lab Batches ────────────────────────────────────────────
+Student.belongsTo(TheoryBatch, { foreignKey: 'theory_batch_id', as: 'theoryBatch' });
+TheoryBatch.hasMany(Student, { foreignKey: 'theory_batch_id', as: 'students' });
+
+Student.belongsTo(LabBatch, { foreignKey: 'lab_batch_id', as: 'labBatch' });
+LabBatch.hasMany(Student, { foreignKey: 'lab_batch_id', as: 'students' });
 
 // ── Enrollment: Student ↔ Batch ↔ Semester ────────────────────
-StudentBatchEnrollment.belongsTo(Student, { foreignKey: 'student_id' });
-StudentBatchEnrollment.belongsTo(Batch, { foreignKey: 'batch_id' });
-StudentBatchEnrollment.belongsTo(Semester, { foreignKey: 'semester_id' });
+// StudentBatchEnrollment.belongsTo(Student, { foreignKey: 'student_id' });
+// StudentBatchEnrollment.belongsTo(Batch, { foreignKey: 'batch_id' });
+// StudentBatchEnrollment.belongsTo(Semester, { foreignKey: 'semester_id' });
 
 // ── Enrollment: Student ↔ Subject ↔ Semester ──────────────────
 StudentSubjectEnrollment.belongsTo(Student, { foreignKey: 'student_id' });
@@ -52,13 +56,14 @@ CollegeCalendar.belongsTo(User, { foreignKey: 'declared_by', as: 'declaredBy' })
 module.exports = {
     sequelize,
     User,
-    Batch,
+    TheoryBatch,
+    LabBatch,
     Semester,
     Subject,
     TimetableSlot,
     Student,
     CollegeCalendar,
-    StudentBatchEnrollment,
+    // StudentBatchEnrollment,
     StudentSubjectEnrollment,
     AttendanceRecord,
     AttendanceAuditLog,

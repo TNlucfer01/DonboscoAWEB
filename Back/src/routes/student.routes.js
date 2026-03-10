@@ -10,32 +10,33 @@ const studentService = require('../services/student.service');
 const makeController = require('../controllers/crud.controller');
 
 const ctrl = makeController(studentService);
-
+//midle ware condtions add the current student detials too  
 const studentValidation = [
     body('name').notEmpty().withMessage('Student name is required'),
     body('roll_number').notEmpty().withMessage('Roll number is required'),
     body('parent_phone').isMobilePhone().withMessage('Valid parent phone is required'),
     body('current_year').isInt({ min: 1, max: 4 }).withMessage('Year must be 1–4'),
-    body('batch_id').isInt({ min: 1 }).withMessage('Valid batch_id is required'),
+    body('theory_batch_id').isInt({ min: 1 }).withMessage('Valid theory_batch_id is required'),
+    body('lab_batch_id').isInt({ min: 1 }).withMessage('Valid lab_batch_id is required'),
 ];
 
 // All student routes — YC and Principal
 router.use(auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'));
-
+//we need to get by the roll_no not the id 
 router.get('/', ctrl.getAll);
-router.get('/:id', ctrl.getById);
+router.get('/:id', ctrl.getById);//for  i need to add a search functionality 
 router.post('/', studentValidation, validate, ctrl.create);
-router.put('/:id', ctrl.update);
+router.put('/:id', ctrl.update);//this is also not working 
 router.delete('/:id', ctrl.remove);
 
-// Bulk CSV upload
+// Bulk CSV upload not used 
 router.post('/bulk', async (req, res, next) => {
     try {
-        const { students, current_year, batch_id } = req.body;
-        if (!Array.isArray(students) || !current_year || !batch_id) {
-            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'students array, current_year, and batch_id required' } });
+        const { students, current_year, theory_batch_id, lab_batch_id } = req.body;
+        if (!Array.isArray(students) || !current_year || !theory_batch_id || !lab_batch_id) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'students array, current_year, theory_batch_id, and lab_batch_id required' } });
         }
-        return success(res, await studentService.bulkCreate(students, current_year, batch_id), 201);
+        return success(res, await studentService.bulkCreate(students, current_year, theory_batch_id, lab_batch_id), 201);
     } catch (e) { next(e); }
 });
 

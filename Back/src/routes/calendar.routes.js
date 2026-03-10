@@ -11,12 +11,12 @@ const calSvc = require('../services/calendar.service');
 // All: Principal only
 router.use(auth, roleGuard('PRINCIPAL'));
 
-router.get('/', async (req, res, next) => {
+router.get('/', async (req, res, next) => {//working
     try { return success(res, await calSvc.getAll(req.query.year, req.query.month)); }
     catch (e) { next(e); }
 });
 
-router.post('/',
+router.post('/', //working  past date can't be updated
     [
         body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
         body('day_type').isIn(['HOLIDAY', 'SATURDAY_ENABLED']).withMessage('day_type must be HOLIDAY or SATURDAY_ENABLED'),
@@ -29,12 +29,12 @@ router.post('/',
     }
 );
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', async (req, res, next) => { //not used right now 
     try { return success(res, await calSvc.update(req.params.id, req.body)); }
     catch (e) { next(e); }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', async (req, res, next) => { //used even now 
     try { return success(res, await calSvc.remove(req.params.id)); }
     catch (e) { next(e); }
 });

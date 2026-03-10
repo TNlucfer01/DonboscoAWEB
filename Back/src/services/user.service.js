@@ -11,7 +11,7 @@ async function getAll() {
     });
 }
 
-async function getById(id) {
+async function getById(id) { //i have to do somethign about the id 
     const user = await User.findByPk(id, { attributes: { exclude: ['password_hash'] } });
     if (!user) throw new AppError('NOT_FOUND', 'User not found', 404);
     return user;
@@ -34,7 +34,7 @@ async function create(data) {
     return safe;
 }
 
-async function update(id, data) {
+async function update(id, data) { // have to use the emp_id 
     const user = await User.findByPk(id);
     if (!user) throw new AppError('NOT_FOUND', 'User not found', 404);
     const { name, email, phone_number, role, managed_year } = data;
@@ -43,7 +43,7 @@ async function update(id, data) {
     return safe;
 }
 
-async function remove(id) {
+async function remove(id) { //why does this even work 
     const user = await User.findByPk(id);
     if (!user) throw new AppError('NOT_FOUND', 'User not found', 404);
     if (user.role === 'PRINCIPAL') throw new AppError('FORBIDDEN', 'Cannot delete the Principal account', 403);

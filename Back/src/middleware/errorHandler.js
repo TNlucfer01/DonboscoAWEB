@@ -1,7 +1,7 @@
 // middleware/errorHandler.js — Global Express error handler
-
+// i don't understand how this work 
 const AppError = require('../utils/AppError');
-
+/// why does the above line is not working 
 // eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
     if (err.isOperational) {

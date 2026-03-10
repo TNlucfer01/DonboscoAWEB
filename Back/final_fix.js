@@ -2,7 +2,7 @@
 require('./src/config/env');
 const { sequelize, User } = require('./src/models/index');
 const bcrypt = require('bcryptjs');
-
+// why does this need explain 
 async function fix() {
     try {
         await sequelize.authenticate();

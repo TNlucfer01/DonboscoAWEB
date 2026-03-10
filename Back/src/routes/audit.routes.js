@@ -8,7 +8,7 @@ const { AttendanceAuditLog, AttendanceRecord, Student, User } = require('../mode
 const { Op } = require('sequelize');
 
 // GET /api/audit — Principal only, filter by date range
-router.get('/',
+router.get('/', //yep that's all the Principal can see this //why do i feel like this route  is less constraints  than other 
     auth, roleGuard('PRINCIPAL'),
     async (req, res, next) => {
         try {
