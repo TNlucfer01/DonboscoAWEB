@@ -1,37 +1,47 @@
 // ─── App Entry Point ──────────────────────────────────────────────────────────
-// Thin shell: manages auth state and delegates routing to AppRoutes.
+// Manages auth state with localStorage persistence + JWT token.
 
 import { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { Toaster } from './components/ui/sonner';
 import AppRoutes from '../routes/routes';
 import { User } from '../features/shared/types';
-import { clearToken, getToken } from '../api/apiClient';
+import { getToken, clearToken } from '../api/apiClient';
+import { logout as apiLogout } from '../api/auth.api';
 
-const USER_KEY = 'dbcas_user_data';
+const USER_KEY = 'dbcas_user';
+
+function loadStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    const token = getToken();
+    if (raw && token) return JSON.parse(raw);
+  } catch { /* ignore parse errors */ }
+  return null;
+}
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem(USER_KEY);
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(loadStoredUser);
 
-  // If token is missing but user data exists, clear user (session expired/invalid)
+  // Persist user on change
   useEffect(() => {
-    if (!getToken()) {
-      handleLogout();
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_KEY);
     }
-  }, []);
+  }, [user]);
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem(USER_KEY, JSON.stringify(userData));
-  };
+  const handleLogin = (role: string, name: string) => setUser({ role, name });
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem(USER_KEY);
+  const handleLogout = async () => {
+    try {
+      await apiLogout(); // Calls POST /auth/logout (clears httpOnly refresh cookie)
+    } catch {
+      // Even if logout API fails, clear local state
+    }
     clearToken();
+    setUser(null);
   };
 
   return (

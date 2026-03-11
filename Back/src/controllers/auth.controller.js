@@ -1,7 +1,7 @@
 // src/controllers/auth.controller.js
 const authService = require('../services/auth.service');
 const { success } = require('../utils/apiResponse');
-
+// Refresh token cookie: httpOnly, secure in prod, 7-day lifetime
 const REFRESH_COOKIE_OPTS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -22,6 +22,7 @@ const login = async (req, res, next) => {
 };
 
 // POST /api/auth/refresh
+// POST /api/auth/refresh — called when access token expires to get a new one
 const refresh = async (req, res, next) => {
     try {
         const refreshToken = req.cookies?.refreshToken;
@@ -32,7 +33,6 @@ const refresh = async (req, res, next) => {
         next(err);
     }
 };
-
 // POST /api/auth/forgot-password
 const forgotPassword = async (req, res, next) => {
     try {
@@ -43,7 +43,6 @@ const forgotPassword = async (req, res, next) => {
         next(err);
     }
 };
-
 // POST /api/auth/reset-password
 const resetPassword = async (req, res, next) => {
     try {

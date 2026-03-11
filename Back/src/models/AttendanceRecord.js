@@ -64,5 +64,5 @@ const AttendanceRecord = sequelize.define('AttendanceRecord', {
         },
     ],
 });
-
+// Note: Frontend uses roll_number for student lookup, not student_id
 module.exports = AttendanceRecord;

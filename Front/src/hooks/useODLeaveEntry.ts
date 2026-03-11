@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ODLeaveStudent, AttendancePeriodKey } from '../features/shared/attendance.types';
 import { fetchODLeaveStudents, saveODLeaveEntries } from '../api/attendance.api';
+import { ApiError } from '../api/apiClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -16,6 +17,12 @@ export function useODLeaveEntry(date: Date | undefined) {
         try {
             const data = await fetchODLeaveStudents(format(d, 'yyyy-MM-dd'));
             setStudents(data);
+        } catch (err) {
+            if (err instanceof ApiError && err.code === 'PAST_DATE') {
+                toast.error('Cannot load OD/Leave entries for past dates');
+            } else {
+                toast.error('Failed to load OD/Leave entries');
+            }
         } finally {
             setLoading(false);
         }
@@ -36,10 +43,26 @@ export function useODLeaveEntry(date: Date | undefined) {
     const save = useCallback(async () => {
         setSaving(true);
         try {
-            await saveODLeaveEntries(students);
+            // saveODLeaveEntries expects a single entry; send modified entries with status in body
+            for (const student of students) {
+                if (student.status) {
+                    await saveODLeaveEntries({
+                        student_id: student.id,
+                        slot_id: student.slot_id,
+                        date: student.date,
+                        status: student.status, // Sends status in body as required
+                        od_reason: student.remarks || undefined,
+                        semester_id: 1, // Default — backend typically derives this
+                    });
+                }
+            }
             toast.success('OD/Leave entries saved successfully!');
-        } catch {
-            toast.error('Failed to save entries');
+        } catch (err) {
+            if (err instanceof ApiError && err.code === 'PAST_DATE') {
+                toast.error('Cannot submit OD/Leave entries for past dates');
+            } else {
+                toast.error('Failed to save entries');
+            }
         } finally {
             setSaving(false);
         }

@@ -1,0 +1,10 @@
+now i want you to get the data fro, the attedance_records for the  viewing on the principal attendance correction
+
+
+
+ also in the front end api add the period no too as a input when 
+ now send the period for the backend api 
+
+ when the backend api recives it should send the subject name for that hour (tittle of the table) + that period only then at the end add the unclock column (ehich is is_locked in the database)
+ the api should repond with the 
+ then  remove the current 5 slot's instead have a check box in which  witht he coumn name unloack

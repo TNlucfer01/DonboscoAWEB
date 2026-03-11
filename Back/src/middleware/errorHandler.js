@@ -1,5 +1,4 @@
 // middleware/errorHandler.js — Global Express error handler
-
 const AppError = require('../utils/AppError');
 
 // eslint-disable-next-line no-unused-vars

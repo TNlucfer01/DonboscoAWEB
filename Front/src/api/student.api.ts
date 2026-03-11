@@ -2,12 +2,36 @@
 
 import { apiClient } from './apiClient';
 
-const USE_MOCK = false;
-
 /** POST /students — Add new student */
 export async function addStudent(
-    name: string, roll_number: string, parent_phone: string, batch_id: string, gender: string = 'Male'
+    name: string, roll_number: string, parent_phone: string, theory_batch_id: number, lab_batch_id: number, phone: string, current_year: number, email: string, dob: string, gender: string, address: string
 ): Promise<void> {
-    if (USE_MOCK) return;
-    await apiClient.post('/students', { name, roll_number, parent_phone, batch_id: parseInt(batch_id), gender });
+    await apiClient.post('/students', { name, roll_number, phone, email, dob, gender, address, parent_phone, current_year, theory_batch_id, lab_batch_id });
+}
+
+/** GET /students — Fetch students, optionally filtered */
+export async function getStudents(year?: number, theory_batch_id?: number, lab_batch_id?: number): Promise<any[]> {
+    const params: Record<string, string> = {};
+    if (year) params.year = year.toString();
+    if (theory_batch_id) params.theory_batch_id = theory_batch_id.toString();
+    if (lab_batch_id) params.lab_batch_id = lab_batch_id.toString();
+    const students = await apiClient.get<any[]>('/students', Object.keys(params).length ? params : undefined);
+    return Array.isArray(students) ? students : [];
+}
+
+/** PUT /students/:id — Update student (validated server-side) */
+export async function updateStudent(id: number, data: {
+    name?: string;
+    roll_number?: string;
+    parent_phone?: string;
+    current_year?: number;
+    theory_batch_id?: number;
+    lab_batch_id?: number;
+}): Promise<void> {
+    await apiClient.put(`/students/${id}`, data);
+}
+
+/** DELETE /students/:id — Delete student */
+export async function deleteStudent(id: number): Promise<void> {
+    await apiClient.delete(`/students/${id}`);
 }

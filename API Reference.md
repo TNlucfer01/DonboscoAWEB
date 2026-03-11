@@ -1,5 +1,5 @@
 # API Reference
-**Project**: Donbosco Attendance System | **Version**: 1.1 | **Date**: 2026-03-06
+**Project**: Donbosco Attendance System | **Version**: 1.1 | **Date**: 2026-03-09
 **Base URL**: `http://localhost:3000/api`
 
 > All protected routes require `Authorization: Bearer <access_token>` header.
@@ -8,6 +8,7 @@
 ---
 
 ## Authentication
+*(No roles required)*
 
 ### `POST /api/auth/login`
 Login with email and password.
@@ -18,21 +19,16 @@ Login with email and password.
 ```
 **Response** `200`
 ```json
-{ "success": true, "data": { "token": "<JWT>", "role": "PRINCIPAL", "name": "Dr. XYZ" } }
+{ "success": true, "data": { "token": "<JWT>", "role": "PRINCIPAL", "name": "Dr. XYZ", "id": 1 } }
 ```
-Refresh token set as HttpOnly cookie.
-
----
 
 ### `POST /api/auth/refresh`
-Get a new access token using the refresh cookie.
+Get a new access token.
 
 **Response** `200`
 ```json
 { "success": true, "data": { "token": "<new JWT>" } }
 ```
-
----
 
 ### `POST /api/auth/forgot-password`
 Send OTP to registered phone number.
@@ -40,31 +36,29 @@ Send OTP to registered phone number.
 **Body**: `{ "phone": "9876543210" }`
 **Response** `200`: `{ "success": true, "message": "OTP sent" }`
 
----
-
 ### `POST /api/auth/reset-password`
 Verify OTP and set new password.
 
 **Body**: `{ "phone": "9876543210", "otp": "123456", "newPassword": "newpass123" }`
 **Response** `200`: `{ "success": true, "message": "Password updated" }`
 
----
-
 ### `POST /api/auth/logout`
-Clear refresh token cookie.
+Clear session/token.
 **Response** `200`: `{ "success": true }`
 
 ---
 
 ## Users (Principal only)
+*(Required Role: PRINCIPAL)*
 
 ### `GET /api/users`
 Get all staff users.
-**Query**: `?role=SUBJECT_STAFF` (optional filter)
-**Response** `200`: `{ "success": true, "data": [ ...users ] }`
+
+### `GET /api/users/:id`
+Get a specific user by ID.
 
 ### `POST /api/users`
-Create a new staff account (default password set).
+Create a new staff account.
 
 **Body**
 ```json
@@ -75,75 +69,104 @@ Create a new staff account (default password set).
   "role": "SUBJECT_STAFF"
 }
 ```
-**Response** `201`: `{ "success": true, "data": { "user_id": 5 } }`
 
 ### `PUT /api/users/:id`
-Update staff details (name, email, phone, role).
-**Response** `200`: `{ "success": true, "data": updatedUser }`
+Update staff details.
 
 ### `DELETE /api/users/:id`
-Deactivate a user account.
-**Response** `200`: `{ "success": true }`
+Deactivate or remove a user account.
 
 ---
 
-## Semesters (Principal)
-
-> **Who activates the semester?** The Principal does — manually, at the start of each academic term. Only one semester can be active at a time. Activating a semester deactivates the current active one.
+## Semesters
 
 ### `GET /api/semesters`
+*(Required Roles: Any authenticated user)*
 List all semesters.
-**Response** `200`: `{ "success": true, "data": [...semesters] }`
 
-### `POST /api/semesters/:id/activate`
+### `PUT /api/semesters/:id/activate`
+*(Required Role: PRINCIPAL)*
 Activate a semester (deactivates the currently active one).
-**Response** `200`: `{ "success": true }`
 
 ---
 
-## Subjects (Principal)
+## Subjects
 
 ### `GET /api/subjects`
+*(Required Roles: Any authenticated user)*
 List all subjects.
-**Query**: `?year=2&semester=ODD`
-**Response** `200`: `{ "success": true, "data": [...subjects] }`
+
+### `GET /api/subjects/:id`
+*(Required Roles: Any authenticated user)*
+Get a typical subject by ID.
 
 ### `POST /api/subjects`
+*(Required Role: PRINCIPAL)*
 Create a subject.
 
 **Body**
 ```json
 {
   "subject_name": "Soil Science",
-  "subject_code": "SS301",
   "subject_year": 3,
   "credits": 4,
-  "semester": "ODD",
-  "subject_description": "Introduction to soil"
+  "semester": "ODD"
 }
 ```
-**Response** `201`: `{ "success": true, "data": { "subject_id": 12 } }`
 
 ### `PUT /api/subjects/:id`
+*(Required Role: PRINCIPAL)*
 Update a subject.
-**Response** `200`: `{ "success": true, "data": updatedSubject }`
 
 ### `DELETE /api/subjects/:id`
+*(Required Role: PRINCIPAL)*
 Delete a subject.
-**Response** `200`: `{ "success": true }`
 
 ---
 
-## Students (Year Coordinator)
+## Batches
+
+### `GET /api/batches`
+*(Required Roles: Any authenticated user)*
+List all batches.
+
+### `GET /api/batches/:id`
+*(Required Roles: Any authenticated user)*
+Get a specific batch.
+
+### `POST /api/batches`
+*(Required Role: PRINCIPAL)*
+Create a new batch.
+
+**Body**
+```json
+{
+  "name": "A",
+  "batch_type": "THEORY",
+  "year": 1,
+  "capacity": 60
+}
+```
+
+### `PUT /api/batches/:id`
+*(Required Role: PRINCIPAL)*
+Update batch details.
+
+### `DELETE /api/batches/:id`
+*(Required Role: PRINCIPAL)*
+Delete a batch.
+
+---
+
+## Students
+
+*(Required Roles: PRINCIPAL, YEAR_COORDINATOR)*
 
 ### `GET /api/students`
-List students (YC sees own year only, Principal sees all).
-**Query**: `?year=2&batch_id=3`
-**Response** `200`: `{ "success": true, "data": [...students] }`
+List all students. Validates based on year managed for Year Coordinators.
 
 ### `GET /api/students/:id`
-Get single student with attendance summary.
-**Response** `200`: `{ "success": true, "data": { ...student, attendance_summary: {...} } }`
+Get a single student by ID.
 
 ### `POST /api/students`
 Add a new student.
@@ -158,56 +181,45 @@ Add a new student.
   "current_year": 1
 }
 ```
-**Response** `201`: `{ "success": true, "data": { "student_id": 101 } }`
 
 ### `PUT /api/students/:id`
-Update student details (name, roll number, parent phone, batch).
-**Response** `200`: `{ "success": true, "data": updatedStudent }`
+Update student details.
 
 ### `DELETE /api/students/:id`
-Remove a student from the year.
-**Response** `200`: `{ "success": true }`
+Remove a student.
 
----
-
-## Student Enrollments (Year Coordinator)
-
-### `POST /api/enrollments/batch`
-Enroll a student in a batch for the active semester (triggered when a student is added/batch is assigned).
-
-**Body**: `{ "student_id": 101, "batch_id": 2, "semester_id": 3 }`
-**Response** `201`: `{ "success": true }`
+### `POST /api/students/bulk`
+Bulk import multiple students.
+**Body**
+```json
+{
+    "students": [ ... ],
+    "current_year": 1,
+    "batch_id": 1
+}
+```
 
 ---
 
 ## Attendance
 
-### `GET /api/attendance/fetch-students`
-Get student list for a batch + period + date. Checks holiday lock and marks OD/IL rows.
+### `POST /api/attendance/fetch-students`
+*(Required Roles: PRINCIPAL, SUBJECT_STAFF)*
+Get student list for a batch + period + date to mark attendance.
 
-**Query**
-```
-?year=1&batch_id=2&slot_id=3&date=2026-03-05
-```
-**Response** `200`
+**Body**
 ```json
 {
-  "success": true,
-  "data": {
-    "window_open": true,
-    "minutes_remaining": 18,
-    "students": [
-      { "student_id": 101, "roll_number": "21AG001", "name": "Arun", "is_locked": false, "status": "PRESENT" },
-      { "student_id": 102, "roll_number": "21AG002", "name": "Priya", "is_locked": true, "status": "OD", "remarks": "Sports meet" }
-    ]
-  }
+    "year": 1,
+    "batch_id": 2,
+    "slot_id": 3,
+    "date": "2026-03-05"
 }
 ```
 
-> **Note**: This is a `GET` request (fetching data, not creating). Parameters passed as query strings.
-
 ### `POST /api/attendance/submit`
-Submit attendance records. Server validates 20-min window.
+*(Required Roles: PRINCIPAL, SUBJECT_STAFF)*
+Submit attendance records.
 
 **Body**
 ```json
@@ -222,25 +234,26 @@ Submit attendance records. Server validates 20-min window.
   ]
 }
 ```
-**Response** `201`
-```json
-{
-  "success": true,
-  "data": { "submitted": 2, "absent_sms_sent": 1 }
-}
-```
 
-**Error** `422`
-```json
-{ "success": false, "error": { "code": "WINDOW_EXPIRED", "message": "Submission window has closed." } }
-```
+### `GET /api/attendance/view`
+*(Required Roles: PRINCIPAL, YEAR_COORDINATOR)*
+Get attendance data by year and date range.
+
+### `PUT /api/attendance/correct`
+*(Required Role: PRINCIPAL)*
+Correct any attendance record (Creates an audit log entry).
 
 ---
 
-## OD / Informed Leave (Year Coordinator)
+## OD / Informed Leave
+
+### `GET /api/attendance/od-il`
+*(Required Roles: PRINCIPAL, YEAR_COORDINATOR)*
+List all OD/IL entries.
 
 ### `POST /api/attendance/od-il`
-Pre-enter OD or Informed Leave for a future date (locks the row in staff's table).
+*(Required Role: YEAR_COORDINATOR)*
+Pre-enter OD or Informed Leave for a future date.
 
 **Body**
 ```json
@@ -249,165 +262,66 @@ Pre-enter OD or Informed Leave for a future date (locks the row in staff's table
   "date": "2026-03-10",
   "slot_id": 2,
   "status": "OD",
-  "od_reason": "District Sports Meet",
   "semester_id": 1
 }
 ```
-**Response** `201`: `{ "success": true }`
-
-### `GET /api/attendance/od-il`
-List all OD/IL entries for the YC's year (and filter by student/date).
-**Query**: `?year=2&student_id=101&from=2026-03-01&to=2026-03-31`
-**Response** `200`: `{ "success": true, "data": [...od_il_entries] }`
 
 ### `PUT /api/attendance/od-il/:id`
-Update an existing OD/IL entry (date or reason — future dates only, before staff submission).
-
-**Body**
-```json
-{
-  "date": "2026-03-11",
-  "od_reason": "Updated reason"
-}
-```
-**Response** `200`: `{ "success": true }`
+*(Required Role: YEAR_COORDINATOR)*
+Update an existing OD/IL entry.
 
 ### `DELETE /api/attendance/od-il/:id`
-Cancel (remove) an OD/IL entry — unlocks the student row for staff.
-**Response** `200`: `{ "success": true }`
-
----
-
-## Attendance View (YC / Principal)
-
-### `GET /api/attendance/view`
-Get attendance data by year. Returns per-student, per-period data for a date range.
-
-**Query**: `?year=2&from=2026-03-01&to=2026-03-31&semester_id=1`
-**Response** `200`
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "student_id": 101,
-      "roll_number": "21AG001",
-      "name": "Arun Kumar",
-      "attendance_percent": 87.5,
-      "records": [...]
-    }
-  ]
-}
-```
-
-> **Scope**: Year-wise only. Batch is not a grouping parameter in the response.
-
----
-
-## Attendance Correction (Principal only)
-
-### `PUT /api/attendance/correct`
-Correct any attendance record. Creates an audit log entry.
-
-**Body**
-```json
-{
-  "record_id": 501,
-  "new_status": "OD",
-  "od_reason": "Official duty approved"
-}
-```
-**Response** `200`: `{ "success": true, "data": { "audit_id": 78 } }`
+*(Required Role: YEAR_COORDINATOR)*
+Cancel (remove) an OD/IL entry.
 
 ---
 
 ## College Calendar (Principal)
+*(Required Role: PRINCIPAL)*
 
 ### `GET /api/calendar`
 Get calendar entries.
-**Query**: `?month=3&year=2026`
 
-### `POST /api/calendar/holiday`
-Mark a future date as holiday.
-
+### `POST /api/calendar`
+Mark a future date as a holiday or enabled saturday.
 **Body**
 ```json
 {
   "date": "2026-03-15",
-  "holiday_name": "Pongal Holiday Extension",
-  "holiday_description": "College extension holiday"
+  "day_type": "HOLIDAY"
 }
 ```
-**Response** `201`: `{ "success": true }`
 
-### `PUT /api/calendar/holiday/:id`
-Update holiday name or description (future dates only).
+### `PUT /api/calendar/:id`
+Update calendar entry limits or reasons.
 
-**Body**: `{ "holiday_name": "Updated Name", "holiday_description": "Updated desc" }`
-**Response** `200`: `{ "success": true }`
-
-### `DELETE /api/calendar/holiday/:id`
-Remove a holiday entry (future dates only).
-**Response** `200`: `{ "success": true }`
-
-### `POST /api/calendar/enable-saturday`
-Mark a Saturday as a working day.
-**Body**: `{ "date": "2026-03-21" }`
-**Response** `201`: `{ "success": true }`
-
-### `DELETE /api/calendar/enable-saturday/:id`
-Unmark a Saturday (revert to non-working).
-**Response** `200`: `{ "success": true }`
+### `DELETE /api/calendar/:id`
+Remove a calendar entry.
 
 ---
 
 ## Reports
 
 ### `GET /api/reports/attendance-summary`
-Attendance percentage per student for the active semester.
-**Query**: `?year=2&semester_id=1`
+*(Required Roles: PRINCIPAL, YEAR_COORDINATOR)*
+Filter by `semester_id`, `date_from`, `date_to`, `year` (for Principal).
 
 ### `GET /api/reports/below-threshold`
-Students with < 80% attendance.
-**Query**: `?semester_id=1&threshold=80`
+*(Required Roles: PRINCIPAL, YEAR_COORDINATOR)*
+Students below the specified threshold. Filter by `semester_id`, `threshold` (default 80), `year`.
 
-### `GET /api/reports/student/:id`
-Full attendance history for a student.
-**Query**: `?semester_id=1`
-
-### `GET /api/reports/dashboard-principal`
-College-wide summary stats for Principal dashboard.
-
-### `GET /api/reports/dashboard-yc`
-Year-level stats for Year Coordinator dashboard.
-**Query**: `?year=2`
+### `GET /api/reports/by-student/:id`
+*(Required Roles: PRINCIPAL, YEAR_COORDINATOR)*
+Full attendance history for a single student.
 
 ---
 
 ## Audit Log (Principal)
 
 ### `GET /api/audit`
+*(Required Role: PRINCIPAL)*
 Get audit log of all Principal corrections.
-**Query**: `?from=2026-03-01&to=2026-03-31`
-
-**Response** `200`
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "audit_id": 1,
-      "student_name": "Arun Kumar",
-      "roll_number": "21AG001",
-      "date": "2026-03-04",
-      "slot_id": 2,
-      "old_status": "ABSENT",
-      "new_status": "OD",
-      "changed_at": "2026-03-05T10:30:00Z"
-    }
-  ]
-}
-```
+Filter by `date_from`, `date_to`.
 
 ---
 

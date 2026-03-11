@@ -1,27 +1,36 @@
 // ─── Staff API ────────────────────────────────────────────────────────────────
 
 import { apiClient } from './apiClient';
-
+//in the future we need to add the photo , then other detials
 export interface StaffMember {
-    id: number;
+    user_id: number;
     name: string;
     email: string;
     phone_number: string;
     role: string;
+    managed_year: number | null;
 }
-
-const USE_MOCK = false;
+//everything is good here too 
+/** GET /users — List all staff (non-principal) */
+export async function fetchStaffMembers(): Promise<StaffMember[]> {
+    return apiClient.get<StaffMember[]>('/users');
+}
 
 /** POST /users — Add new staff member */
 export async function addStaffMember(
-    name: string, email: string, phone_number: string, role: string = 'SUBJECT_STAFF'
+    name: string, email: string, phone_number: string, role: string, managed_year: number | null
 ): Promise<void> {
-    if (USE_MOCK) return;
-    await apiClient.post('/users', { name, email, phone_number, role });
+    await apiClient.post('/users', { name, email, phone_number, role, managed_year });
 }
 
-/** GET /users — List staff members */
-export async function fetchStaffMembers(): Promise<StaffMember[]> {
-    if (USE_MOCK) return [];
-    return apiClient.get<StaffMember[]>('/users');
+/** PUT /users/:id — Update staff member */
+export async function updateStaffMember(
+    id: number, data: Partial<StaffMember>
+): Promise<void> {
+    await apiClient.put(`/users/${id}`, data);
+}
+
+/** DELETE /users/:id — Deactivate staff member */
+export async function deleteStaffMember(id: number): Promise<void> {
+    await apiClient.delete(`/users/${id}`);
 }

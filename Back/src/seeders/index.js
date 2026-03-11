@@ -1,6 +1,6 @@
 // src/seeders/index.js — Seed initial data for development
 require('../config/env');
-const { sequelize, TimetableSlot, Semester, User, Batch } = require('../models/index');
+const { sequelize, TimetableSlot, Semester, User, TheoryBatch, LabBatch } = require('../models/index');
 const bcrypt = require('bcryptjs');
 
 async function seed() {
@@ -48,12 +48,15 @@ async function seed() {
         }
 
         // ── 4. Sample Batches (for dev testing) ───────────────────────
-        await Batch.bulkCreate([
-            { name: 'A1', batch_type: 'THEORY', year: 1, capacity: 60 },
-            { name: 'A2', batch_type: 'THEORY', year: 1, capacity: 60 },
-            { name: 'A1-LAB', batch_type: 'LAB', year: 1, capacity: 15 },
-            { name: 'B1', batch_type: 'THEORY', year: 2, capacity: 60 },
-            { name: 'B2', batch_type: 'THEORY', year: 2, capacity: 60 },
+        await TheoryBatch.bulkCreate([
+            { name: 'A1', year: 1, capacity: 60 },
+            { name: 'A2', year: 1, capacity: 60 },
+            { name: 'B1', year: 2, capacity: 60 },
+            { name: 'B2', year: 2, capacity: 60 },
+        ], { ignoreDuplicates: true });
+
+        await LabBatch.bulkCreate([
+            { name: 'A1-LAB', year: 1, capacity: 15 },
         ], { ignoreDuplicates: true });
         console.log('✔ Sample batches seeded');
 

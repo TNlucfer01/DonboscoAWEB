@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../../app/components/Layout';
 import { Button } from '../../app/components/ui/button';
 import { Label } from '../../app/components/ui/label';
@@ -7,22 +7,77 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
-import { BATCH_OPTIONS, PERIOD_OPTIONS, SUBJECT_OPTIONS } from '../shared/constants';
+import { PERIOD_OPTIONS } from '../shared/constants';
 import { useStaffAttendance } from '../../hooks/useStaffAttendance';
+import { fetchBatches, Batch } from '../../api/batch.api';
+import { fetchSubjects, Subject } from '../../api/subject.api';
+import { Clock, AlertTriangle } from 'lucide-react';
 
 const YEAR_RADIO = ['1', '2', '3', '4'];
 const YEAR_LABELS: Record<string, string> = { '1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year' };
 
 export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
     const [year, setYear] = useState('');
+    const [classType, setClassType] = useState('');
     const [batch, setBatch] = useState('');
     const [period, setPeriod] = useState('');
     const [subject, setSubject] = useState('');
-    const { students, loading, submitting, fetched, fetch, updateStatus, markAllPresent, submit } = useStaffAttendance();
+    const [batches, setBatches] = useState<Batch[]>([]);
+    const [subjects, setSubjects] = useState<Subject[]>([]);
+    const { students, loading, submitting, fetched, remainingMinutes, fetch, updateStatus, markAllPresent, submit } = useStaffAttendance();
+submit
+    // ── Countdown Timer ───────────────────────────────────────────
+    const [secondsLeft, setSecondsLeft] = useState(0);
+    const timerExpired = fetched && secondsLeft <= 0;
+
+    useEffect(() => {
+        if (fetched && remainingMinutes > 0) {
+            setSecondsLeft(remainingMinutes * 60);
+        }
+    }, [fetched, remainingMinutes]);
+
+    useEffect(() => {
+        if (secondsLeft <= 0) return;
+        const timer = setInterval(() => {
+            setSecondsLeft(prev => {
+                if (prev <= 1) { clearInterval(timer); return 0; }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [secondsLeft > 0]); // Re-start timer when secondsLeft becomes > 0
+
+    const timerMins = Math.floor(secondsLeft / 60);
+    const timerSecs = secondsLeft % 60;
+    const timerDisplay = `${String(timerMins).padStart(2, '0')}:${String(timerSecs).padStart(2, '0')}`;
+
+    // ── Load batches when year + classType change ─────────────────
+    useEffect(() => {
+        if (year && classType) {
+            fetchBatches(Number(year)).then(res => {
+                setBatches(res.filter(b => b.batch_type === classType));
+                setBatch('');
+            }).catch(() => setBatches([]));
+        } else {
+            setBatches([]);
+        }
+    }, [year, classType]);
+
+    // ── Load subjects from backend when year changes ──────────────
+    useEffect(() => {
+        if (year) {
+            fetchSubjects(year).then(res => {
+                setSubjects(res);
+                setSubject('');
+            }).catch(() => setSubjects([]));
+        } else {
+            setSubjects([]);
+        }
+    }, [year]);
 
     const handleFetch = () => {
-        if (!year || !batch || !period || !subject) return;
-        fetch(year, batch, period, subject);
+        if (!year || !classType || !batch || !period || !subject) return;
+        fetch(year, batch, classType, period, subject);
     };
 
     return (
@@ -46,9 +101,16 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                     ))}
                                 </RadioGroup>
                             </div>
-                            <SelectField label="Step 2: Select Batch *" value={batch} options={BATCH_OPTIONS} onValueChange={setBatch} />
-                            <SelectField label="Step 3: Select Period *" value={period} options={PERIOD_OPTIONS} onValueChange={setPeriod} />
-                            <SelectField label="Step 4: Select Subject *" value={subject} options={SUBJECT_OPTIONS} onValueChange={setSubject} />
+                            <SelectField label="Step 2: Select Class Type *" value={classType} options={[{ value: 'THEORY', label: 'Theory' }, { value: 'LAB', label: 'Lab' }]} onValueChange={setClassType} />
+                            <SelectField label="Step 3: Select Batch *" value={batch} options={batches.map(b => ({ value: String(b.batch_id), label: b.name }))} onValueChange={setBatch} disabled={!year || !classType} />
+                            <SelectField label="Step 4: Select Period *" value={period} options={PERIOD_OPTIONS} onValueChange={setPeriod} />
+                            <SelectField
+                                label="Step 5: Select Subject *"
+                                value={subject}
+                                options={subjects.map(s => ({ value: String(s.subject_id), label: `${s.subject_name} (${s.subject_code})` }))}
+                                onValueChange={setSubject}
+                                disabled={!year || subjects.length === 0}
+                            />
                             <div>
                                 <Button onClick={handleFetch} disabled={loading}
                                     className="w-full sm:w-auto bg-slate-700 hover:bg-slate-800 text-white">
@@ -62,9 +124,24 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                 {fetched && students.length > 0 && (
                     <Card className="border-2 border-slate-300">
                         <CardHeader>
-                            <CardTitle className="text-slate-800">
-                                Mark Attendance — Year {year} — Batch {batch} — Period {period} — {subject}
-                            </CardTitle>
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                                <CardTitle className="text-slate-800">
+                                    Mark Attendance — Year {year} — Batch {batch} — Period {period}
+                                </CardTitle>
+                                {/* Countdown Timer */}
+                                <div className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-mono font-semibold ${timerExpired
+                                        ? 'bg-red-100 border border-red-300 text-red-800'
+                                        : secondsLeft < 300
+                                            ? 'bg-amber-100 border border-amber-300 text-amber-800'
+                                            : 'bg-green-100 border border-green-300 text-green-800'
+                                    }`}>
+                                    {timerExpired ? (
+                                        <><AlertTriangle className="h-4 w-4" /> Submission window closed</>
+                                    ) : (
+                                        <><Clock className="h-4 w-4" /> {timerDisplay} remaining</>
+                                    )}
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
@@ -83,7 +160,7 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                                 <td className="border border-slate-300 px-4 py-3 text-slate-700">{s.rollNo}</td>
                                                 <td className="border border-slate-300 px-4 py-3 text-slate-700">{s.name}</td>
                                                 <td className="border border-slate-300 px-4 py-3">
-                                                    <Select value={s.status} onValueChange={(v) => updateStatus(s.id, v)}>
+                                                    <Select value={s.status} onValueChange={(v) => updateStatus(s.id, v)} disabled={timerExpired}>
                                                         <SelectTrigger className="border-slate-300"><SelectValue /></SelectTrigger>
                                                         <SelectContent className="bg-white border-2 border-slate-300">
                                                             <SelectItem value="Present">Present</SelectItem>
@@ -97,12 +174,13 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                 </table>
                             </div>
                             <div className="mt-6 flex justify-end gap-4">
-                                <Button variant="outline" onClick={markAllPresent} className="border-slate-300 text-slate-700">
+                                <Button variant="outline" onClick={markAllPresent} disabled={timerExpired} className="border-slate-300 text-slate-700">
                                     Mark All Present
                                 </Button>
-                                <Button onClick={() => submit(year, batch, period, subject)} disabled={submitting}
+                                {/* //i have to make this dynamic in the future */}
+                                <Button onClick={() => submit(year, batch, period, subject, "2026-03-11")} disabled={submitting || timerExpired}
                                     className="bg-slate-700 hover:bg-slate-800 text-white">
-                                    {submitting ? 'Submitting…' : 'Submit Attendance'}
+                                    {timerExpired ? 'Window Closed' : submitting ? 'Submitting…' : 'Submit Attendance'}
                                 </Button>
                             </div>
                         </CardContent>

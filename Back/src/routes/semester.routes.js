@@ -2,10 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const roleGuard = require('../middleware/roleGuaurd');
+const roleGuard = require('../middleware/roleGuard');
 const { success } = require('../utils/apiResponse');
-const semService = require('../services/semester.service');
 
+const semService = require('../services/semester.service');
 // GET /api/semesters — accessible to all authenticated users
 router.get('/', auth, async (req, res, next) => {
     try { return success(res, await semService.getAll()); }

@@ -5,7 +5,6 @@ const AppError = require('../utils/AppError');
 async function getAll() {
     return Semester.findAll({ order: [['academic_year', 'ASC'], ['name', 'ASC']] });
 }
-
 async function activate(semesterId) {
     const semester = await Semester.findByPk(semesterId);
     if (!semester) throw new AppError('NOT_FOUND', 'Semester not found', 404);
@@ -18,5 +17,4 @@ async function activate(semesterId) {
 
     return semester.reload();
 }
-
 module.exports = { getAll, activate };

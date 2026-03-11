@@ -7,6 +7,11 @@ const Subject = sequelize.define('Subject', {
         primaryKey: true,
         autoIncrement: true,
     },
+    subject_code: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        unique: true,
+    },
     subject_name: {
         type: DataTypes.STRING(100),
         allowNull: false,

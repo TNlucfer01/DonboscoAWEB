@@ -8,7 +8,7 @@ async function getAll(year, month) {
     if (year && month) {
         const start = `${year}-${String(month).padStart(2, '0')}-01`;
         const end = dayjs(start).endOf('month').format('YYYY-MM-DD');
-        const { Op } = require('sequelize');
+        const { Op } = require('sequelize'); // Op = Sequelize operators (between, gt, lt, etc.)
         where.date = { [Op.between]: [start, end] };
     }
     return CollegeCalendar.findAll({ where, order: [['date', 'ASC']] });

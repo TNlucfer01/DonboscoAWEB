@@ -46,10 +46,15 @@ const Student = sequelize.define('Student', {
         allowNull: false,
         validate: { min: 1, max: 4 },
     },
-    batch_id: {
+    theory_batch_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: 'batches', key: 'batch_id' },
+        references: { model: 'theory_batches', key: 'theory_batch_id' },
+    },
+    lab_batch_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: { model: 'lab_batches', key: 'lab_batch_id' },
     },
 }, {
     tableName: 'students',

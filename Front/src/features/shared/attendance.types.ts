@@ -20,6 +20,9 @@ export interface CorrectionStudent {
     name: string;
     status: string;
     odReason: string;
+    slot?: number;    // Period number (from TimetableSlot)
+    subject?: string; // Subject name
+    date?: string;    // YYYY-MM-DD
 }
 
 export interface StaffStudent {
@@ -32,6 +35,10 @@ export interface StaffStudent {
 export interface ODLeaveStudent extends AttendanceStudent {
     remarks: string;
     attendancePercentage: number;
+    status: string;
+    slot_id: number;
+    date: string;
+
 }
 
 export interface AuditLogEntry {

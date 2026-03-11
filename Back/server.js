@@ -6,10 +6,9 @@ const morgan = require('morgan');
 const sequelize = require('./src/config/db');
 
 const app = express();
-
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(helmet());
 app.use(morgan('dev'));
 
@@ -20,6 +19,7 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/users', require('./src/routes/user.routes'));
 app.use('/api/semesters', require('./src/routes/semester.routes'));
+
 app.use('/api/batches', require('./src/routes/batch.routes'));
 app.use('/api/subjects', require('./src/routes/subject.routes'));
 app.use('/api/students', require('./src/routes/student.routes'));

@@ -16,28 +16,29 @@ interface DatePickerFieldProps {
     label?: string;
 }
 
-export function DatePickerField({ date, onDateChange, label = 'Date' }: DatePickerFieldProps) {
-    const [open, setOpen] = useState(false);
 
-    const handleSelect = (selected: Date | undefined) => {
-        onDateChange(selected);
-        setOpen(false); // ← fix: close popover on selection
-    };
-
-    return (
-        <div className="flex-1">
-            <Label className="text-slate-700">{label}</Label>
-            <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full mt-1 justify-start text-left border-slate-300">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, 'PP') : <span>Pick a date</span>}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white border-2 border-slate-300">
-                    <Calendar mode="single" selected={date} onSelect={handleSelect} />
-                </PopoverContent>
-            </Popover>
-        </div>
-    );
+export function DatePickerField({
+  date,
+  onDateChange,
+  label = 'Date',
+}: DatePickerFieldProps) {
+  return (
+    <div className="flex-1 space-y-2">
+      <Label className="text-slate-700">{label}</Label>
+      <div className="rounded-md border border-slate-300 p-3 bg-white">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={onDateChange}
+          className="pointer-events-auto"
+        />
+      </div>
+      {/* Optional: show selected date below if needed */}
+      {date && (
+        <p className="text-sm text-slate-600">
+          Selected: {format(date, 'PPP')}
+        </p>
+      )}
+    </div>
+  );
 }

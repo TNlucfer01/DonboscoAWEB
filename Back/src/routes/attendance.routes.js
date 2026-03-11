@@ -3,7 +3,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const roleGuard = require('../middleware/roleGuaurd');
+const roleGuard = require('../middleware/roleGuard');
 const validate = require('../middleware/validate');
 const { success } = require('../utils/apiResponse');
 const svc = require('../services/attendance.service');
@@ -14,23 +14,43 @@ router.post('/fetch-students',
     [
         body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
         body('batch_id').isInt({ min: 1 }).withMessage('batch_id required'),
+        body('batch_type').isIn(['THEORY', 'LAB']).withMessage('batch_type required'),
         body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
         body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
     ],
     validate,
     async (req, res, next) => {
+        console.log(req.body);
         try { return success(res, await svc.fetchStudents(req.body)); }
         catch (e) { next(e); }
     }
 );
 
+// GET /api/attendance/fetch-students-pri — Principal: one row per student with period1–period5
+// Query params: year (1-4), date (YYYY-MM-DD), period (1-5, optional — if given, only fetch that slot)
+router.get('/fetch-students-pri',
+    auth, roleGuard('PRINCIPAL'),
+    async (req, res, next) => {
+        try {
+            const { year, date, period } = req.query;
+            if (!year || !date) {
+                return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'year and date query params are required' } });
+            }
+            return success(res, await svc.fetchStudentsPrincipal({ year, date, period: period ? Number(period) : null }));
+        } catch (e) { next(e); }
+    }
+);
+
+
 // POST /api/attendance/submit — Staff only
+// Handles multiple students at once via the records[] array.
+// Multiple staff can submit for different batches/slots simultaneously.
 router.post('/submit',
-    auth, roleGuard('SUBJECT_STAFF', 'PRINCIPAL'),
+    auth, roleGuard('SUBJECT_STAFF'),
     [
         body('records').isArray({ min: 1 }).withMessage('records array required'),
         body('slot_id').isInt({ min: 1 }),
-        body('date').isDate(),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
     ],
     validate,
     async (req, res, next) => {
@@ -53,13 +73,32 @@ router.get('/view', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'),
 router.put('/correct',
     auth, roleGuard('PRINCIPAL'),
     [
-        body('record_id').isInt({ min: 1 }),
+        body('record_id').isInt({ min: 1 }).withMessage('record_id is required'),
         body('new_status').isIn(['PRESENT', 'ABSENT', 'OD', 'INFORMED_LEAVE']),
     ],
     validate,
     async (req, res, next) => {
         try {
             return success(res, await svc.correct(req.body, req.user.userId));
+        } catch (e) { next(e); }
+    }
+);
+
+// POST /api/attendance/correct-bulk — Principal: bulk upsert (create + update) for all 5 slots
+// Each record: { record_id (or null), student_id, slot_id, date, new_status, od_reason? }
+router.post('/correct-bulk',
+    auth, roleGuard('PRINCIPAL'),
+    [
+        body('records').isArray({ min: 1 }).withMessage('records array required'),
+        body('records.*.student_id').isInt({ min: 1 }),
+        body('records.*.slot_id').isInt({ min: 1 }),
+        body('records.*.date').isDate(),
+        body('records.*.new_status').isIn(['PRESENT', 'ABSENT', 'OD', 'INFORMED_LEAVE']),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            return success(res, await svc.correctBulk(req.body.records, req.user.userId));
         } catch (e) { next(e); }
     }
 );
@@ -75,7 +114,7 @@ router.post('/od-il',
     [
         body('student_id').isInt({ min: 1 }),
         body('slot_id').isInt({ min: 1 }),
-        body('date').isDate(),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
         body('status').isIn(['OD', 'INFORMED_LEAVE']),
         body('semester_id').isInt({ min: 1 }),
     ],
@@ -86,10 +125,18 @@ router.post('/od-il',
     }
 );
 
-router.put('/od-il/:id', auth, roleGuard('YEAR_COORDINATOR'), async (req, res, next) => {
-    try { return success(res, await svc.updateODIL(req.params.id, req.body)); }
-    catch (e) { next(e); }
-});
+router.put('/od-il/:id',
+    auth, roleGuard('YEAR_COORDINATOR'),
+    [
+        body('status').isIn(['OD', 'INFORMED_LEAVE']).withMessage('status must be OD or INFORMED_LEAVE'),
+        body('od_reason').optional().isString(),
+    ],
+    validate,
+    async (req, res, next) => {
+        try { return success(res, await svc.updateODIL(req.params.id, req.body)); }
+        catch (e) { next(e); }
+    }
+);
 
 router.delete('/od-il/:id', auth, roleGuard('YEAR_COORDINATOR'), async (req, res, next) => {
     try { return success(res, await svc.cancelODIL(req.params.id)); }

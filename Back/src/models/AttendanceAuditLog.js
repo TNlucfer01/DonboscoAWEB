@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-
+// TODO: Support batch audit log entries when correcting multiple slots at once
 const AttendanceAuditLog = sequelize.define('AttendanceAuditLog', {
     audit_id: {
         type: DataTypes.INTEGER,

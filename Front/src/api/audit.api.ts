@@ -3,26 +3,23 @@
 import { apiClient } from './apiClient';
 import { AuditLogEntry } from '../features/shared/attendance.types';
 
-const USE_MOCK = false;
-
-/** GET /audit?date_from=&date_to= */
+/** GET /audit?date_from=&date_to= — Fetch audit logs */
 export async function fetchAuditLogs(startDate?: string, endDate?: string): Promise<AuditLogEntry[]> {
-    if (USE_MOCK) return [];
-
     const data = await apiClient.get<any[]>('/audit', {
         ...(startDate && { date_from: startDate }),
         ...(endDate && { date_to: endDate }),
     });
 
+    // Transform backend shape to frontend AuditLogEntry
     return data.map(log => ({
         id: log.audit_id,
-        timestamp: new Date(log.created_at).toLocaleString(),
-        student: log.record.student.name,
-        rollNo: log.record.student.roll_number,
-        dateOfPeriod: log.record.date,
-        period: `Period ${log.record.slot.slot_number}`,
+        timestamp: new Date(log.changed_at).toLocaleString(),
+        student: log.record?.student?.name || 'Unknown',
+        rollNo: log.record?.student?.roll_number || '-',
+        dateOfPeriod: log.record?.date || '-',
+        period: `Period ${log.record?.slot_id || '-'}`,
         oldStatus: log.old_status,
         newStatus: log.new_status,
-        changedBy: log.changer.name
+        changedBy: log.changedBy?.name || 'Principal',
     }));
 }

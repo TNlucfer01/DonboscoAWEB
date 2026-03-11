@@ -1,18 +1,14 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-const Batch = sequelize.define('Batch', {
-    batch_id: {
+const TheoryBatch = sequelize.define('TheoryBatch', {
+    theory_batch_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
     },
     name: {
         type: DataTypes.STRING(50),
-        allowNull: false,
-    },
-    batch_type: {
-        type: DataTypes.ENUM('THEORY', 'LAB'),
         allowNull: false,
     },
     year: {
@@ -30,8 +26,8 @@ const Batch = sequelize.define('Batch', {
         defaultValue: 0,
     },
 }, {
-    tableName: 'batches',
+    tableName: 'theory_batches',
     timestamps: false,
 });
 
-module.exports = Batch;
+module.exports = TheoryBatch;

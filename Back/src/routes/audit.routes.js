@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const roleGuard = require('../middleware/roleGuaurd');
+const roleGuard = require('../middleware/roleGuard');
 const { success } = require('../utils/apiResponse');
 const { AttendanceAuditLog, AttendanceRecord, Student, User } = require('../models/index');
 const { Op } = require('sequelize');

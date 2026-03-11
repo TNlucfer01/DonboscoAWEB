@@ -20,6 +20,7 @@ interface SelectFieldProps {
     options: SelectOption[];
     onValueChange: (value: string) => void;
     className?: string;
+    disabled?: boolean;
 }
 
 export function SelectField({
@@ -30,13 +31,14 @@ export function SelectField({
     options,
     onValueChange,
     className,
+    disabled,
 }: SelectFieldProps) {
     return (
         <div className={className}>
             <Label htmlFor={id} className="text-slate-700">
                 {label}
             </Label>
-            <Select value={value} onValueChange={onValueChange}>
+            <Select value={value} onValueChange={onValueChange} disabled={disabled}>
                 <SelectTrigger id={id} className="mt-1 border-slate-300">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
