@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { Button } from '../../app/components/ui/button';
 import { Input } from '../../app/components/ui/input';
 import { Label } from '../../app/components/ui/label';
-import { GraduationCap, AlertCircle } from 'lucide-react';
+import { GraduationCap, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '../../app/components/ui/alert';
 import { login as authLogin, forgotPassword, resetPassword, ApiError } from '../../api/auth.api';
 
 interface LoginProps {
-    onLogin: (role: string, username: string) => void;
+    onLogin: (user: User) => void;
 }
 
 // ─── Forgot Password Flow ─────────────────────────────────────────────────────
