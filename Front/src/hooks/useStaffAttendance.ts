@@ -11,10 +11,10 @@ export function useStaffAttendance() {
     const [submitting, setSubmitting] = useState(false);
     const [fetched, setFetched] = useState(false);
 
-    const fetch = useCallback(async (year: string, batch: string, period: string, subject: string) => {
+    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, subject: string) => {
         setLoading(true);
         try {
-            const data = await fetchStaffStudents(year, batch, period, subject);
+            const data = await fetchStaffStudents(year, batch, classType, period, subject);
             setStudents(data);
             setFetched(true);
         } catch {

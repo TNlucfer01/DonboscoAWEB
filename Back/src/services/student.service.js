@@ -3,7 +3,7 @@ const { Student, TheoryBatch, LabBatch } = require('../models/index');
 const AppError = require('../utils/AppError');
 
 
-async function getAll(query, currentUser) { //query can ve done in two ways  lab batch and theory batch 
+async function getAll(query, currentUser) {
     const where = {};
     // YC sees only their year; Principal sees all
     if (currentUser.role === 'YEAR_COORDINATOR') {
@@ -11,23 +11,26 @@ async function getAll(query, currentUser) { //query can ve done in two ways  lab
     } else if (query.year) {
         where.current_year = Number(query.year);
     }
-    if (query.theory_batch_id) where.theory_batch_id = Number(query.theory_batch_id); 
+    if (query.theory_batch_id) where.theory_batch_id = Number(query.theory_batch_id);
     if (query.lab_batch_id) where.lab_batch_id = Number(query.lab_batch_id);
+    if (query.roll_number) where.roll_number = query.roll_number;
 
     return Student.findAll({
         where,
-        include: [//for linking i think 
+        include: [
+            // Sequelize includes are LEFT JOINs by default — if lab_batch_id is not
+            // filtered, all students still appear with their batch info attached
             { model: TheoryBatch, as: 'theoryBatch', attributes: ['theory_batch_id', 'name'] },
-            //what will happen when there is no lab batch is given 
-												{ model: LabBatch, as: 'labBatch', attributes: ['lab_batch_id', 'name'] }
-        ],//by rollno 
+            { model: LabBatch, as: 'labBatch', attributes: ['lab_batch_id', 'name'] }
+        ],
         order: [['name', 'ASC']],
     });
 }
 
-async function getById(id) { //by the roll no 
-    const student = await Student.findByPk(id, {
-								//how does this even work 
+async function getById(id) {
+    // Looks up by roll_number — the `:id` URL param is actually the roll number
+    const student = await Student.findOne({
+        where: { roll_number: id },
         include: [
             { model: TheoryBatch, as: 'theoryBatch' },
             { model: LabBatch, as: 'labBatch' }
@@ -38,21 +41,21 @@ async function getById(id) { //by the roll no
 }
 
 async function create(data) {
-//why does there is no condtion  
     const { name, roll_number, phone, email, dob, gender, address, parent_phone, current_year, theory_batch_id, lab_batch_id } = data;
 
-    const theoryBatch = await TheoryBatch.findByPk(theory_batch_id); //for veryifing the batch exist instead  of add them inside 
+    // Validate batch exists and has room before creating student
+    const theoryBatch = await TheoryBatch.findByPk(theory_batch_id);
     if (!theoryBatch) throw new AppError('NOT_FOUND', 'Theory Batch not found', 404);
-    if (theoryBatch.student_count >= theoryBatch.capacity) { //warning 
+    if (theoryBatch.student_count >= theoryBatch.capacity) {
         throw new AppError('CAPACITY_EXCEEDED', 'Theory Batch is at full capacity', 409);
     }
-//same as the above one 
+
     const labBatch = await LabBatch.findByPk(lab_batch_id);
     if (!labBatch) throw new AppError('NOT_FOUND', 'Lab Batch not found', 404);
     if (labBatch.student_count >= labBatch.capacity) {
         throw new AppError('CAPACITY_EXCEEDED', 'Lab Batch is at full capacity', 409);
     }
-// this creates a new record ont he db  
+
     const student = await Student.create({ name, roll_number, phone, email, dob, gender, address, parent_phone, current_year, theory_batch_id, lab_batch_id });
 
     // Update batch student_count
@@ -62,15 +65,15 @@ async function create(data) {
     return student;
 }
 
-async function update(id, data) { //by the roll no 
-    const student = await Student.findByPk(id);
+async function update(id, data) {
+    const student = await Student.findOne({ where: { roll_number: id } });
     if (!student) throw new AppError('NOT_FOUND', 'Student not found', 404);
     await student.update(data);
     return student;
 }
 
-async function remove(id) { //by the roll no 
-    const student = await Student.findByPk(id);
+async function remove(id) {
+    const student = await Student.findOne({ where: { roll_number: id } });
     if (!student) throw new AppError('NOT_FOUND', 'Student not found', 404);
 
     const theoryBatch = await TheoryBatch.findByPk(student.theory_batch_id);
@@ -85,7 +88,6 @@ async function remove(id) { //by the roll no
 }
 
 
-// not used so far may be for the future 
 async function bulkCreate(rows, current_year, theory_batch_id, lab_batch_id) {
     const theoryBatch = await TheoryBatch.findByPk(theory_batch_id);
     if (!theoryBatch) throw new AppError('NOT_FOUND', 'Theory Batch not found', 404);

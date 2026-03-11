@@ -48,7 +48,7 @@ export async function fetchAttendanceView(year: string, date: string): Promise<A
 export async function fetchCorrectionStudents(
     year: string, _batch: string, period: string, date: string
 ): Promise<CorrectionStudent[]> {
-    const data = await apiClient.get<any[]>('/attendance/view', { year, date_from: date, date_to: date });
+    const data = await apiClient.get<any[]>('/attendance/fetch-students', { year, date_from: date, date_to: date });
 
     return data
         .filter(r => String(r.slot?.slot_number || r.slot_id) === period)
@@ -74,11 +74,12 @@ export async function saveAttendanceCorrection(students: CorrectionStudent[]): P
 
 /** POST /attendance/fetch-students — Staff fetch students for attendance */
 export async function fetchStaffStudents(
-    year: string, batch_id: string, slot_id: string, _subject: string
+    year: string, batch_id: string, batch_type: string, slot_id: string, _subject: string
 ): Promise<StaffStudent[]> {
     const data = await apiClient.post<any[]>('/attendance/fetch-students', {
         year: parseInt(year),
         batch_id: parseInt(batch_id),
+        batch_type,
         slot_id: parseInt(slot_id),
         date: new Date().toISOString().split('T')[0],
     });

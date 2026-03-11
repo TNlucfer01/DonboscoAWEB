@@ -64,5 +64,5 @@ const AttendanceRecord = sequelize.define('AttendanceRecord', {
         },
     ],
 });
-//no issue for now except the rool no b acts a  the id 
+// Note: Frontend uses roll_number for student lookup, not student_id
 module.exports = AttendanceRecord;

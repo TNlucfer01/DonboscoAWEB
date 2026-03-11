@@ -1,11 +1,16 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-//add the subject code 
+
 const Subject = sequelize.define('Subject', {
     subject_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
+    },
+    subject_code: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        unique: true,
     },
     subject_name: {
         type: DataTypes.STRING(100),

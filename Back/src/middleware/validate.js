@@ -1,7 +1,7 @@
 const { validationResult } = require('express-validator');
 
-// Run after express-validator chain — collects errors and returns 400 if any
-//what does this validate  ooh i still don't understand at all 
+// Runs after the express-validator body/query checks — if any validation
+// errors were collected, returns a 400 with all error messages joined together
 module.exports = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

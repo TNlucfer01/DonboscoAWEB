@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-//ok
+
 const Semester = sequelize.define('Semester', {
     semester_id: {
         type: DataTypes.INTEGER,

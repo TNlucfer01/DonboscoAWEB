@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-// okay 
+
 const TimetableSlot = sequelize.define('TimetableSlot', {
     slot_id: {
         type: DataTypes.INTEGER,

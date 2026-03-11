@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-//not used right now 
+
 const NotificationLog = sequelize.define('NotificationLog', {
     log_id: {
         type: DataTypes.INTEGER,

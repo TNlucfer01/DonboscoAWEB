@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-//okay
+
 const TheoryBatch = sequelize.define('TheoryBatch', {
     theory_batch_id: {
         type: DataTypes.INTEGER,

@@ -10,10 +10,10 @@ const otpStore = new Map(); // phone → { otp, expiresAt }
 // ── Login ──────────────────────────────────────────────────────
 async function login(email, password) {
     const user = await User.findOne({ where: { email } });
-    if (!user) throw new AppError('AUTH_FAILED', 'Invalid credentia', 401);
+    if (!user) throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) throw new AppError('AUTH_FAILED', 'Invalid credential', 401);
+    if (!valid) throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
 
     const accessToken = jwt.sign(
         { userId: user.user_id, role: user.role, managedYear: user.managed_year, name: user.name },
@@ -51,7 +51,7 @@ async function refreshAccessToken(refreshToken) {
 }
 
 // ── Forgot Password (OTP) ──────────────────────────────────────
-async function sendOTP(phone) {//how can i test these thing
+async function sendOTP(phone) {
     const user = await User.findOne({ where: { phone_number: phone } });
     if (!user) throw new AppError('NOT_FOUND', 'No account with this phone number', 404);
 
@@ -64,7 +64,7 @@ async function sendOTP(phone) {//how can i test these thing
 }
 
 // ── Reset Password ─────────────────────────────────────────────
-async function resetPassword(phone, otp, newPassword) { //how can i test this 
+async function resetPassword(phone, otp, newPassword) {
     const entry = otpStore.get(phone);
     if (!entry || entry.otp !== otp || Date.now() > entry.expiresAt) {
         throw new AppError('OTP_INVALID', 'OTP is invalid or has expired', 400);

@@ -3,7 +3,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const roleGuard = require('../middleware/roleGuaurd');
+const roleGuard = require('../middleware/roleGuard');
 const validate = require('../middleware/validate');
 const { success } = require('../utils/apiResponse');
 const svc = require('../services/attendance.service');
@@ -12,11 +12,11 @@ const svc = require('../services/attendance.service');
 router.post('/fetch-students',
     auth, roleGuard('SUBJECT_STAFF', 'PRINCIPAL'),
     [
-        body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),//i need to chnage this
+        body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
         body('batch_id').isInt({ min: 1 }).withMessage('batch_id required'),
         body('batch_type').isIn(['THEORY', 'LAB']).withMessage('batch_type required'),
-        body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'), //good  
-        body('date').isDate().withMessage('date required (YYYY-MM-DD)'), //not tfor the past dates
+        body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
     ],
     validate,
     async (req, res, next) => {
@@ -25,18 +25,19 @@ router.post('/fetch-students',
     }
 );
 
-// POST /api/attendance/submit — Staff only my question is it abl to hande multiple person attendance putting 
+// POST /api/attendance/submit — Staff only
+// Handles multiple students at once via the records[] array.
+// Multiple staff can submit for different batches/slots simultaneously.
 router.post('/submit',
-    auth, roleGuard('SUBJECT_STAFF', 'PRINCIPAL'), //remove te Principal role 
+    auth, roleGuard('SUBJECT_STAFF'),
     [
         body('records').isArray({ min: 1 }).withMessage('records array required'),
         body('slot_id').isInt({ min: 1 }),
-        body('date').isDate(),//i need to add the condtion to make sure that this is not past 
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
     ],
     validate,
     async (req, res, next) => {
         try {
-												//is it able to though nopr it can't do that for multiple records 
             const { records, slot_id, date, subject_id } = req.body;
             return success(res, await svc.submit({ records, slot_id, date, subject_id, submitted_by: req.user.userId }));
         } catch (e) { next(e); }
@@ -55,7 +56,7 @@ router.get('/view', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'),
 router.put('/correct',
     auth, roleGuard('PRINCIPAL'),
     [
-        body('record_id').isInt({ min: 1 }), //why do we need a  new record id 
+        body('record_id').isInt({ min: 1 }).withMessage('record_id is required'),
         body('new_status').isIn(['PRESENT', 'ABSENT', 'OD', 'INFORMED_LEAVE']),
     ],
     validate,
@@ -66,13 +67,9 @@ router.put('/correct',
     }
 );
 
-// OD / IL routes — YC only make sure he can't put the attendance for the past days 
+// OD / IL routes — YC only
 router.get('/od-il', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'), async (req, res, next) => {
     try { return success(res, await svc.listODIL(req.query, req.user)); }
-				
-
-				
-				
     catch (e) { next(e); }
 });
 
@@ -81,7 +78,7 @@ router.post('/od-il',
     [
         body('student_id').isInt({ min: 1 }),
         body('slot_id').isInt({ min: 1 }),
-        body('date').isDate(), // remove the past days 
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
         body('status').isIn(['OD', 'INFORMED_LEAVE']),
         body('semester_id').isInt({ min: 1 }),
     ],
@@ -92,10 +89,18 @@ router.post('/od-il',
     }
 );
 
-router.put('/od-il/:id', auth, roleGuard('YEAR_COORDINATOR'), async (req, res, next) => {
-    try { return success(res, await svc.updateODIL(req.params.id, req.body)); }
-    catch (e) { next(e); }
-});
+router.put('/od-il/:id',
+    auth, roleGuard('YEAR_COORDINATOR'),
+    [
+        body('status').isIn(['OD', 'INFORMED_LEAVE']).withMessage('status must be OD or INFORMED_LEAVE'),
+        body('od_reason').optional().isString(),
+    ],
+    validate,
+    async (req, res, next) => {
+        try { return success(res, await svc.updateODIL(req.params.id, req.body)); }
+        catch (e) { next(e); }
+    }
+);
 
 router.delete('/od-il/:id', auth, roleGuard('YEAR_COORDINATOR'), async (req, res, next) => {
     try { return success(res, await svc.cancelODIL(req.params.id)); }

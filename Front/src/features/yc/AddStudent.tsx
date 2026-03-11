@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import Layout from '../../app/components/Layout';
 import { Button } from '../../app/components/ui/button';
 import { Input } from '../../app/components/ui/input';
@@ -6,16 +6,28 @@ import { Label } from '../../app/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
-import { BATCH_OPTIONS, GENDER_OPTIONS, YEAR_OPTIONS } from '../shared/constants';
-import { addStudent } from '../../api/student.api';
+import { LAB_BATCH_OPTIONS, THEORY_BATCH_OPTIONS, GENDER_OPTIONS, YEAR_OPTIONS } from '../shared/constants';
+import { addStudent, getStudents } from '../../api/student.api';
+import { fetchBatches, Batch } from '../../api/batch.api';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+
+interface StudentData {
+	student_id: number;
+	name: string;
+	roll_number: string;
+	parent_phone: string;
+	theoryBatch?: { name: string };
+	labBatch?: { name: string };
+}
 
 export default function AddStudent({ user, onLogout }: PageProps) {
 	const [name, setName] = useState('');
 	const [roll_number, setroll_number] = useState('');
 	const [parent_phone, setparent_phone] = useState('');
-	const [batch, setBatch] = useState('');
+	const [lab_batch, setlab_Batch] = useState('');
+	const [theory_batch, settheory_Batch] = useState('');
+
 	const [phone, setphone] = useState('');
 	const [dob, setdob] = useState('');
 	const [gender, setgender] = useState('');
@@ -24,16 +36,44 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 	const [current_year, setcurrent_year] = useState('');
 	const [loading, setLoading] = useState(false);
 
+	const [theoryBatches, setTheoryBatches] = useState<Batch[]>([]);
+	const [labBatches, setLabBatches] = useState<Batch[]>([]);
+	const [students, setStudents] = useState<StudentData[]>([]);
+	const [initialLoading, setInitialLoading] = useState(true);
+
+	useEffect(() => {
+		const loadData = async () => {
+			try {
+				const [batchesData, studentsData] = await Promise.all([
+					fetchBatches(),
+					getStudents()
+				]);
+				setTheoryBatches(batchesData.filter(b => b.batch_type === 'THEORY'));
+				setLabBatches(batchesData.filter(b => b.batch_type === 'LAB'));
+				setStudents(studentsData);
+			} catch (err) {
+				toast.error('Failed to load initial data');
+			} finally {
+				setInitialLoading(false);
+			}
+		};
+		loadData();
+	}, []);
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!name || !roll_number || !parent_phone || !batch || !current_year) return toast.error('Please fill in required fields (*)');
+		if (!name || !roll_number || !parent_phone || !lab_batch || !current_year) return toast.error('Please fill in required fields (*)');
 		setLoading(true);
 		try {
-			
-			await addStudent(name, roll_number, parent_phone, Number(batch), phone, Number(current_year), email, dob, gender, address);
-			toast.success(`Student ${name} (${roll_number}) added to Batch ${batch} successfully!`);
-			setName(''); setroll_number(''); setparent_phone(''); setBatch(''); setcurrent_year('');
+
+			await addStudent(name, roll_number, parent_phone, Number(theory_batch), Number(lab_batch), phone, Number(current_year), email, dob, gender, address);
+			toast.success(`Student ${name} (${roll_number}) added successfully!`);
+			setName(''); setroll_number(''); setparent_phone(''); setlab_Batch(''); settheory_Batch(''); setcurrent_year('');
 			setphone(''); setemail(''); setdob(''); setgender(''); setaddress('');
+
+			// Refresh table
+			const updatedStudents = await getStudents();
+			setStudents(updatedStudents);
 		} catch (err: any) {
 			toast.error(err.message || 'Failed to add student');
 		}
@@ -65,8 +105,11 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 											<Input id="rollNumber" value={roll_number} onChange={(e) => setroll_number(e.target.value)}
 												placeholder="Roll No" className="mt-1 border-slate-300" required />
 										</div>
-										<SelectField label="Batch *" value={batch} options={BATCH_OPTIONS} onValueChange={setBatch}
-											placeholder="Select Batch" />
+										<SelectField label="Theory Batch *" value={theory_batch} options={theoryBatches.map(b => ({ value: String(b.batch_id), label: b.name }))} onValueChange={settheory_Batch}
+											placeholder="Select Theory Batch" />
+										<SelectField label="Lab Batch *" value={lab_batch} options={labBatches.map(b => ({ value: String(b.batch_id), label: b.name }))} onValueChange={setlab_Batch}
+											placeholder="Select Lab Batch" />
+
 									</div>
 									<SelectField label="Current Year *" value={current_year} options={YEAR_OPTIONS} onValueChange={setcurrent_year}
 										placeholder="Select Year" />
@@ -118,6 +161,44 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 						</form>
 					</CardContent>
 				</Card>
+
+				<div className="mt-8">
+					<h2 className="text-xl font-semibold text-slate-800 mb-4">Added Students List</h2>
+					<Card className="border-2 border-slate-300">
+						<CardContent className="p-0">
+							{initialLoading ? (
+								<div className="p-8 flex justify-center text-slate-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
+							) : students.length === 0 ? (
+								<div className="p-8 text-center text-slate-500 italic">No students added yet.</div>
+							) : (
+								<div className="overflow-x-auto">
+									<table className="w-full text-sm text-left text-slate-600">
+										<thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b-2 border-slate-200">
+											<tr>
+												<th className="px-6 py-3 font-semibold">Roll Number</th>
+												<th className="px-6 py-3 font-semibold">Name</th>
+												<th className="px-6 py-3 font-semibold">Theory Batch</th>
+												<th className="px-6 py-3 font-semibold">Lab Batch</th>
+												<th className="px-6 py-3 font-semibold">Parent Phone</th>
+											</tr>
+										</thead>
+										<tbody>
+											{students.map((student) => (
+												<tr key={student.student_id} className="bg-white border-b hover:bg-slate-50">
+													<td className="px-6 py-4 font-medium text-slate-800">{student.roll_number}</td>
+													<td className="px-6 py-4">{student.name}</td>
+													<td className="px-6 py-4">{student.theoryBatch?.name || '-'}</td>
+													<td className="px-6 py-4">{student.labBatch?.name || '-'}</td>
+													<td className="px-6 py-4">{student.parent_phone}</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		</Layout>
 	);

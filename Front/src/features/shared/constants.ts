@@ -14,11 +14,15 @@ export const YEAR_OPTIONS: SelectOption[] = [
     { value: '4', label: '4th Year' },
 ];
 
-export const BATCH_OPTIONS: SelectOption[] = [
+export const LAB_BATCH_OPTIONS: SelectOption[] = [
     { value: '1', label: 'Batch A' },
     { value: '2', label: 'Batch B' },
     { value: '3', label: 'Batch C' },
     { value: '4', label: 'Batch D' },
+];
+export const THEORY_BATCH_OPTIONS: SelectOption[] = [
+    { value: '1', label: 'Batch A' },
+    { value: '2', label: 'Batch B' },
 ];
 
 export const PERIOD_OPTIONS: SelectOption[] = [

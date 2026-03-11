@@ -20,6 +20,7 @@ export interface CorrectionStudent {
     name: string;
     status: string;
     odReason: string;
+
 }
 
 export interface StaffStudent {

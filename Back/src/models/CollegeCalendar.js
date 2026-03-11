@@ -37,5 +37,5 @@ const CollegeCalendar = sequelize.define('CollegeCalendar', {
     tableName: 'college_calendar',
     timestamps: false,
 });
-//ok
+
 module.exports = CollegeCalendar;

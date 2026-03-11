@@ -1,7 +1,7 @@
 // src/services/sms.service.js
 const axios = require('axios');
 const { NotificationLog, Semester } = require('../models/index');
-//test this for future usage 
+
 async function sendSMS(phone, message) {
     try {
         if (process.env.NODE_ENV === 'development') {

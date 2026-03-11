@@ -1,7 +1,8 @@
 // src/controllers/crud.controller.js
 // Generic factory for simple CRUD controllers — reduces boilerplate
 const { success } = require('../utils/apiResponse');
-//done now i know how it works jid of not wholely but kinda 
+// Generic factory — given a service with getAll/getById/create/update/remove,
+// returns Express route handlers that delegate to those methods
 const makeController = (service) => ({
     getAll: async (req, res, next) => {
         try { return success(res, await service.getAll(req.query, req.user)); }

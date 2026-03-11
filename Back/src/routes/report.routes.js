@@ -2,33 +2,42 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const roleGuard = require('../middleware/roleGuaurd');
+const roleGuard = require('../middleware/roleGuard');
 const { success } = require('../utils/apiResponse');
 const { sequelize } = require('../models/index');
 const { QueryTypes } = require('sequelize');
 
 // Helper: build year scope for SQL
 const yearScope = (currentUser, query) => {
-    if (currentUser.role === 'YEAR_COORDINATOR') return currentUser.managedYear;
-    return query.year ? Number(query.year) : null;
+  if (currentUser.role === 'YEAR_COORDINATOR') return currentUser.managedYear;
+  return query.year ? Number(query.year) : null;
 };
-//what is the reports may be for the dasjboard 
-// GET /api/reports/attendance-summary 
-router.get('/attendance-summary', //need the semester_id ,user //why does the below two routes are very differnt 
-    auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
-    async (req, res, next) => {
-        try {
-            const year = yearScope(req.user, req.query);
-            const params = { semId: req.query.semester_id || null };
-            const conditions = ['1=1'];
-            if (year) conditions.push(`s.current_year = ${year}`);
-            if (params.semId) conditions.push('ar.semester_id = :semId');
-            if (req.query.date_from && req.query.date_to) {
-                conditions.push(`ar.date BETWEEN '${req.query.date_from}' AND '${req.query.date_to}'`);
-            }
-												//good but i can't understand 
 
-            const results = await sequelize.query(`
+// GET /api/reports/attendance-summary
+// Used by Principal/YC dashboard — summarises each student's attendance %
+router.get('/attendance-summary',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const year = yearScope(req.user, req.query);
+      const replacements = {};
+      const conditions = ['1=1'];
+
+      if (year) {
+        conditions.push('s.current_year = :year');
+        replacements.year = year;
+      }
+      if (req.query.semester_id) {
+        conditions.push('ar.semester_id = :semId');
+        replacements.semId = Number(req.query.semester_id);
+      }
+      if (req.query.date_from && req.query.date_to) {
+        conditions.push('ar.date BETWEEN :dateFrom AND :dateTo');
+        replacements.dateFrom = req.query.date_from;
+        replacements.dateTo = req.query.date_to;
+      }
+
+      const results = await sequelize.query(`
         SELECT
           s.student_id, s.name, s.roll_number, s.current_year,
           COUNT(ar.record_id) AS total_periods,
@@ -42,25 +51,34 @@ router.get('/attendance-summary', //need the semester_id ,user //why does the be
         WHERE ${conditions.join(' AND ')}
         GROUP BY s.student_id
         ORDER BY s.current_year, s.roll_number
-      `, { replacements: params, type: QueryTypes.SELECT });
+      `, { replacements, type: QueryTypes.SELECT });
 
-            return success(res, results);
-        } catch (e) { next(e); }
-    }
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
 );
 
 // GET /api/reports/below-threshold
-router.get('/below-threshold',//can see by the year and the semster too 
-    auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
-    async (req, res, next) => {
-        try {
-            const year = yearScope(req.user, req.query);
-            const threshold = Number(req.query.threshold) || 80;
-            const conditions = ['1=1'];
-            if (year) conditions.push(`s.current_year = ${year}`);
-            if (req.query.semester_id) conditions.push(`ar.semester_id = ${req.query.semester_id}`);
+// Lists students below a given attendance % (default 80%)
+router.get('/below-threshold',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const year = yearScope(req.user, req.query);
+      const threshold = Number(req.query.threshold) || 80;
+      const replacements = { threshold };
+      const conditions = ['1=1'];
 
-            const results = await sequelize.query(`
+      if (year) {
+        conditions.push('s.current_year = :year');
+        replacements.year = year;
+      }
+      if (req.query.semester_id) {
+        conditions.push('ar.semester_id = :semId');
+        replacements.semId = Number(req.query.semester_id);
+      }
+
+      const results = await sequelize.query(`
         SELECT
           s.student_id, s.name, s.roll_number, s.current_year, s.parent_phone,
           ROUND(
@@ -71,21 +89,22 @@ router.get('/below-threshold',//can see by the year and the semster too
         JOIN attendance_records ar ON ar.student_id = s.student_id
         WHERE ${conditions.join(' AND ')}
         GROUP BY s.student_id
-        HAVING attendance_pct < ${threshold}
+        HAVING attendance_pct < :threshold
         ORDER BY attendance_pct ASC
-      `, { type: QueryTypes.SELECT });
+      `, { replacements, type: QueryTypes.SELECT });
 
-            return success(res, results);
-        } catch (e) { next(e); }
-    }
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
 );
 
-// GET /api/reports/by-student/:id not need for today's use but we will updat the rollno 
+// GET /api/reports/by-student/:id
+// Detailed attendance history for a single student (by student_id)
 router.get('/by-student/:id',
-    auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
-    async (req, res, next) => {
-        try {
-            const results = await sequelize.query(`
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const results = await sequelize.query(`
         SELECT
           ar.date, ar.slot_id, ar.status, ar.od_reason,
           sub.subject_name, ts.slot_number, ts.start_time
@@ -96,11 +115,9 @@ router.get('/by-student/:id',
         ORDER BY ar.date DESC, ts.slot_number ASC
       `, { replacements: { studentId: req.params.id }, type: QueryTypes.SELECT });
 
-            return success(res, results);
-        } catch (e) { next(e); }
-    }
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
 );
-//why does this only uses the sql query for the quering 
-
 
 module.exports = router;

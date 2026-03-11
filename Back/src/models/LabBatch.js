@@ -29,5 +29,5 @@ const LabBatch = sequelize.define('LabBatch', {
     tableName: 'lab_batches',
     timestamps: false,
 });
-//ok i think 
+
 module.exports = LabBatch;

@@ -1,5 +1,0 @@
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "principal@donbosco.edu", "password": "Admin@1234"}' \
-  -c cookies.txt \
-  -v

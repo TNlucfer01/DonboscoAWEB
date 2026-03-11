@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
 import { DatePickerField } from '../shared/DatePickerField';
-import { YEAR_OPTIONS, BATCH_OPTIONS, PERIOD_OPTIONS } from '../shared/constants';
+import { YEAR_OPTIONS, LAB_BATCH_OPTIONS, PERIOD_OPTIONS } from '../shared/constants';
 import { useAttendanceCorrection } from '../../hooks/useAttendanceCorrection';
 import { format } from 'date-fns';
 
@@ -35,7 +35,7 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                     <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
-                            <SelectField label="Batch *" value={batch} options={BATCH_OPTIONS} onValueChange={setBatch} />
+                            <SelectField label="Batch *" value={batch} options={LAB_BATCH_OPTIONS} onValueChange={setBatch} />
                             <SelectField label="Period *" value={period} options={PERIOD_OPTIONS} onValueChange={setPeriod} />
                             <div><DatePickerField date={date} onDateChange={setDate} label="Date *" /></div>
                             <div className="flex items-end">

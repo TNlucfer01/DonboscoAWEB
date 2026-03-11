@@ -7,22 +7,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
-import { BATCH_OPTIONS, PERIOD_OPTIONS, SUBJECT_OPTIONS } from '../shared/constants';
+import { PERIOD_OPTIONS, SUBJECT_OPTIONS } from '../shared/constants';
 import { useStaffAttendance } from '../../hooks/useStaffAttendance';
+import { fetchBatches, Batch } from '../../api/batch.api';
+import { useEffect } from 'react';
 
 const YEAR_RADIO = ['1', '2', '3', '4'];
 const YEAR_LABELS: Record<string, string> = { '1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year' };
 
 export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
     const [year, setYear] = useState('');
+    const [classType, setClassType] = useState('');
     const [batch, setBatch] = useState('');
     const [period, setPeriod] = useState('');
     const [subject, setSubject] = useState('');
+    const [batches, setBatches] = useState<Batch[]>([]);
     const { students, loading, submitting, fetched, fetch, updateStatus, markAllPresent, submit } = useStaffAttendance();
 
+    useEffect(() => {
+        if (year && classType) {
+            fetchBatches(Number(year)).then(res => {
+                setBatches(res.filter(b => b.batch_type === classType));
+                setBatch('');
+            }).catch(() => setBatches([]));
+        } else {
+            setBatches([]);
+        }
+    }, [year, classType]);
+
     const handleFetch = () => {
-        if (!year || !batch || !period || !subject) return;
-        fetch(year, batch, period, subject);
+        if (!year || !classType || !batch || !period || !subject) return;
+        fetch(year, batch, classType, period, subject);
     };
 
     return (
@@ -46,9 +61,10 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                     ))}
                                 </RadioGroup>
                             </div>
-                            <SelectField label="Step 2: Select Batch *" value={batch} options={BATCH_OPTIONS} onValueChange={setBatch} />
-                            <SelectField label="Step 3: Select Period *" value={period} options={PERIOD_OPTIONS} onValueChange={setPeriod} />
-                            <SelectField label="Step 4: Select Subject *" value={subject} options={SUBJECT_OPTIONS} onValueChange={setSubject} />
+                            <SelectField label="Step 2: Select Class Type *" value={classType} options={[{ value: 'THEORY', label: 'Theory' }, { value: 'LAB', label: 'Lab' }]} onValueChange={setClassType} />
+                            <SelectField label="Step 3: Select Batch *" value={batch} options={batches.map(b => ({ value: String(b.batch_id), label: b.name }))} onValueChange={setBatch} disabled={!year || !classType} />
+                            <SelectField label="Step 4: Select Period *" value={period} options={PERIOD_OPTIONS} onValueChange={setPeriod} />
+                            <SelectField label="Step 5: Select Subject *" value={subject} options={SUBJECT_OPTIONS} onValueChange={setSubject} />
                             <div>
                                 <Button onClick={handleFetch} disabled={loading}
                                     className="w-full sm:w-auto bg-slate-700 hover:bg-slate-800 text-white">

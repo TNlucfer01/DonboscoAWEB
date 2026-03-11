@@ -1,7 +1,7 @@
 // src/controllers/auth.controller.js
 const authService = require('../services/auth.service');
 const { success } = require('../utils/apiResponse');
-// isn't the refresh time is 15mintues
+// Refresh token cookie: httpOnly, secure in prod, 7-day lifetime
 const REFRESH_COOKIE_OPTS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -15,15 +15,14 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
         const result = await authService.login(email, password);
         res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTS);
-       //this is the for the login token 
-								return success(res, { token: result.accessToken, user: result.user });
+        return success(res, { token: result.accessToken, user: result.user });
     } catch (err) {
         next(err);
     }
 };
 
 // POST /api/auth/refresh
-// when does this even used 
+// POST /api/auth/refresh — called when access token expires to get a new one
 const refresh = async (req, res, next) => {
     try {
         const refreshToken = req.cookies?.refreshToken;
@@ -34,7 +33,6 @@ const refresh = async (req, res, next) => {
         next(err);
     }
 };
-//how can i test this for now
 // POST /api/auth/forgot-password
 const forgotPassword = async (req, res, next) => {
     try {
@@ -45,7 +43,6 @@ const forgotPassword = async (req, res, next) => {
         next(err);
     }
 };
-//how can i test this 
 // POST /api/auth/reset-password
 const resetPassword = async (req, res, next) => {
     try {

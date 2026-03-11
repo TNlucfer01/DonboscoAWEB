@@ -8,7 +8,7 @@ const sequelize = require('./src/config/db');
 const app = express();
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(helmet());
 app.use(morgan('dev'));
 
@@ -20,13 +20,13 @@ app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/users', require('./src/routes/user.routes'));
 app.use('/api/semesters', require('./src/routes/semester.routes'));
 
- //app.use('/api/batches', require('./src/routes/batch.routes'));
+//app.use('/api/batches', require('./src/routes/batch.routes'));
 app.use('/api/subjects', require('./src/routes/subject.routes'));
 app.use('/api/students', require('./src/routes/student.routes'));
 app.use('/api/attendance', require('./src/routes/attendance.routes'));
 app.use('/api/calendar', require('./src/routes/calendar.routes'));
 app.use('/api/audit', require('./src/routes/audit.routes'));
-app.use('/api/reports', require('./src/routes/report.routes'));//fix this routes entrirly 
+app.use('/api/reports', require('./src/routes/report.routes'));
 
 // ── Global Error Handler ─────────────────────────────────────
 app.use(require('./src/middleware/errorHandler'));

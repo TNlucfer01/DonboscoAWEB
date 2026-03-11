@@ -3,7 +3,7 @@ const express = require('express');
 const { body, query } = require('express-validator');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const roleGuard = require('../middleware/roleGuaurd');
+const roleGuard = require('../middleware/roleGuard');
 const validate = require('../middleware/validate');
 const { success } = require('../utils/apiResponse');
 const batchService = require('../services/batch.service');
@@ -18,7 +18,7 @@ const batchValidation = [
 const batchTypeValidation = [
     query('batch_type').isIn(['THEORY', 'LAB']).withMessage('batch_type query parmeter must be THEORY or LAB'),
 ];
-//wy do we need the batch api 
+
 router.get('/', auth, async (req, res, next) => {
     try { return success(res, await batchService.getAll(req.query)); }
     catch (e) { next(e); }
