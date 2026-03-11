@@ -16,14 +16,14 @@ async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
     if (holiday) throw new AppError('HOLIDAY', `Attendance blocked: ${holiday.holiday_name || 'Holiday'}`, 422);
 
     // 2. 20-min window check — fetch the slot's start_time, compute elapsed minutes
-    const slot = await TimetableSlot.findByPk(slot_id);
-    if (!slot) throw new AppError('NOT_FOUND', 'Slot not found', 404);
+    //for now only 
+    // const slot = await TimetableSlot.findByPk(slot_id);
+    // if (!slot) throw new AppError('NOT_FOUND', 'Slot not found', 404);
 
-    const slotStart = dayjs(`${date} ${slot.start_time}`);
-    const diff = dayjs().diff(slotStart, 'minute');
-    if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
-    if (diff < 0) throw new AppError('WINDOW_NOT_OPEN', 'This period has not started yet.', 422);
-
+    // const slotStart = dayjs(`${date} ${slot.start_time}`);
+    // const diff = dayjs().diff(slotStart, 'minute');
+    // if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
+    // if (diff < 0) throw new AppError('WINDOW_NOT_OPEN', 'This period has not started yet.', 422);
     // 3. Fetch students in the batch (theory or lab based on batch_type)
     const batchKey = batch_type === 'THEORY' ? 'theory_batch_id' : 'lab_batch_id';
     const students = await Student.findAll({
@@ -31,7 +31,6 @@ async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
         attributes: ['student_id', 'name', 'roll_number', 'parent_phone'],
         order: [['roll_number', 'ASC']],
     });
-
     // 4. Check for existing locked (OD/IL) rows for this slot + date
     // This prevents staff from overwriting YC-approved OD/IL entries
     const existingRecords = await AttendanceRecord.findAll({
@@ -48,7 +47,7 @@ async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
         is_locked: !!lockMap[s.student_id]?.is_locked,
         status: lockMap[s.student_id]?.status || null,
         od_reason: lockMap[s.student_id]?.od_reason || null,
-        remaining_minutes: 20 - diff, // Frontend should start a countdown timer from this value
+        remaining_minutes: 20, // Frontend should start a countdown timer from this value
     }));
 }
 
@@ -137,7 +136,7 @@ async function view({ year, date_from, date_to, semester_id }, currentUser) {
     });
 }
 
-// ── Principal: Correct Attendance ─────────────────────────────
+// ── Principal: Correct Attendance (single record) ─────────────
 // TODO: Support batch correction of multiple slots at once (currently corrects one record at a time)
 async function correct({ record_id, new_status, od_reason }, changed_by) {
     const record = await AttendanceRecord.findByPk(record_id);
@@ -146,7 +145,6 @@ async function correct({ record_id, new_status, od_reason }, changed_by) {
     const old_status = record.status;
     await record.update({ status: new_status, od_reason: od_reason || null });
 
-    // Insert audit log
     await AttendanceAuditLog.create({
         record_id,
         changed_by,
@@ -156,6 +154,75 @@ async function correct({ record_id, new_status, od_reason }, changed_by) {
     });
 
     return { message: 'Attendance corrected', old_status, new_status };
+}
+
+// ── Principal: Bulk Upsert Attendance (all 5 slots for a student on a date) ──
+// For each record: if record_id provided → update; if null → create new record.
+// This allows principal to set attendance even for periods staff never submitted.
+async function correctBulk(records, changed_by) {
+    const semester = await Semester.findOne({ where: { is_active: true } });
+    if (!semester) throw new AppError('NO_ACTIVE_SEMESTER', 'No active semester found', 422);
+
+    const results = [];
+
+    for (const r of records) {
+        const { record_id, student_id, slot_id, date, new_status, od_reason, is_locked } = r;
+
+        if (record_id) {
+            // ── UPDATE existing record ────────────────────────────
+            const existing = await AttendanceRecord.findByPk(record_id);
+            if (!existing) continue;
+
+            const old_status = existing.status;
+            const hasChange = old_status !== new_status
+                || existing.od_reason !== (od_reason || null)
+                || (is_locked !== undefined && existing.is_locked !== is_locked);
+
+            if (hasChange) {
+                const updatePayload = { status: new_status, od_reason: od_reason || null };
+                if (is_locked !== undefined) updatePayload.is_locked = is_locked;
+                await existing.update(updatePayload);
+                await AttendanceAuditLog.create({
+                    record_id,
+                    changed_by,
+                    old_status,
+                    new_status,
+                    changed_at: new Date(),
+                });
+            }
+            results.push({ action: 'updated', record_id, student_id, slot_id });
+        } else {
+            // ── CREATE new record ─────────────────────────────────
+            const [newRecord, created] = await AttendanceRecord.findOrCreate({
+                where: { student_id, slot_id, date, semester_id: semester.semester_id },
+                defaults: {
+                    student_id, slot_id, date,
+                    semester_id: semester.semester_id,
+                    status: new_status,
+                    od_reason: od_reason || null,
+                    submitted_by: changed_by,
+                    submitted_at: new Date(),
+                    is_locked: false,
+                },
+            });
+
+            if (!created) {
+                // Row already existed (race condition) — just update it
+                const old_status = newRecord.status;
+                await newRecord.update({ status: new_status, od_reason: od_reason || null });
+                await AttendanceAuditLog.create({
+                    record_id: newRecord.record_id,
+                    changed_by,
+                    old_status,
+                    new_status,
+                    changed_at: new Date(),
+                });
+            }
+            results.push({ action: created ? 'created' : 'upserted', student_id, slot_id });
+        }
+    }
+
+    return { saved: results.length, results };
 }
 
 // ── YC: OD / IL Entry ─────────────────────────────────────────
@@ -214,4 +281,94 @@ async function listODIL({ year }, currentUser) {
     });
 }
 
-module.exports = { fetchStudents, submit, view, correct, createODIL, updateODIL, cancelODIL, listODIL };
+
+// ── Principal: Fetch Students for attendance correction ────────────────────────
+// Returns: { slotMap, subjectName (when period is set), students: [...] }
+// Each period slot includes: { record_id, slot_id, status, od_reason, is_locked }
+// Optional period (1–5): narrows query to that slot only and includes subject_name.
+async function fetchStudentsPrincipal({ year, date, period = null }) {
+    if (!year || !date) throw new AppError('VALIDATION_ERROR', 'year and date are required', 400);
+
+    // 1. Build slotMap: { slotNumber → slot_id } — THEORY type only to avoid collisions
+    const allSlots = await TimetableSlot.findAll({
+        where: { slot_type: 'THEORY' },
+        attributes: ['slot_id', 'slot_number'],
+        order: [['slot_number', 'ASC']],
+    });
+    const slotMap = {};
+    for (const sl of allSlots) { slotMap[sl.slot_number] = sl.slot_id; }
+
+    // 2. Get all students in the year ordered by roll number
+    const students = await Student.findAll({
+        where: { current_year: Number(year) },
+        attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+        order: [['roll_number', 'ASC']],
+    });
+
+    if (students.length === 0) return { slotMap, subjectName: null, students: [] };
+
+    const studentIds = students.map(s => s.student_id);
+
+    // 3. Build where clause — filter to specific slot when period is given
+    const recordWhere = { student_id: studentIds, date };
+    if (period && slotMap[period]) {
+        recordWhere.slot_id = slotMap[period];
+    }
+
+    // 4. Fetch attendance_records, including Subject with explicit attribute list
+    //    (avoids the subject_code column bug — we only SELECT subject_id + subject_name)
+    const records = await AttendanceRecord.findAll({
+        where: recordWhere,
+        include: [
+            { model: TimetableSlot, as: 'slot', attributes: ['slot_number'] },
+            ...(period ? [{ model: Subject, as: 'subject', attributes: ['subject_id', 'subject_name', 'subject_code'], required: false }] : []),
+        ],
+        attributes: ['record_id', 'student_id', 'status', 'od_reason', 'slot_id', 'is_locked'],
+    });
+
+    // 5. Extract subject info from the first record that has a subject (when period is set)
+    let subjectName = null;
+    let subjectCode = null;
+    if (period) {
+        const withSubject = records.find(r => r.subject?.subject_name);
+        subjectName = withSubject?.subject?.subject_name || null;
+        subjectCode = withSubject?.subject?.subject_code || null;
+    }
+
+    // 6. Build lookup: { student_id: { slotNumber: recordData } }
+    const recordMap = {};
+    for (const r of records) {
+        const slotNum = r.slot?.slot_number;
+        if (!slotNum) continue;
+        if (!recordMap[r.student_id]) recordMap[r.student_id] = {};
+        recordMap[r.student_id][slotNum] = {
+            record_id: r.record_id,
+            slot_id: r.slot_id,
+            status: r.status,
+            od_reason: r.od_reason || null,
+            is_locked: r.is_locked,           // expose lock status for Unlock checkbox
+        };
+    }
+
+    // 7. Pivot into one row per student; only include requested period column(s)
+    const periodsToInclude = period ? [Number(period)] : [1, 2, 3, 4, 5];
+
+    const pivoted = students.map(s => {
+        const row = {
+            student_id: s.student_id,
+            name: s.name,
+            roll_number: s.roll_number,
+            current_year: s.current_year,
+            period1: null, period2: null, period3: null, period4: null, period5: null,
+        };
+        for (const p of periodsToInclude) {
+            row[`period${p}`] = recordMap[s.student_id]?.[p] || null;
+        }
+        return row;
+    });
+
+    return { slotMap, subjectName, subjectCode, students: pivoted };
+}
+
+module.exports = { fetchStudents, submit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
+

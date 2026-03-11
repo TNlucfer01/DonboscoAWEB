@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { StaffStudent } from '../features/shared/attendance.types';
 import { fetchStaffStudents, submitStaffAttendance } from '../api/attendance.api';
+import { ApiError } from '../api/apiClient';
 import { toast } from 'sonner';
 
 export function useStaffAttendance() {
@@ -10,15 +11,21 @@ export function useStaffAttendance() {
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [fetched, setFetched] = useState(false);
+    const [remainingMinutes, setRemainingMinutes] = useState<number>(0);
 
-    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, subject: string) => {
+    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, date: string) => {
         setLoading(true);
         try {
-            const data = await fetchStaffStudents(year, batch, classType, period, subject);
-            setStudents(data);
+            const result = await fetchStaffStudents(year, batch, classType, period, date);
+            setStudents(result.students);
+            setRemainingMinutes(result.remainingMinutes);
             setFetched(true);
-        } catch {
-            toast.error('Failed to fetch students');
+        } catch (err) {
+            if (err instanceof ApiError && err.code === 'PAST_DATE') {
+                toast.error('Cannot fetch attendance for past dates');
+            } else {
+                toast.error('Failed to fetch students');
+            }
         } finally {
             setLoading(false);
         }
@@ -32,17 +39,21 @@ export function useStaffAttendance() {
         setStudents((prev) => prev.map((s) => ({ ...s, status: 'Present' })));
     }, []);
 
-    const submit = useCallback(async (year: string, batch: string, period: string, subject: string) => {
+    const submit = useCallback(async (year: string, batch: string, period: string, subject: string, date: string) => {
         setSubmitting(true);
         try {
-            await submitStaffAttendance(year, batch, period, subject, students);
+            await submitStaffAttendance(year, batch, period, subject, students, date);
             toast.success('Attendance saved successfully!');
-        } catch {
-            toast.error('Failed to submit attendance');
+        } catch (err) {
+            if (err instanceof ApiError && err.code === 'PAST_DATE') {
+                toast.error('Cannot submit attendance for past dates');
+            } else {
+                toast.error('Failed to submit attendance');
+            }
         } finally {
             setSubmitting(false);
         }
     }, [students]);
 
-    return { students, loading, submitting, fetched, fetch, updateStatus, markAllPresent, submit };
+    return { students, loading, submitting, fetched, remainingMinutes, fetch, updateStatus, markAllPresent, submit };
 }

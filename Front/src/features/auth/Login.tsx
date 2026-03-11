@@ -6,7 +6,7 @@ import { Input } from '../../app/components/ui/input';
 import { Label } from '../../app/components/ui/label';
 import { GraduationCap, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../../app/components/ui/alert';
-import { login as authLogin, forgotPassword, resetPassword } from '../../api/auth.api';
+import { login as authLogin, forgotPassword, resetPassword, ApiError } from '../../api/auth.api';
 
 interface LoginProps {
     onLogin: (role: string, username: string) => void;
@@ -51,7 +51,11 @@ function ForgotPassword({ onBack }: ForgotPasswordProps) {
                 onBack();
             }
         } catch (err: any) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            if (err instanceof ApiError) {
+                setError(err.message);
+            } else {
+                setError(err.message || 'Something went wrong. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -170,20 +174,16 @@ export default function Login({ onLogin }: LoginProps) {
 
         setLoading(true);
         try {
-            // authLogin() calls POST /api/auth/login, stores the access token,
-            // and returns the user object from response.data.user
             const user = await authLogin(email.trim(), password);
-
-            // user shape: { id: number, name: string, role: string }
             onLogin(user.role.toLowerCase(), user.name);
 
         } catch (err: any) {
-            const msg: string = err.message ?? '';
-            setError(
-                msg.includes('401') || msg.toLowerCase().includes('invalid')
-                    ? 'Invalid email or password'
-                    : msg || 'Login failed. Please try again.'
-            );
+            // Use error codes from the standard API format
+            if (err instanceof ApiError && err.code === 'AUTH_FAILED') {
+                setError('Invalid email or password');
+            } else {
+                setError(err.message || 'Login failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }

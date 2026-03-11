@@ -1,4 +1,4 @@
-import { apiClient, setToken, clearToken } from './apiClient';
+import { apiClient, setToken, clearToken, ApiError } from './apiClient';
 
 export interface UserResponse {
     id: number;
@@ -8,19 +8,20 @@ export interface UserResponse {
 
 // ─── What the backend actually returns ───────────────────────────────────────
 // { success: true, data: { token: string, user: UserResponse } }
+// Some backends may use accessToken instead of token — support both.
 interface LoginResponse {
-    token: string;
+    token?: string;
+    accessToken?: string;
     user: UserResponse;
 }
 
 
 export async function login(email: string, password: string): Promise<UserResponse> {
-    // apiClient.post returns the parsed JSON body (the full envelope)
     const raw = await apiClient.post<LoginResponse>('/auth/login', { email, password });
-    const { token, user } = raw;
-    // Store access token for subsequent requests (Authorization: Bearer <token>)
-    setToken(token);
-
+    // Backend returns `token` — support `accessToken` as fallback
+    const jwt = raw.token || raw.accessToken;
+    if (jwt) setToken(jwt);
+    const { user } = raw;
     return user;
 }
 
@@ -29,6 +30,7 @@ export async function logout(): Promise<void> {
         await apiClient.post('/auth/logout');
     } finally {
         clearToken();
+        localStorage.removeItem('dbcas_user');
     }
 }
 
@@ -39,3 +41,5 @@ export async function forgotPassword(phone: string): Promise<void> {
 export async function resetPassword(phone: string, otp: string, newPassword: string): Promise<void> {
     await apiClient.post('/auth/reset-password', { phone, otp, newPassword });
 }
+
+export { ApiError };

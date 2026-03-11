@@ -1,7 +1,7 @@
 // ─── Staff API ────────────────────────────────────────────────────────────────
 
 import { apiClient } from './apiClient';
-
+//in the future we need to add the photo , then other detials
 export interface StaffMember {
     user_id: number;
     name: string;
@@ -10,7 +10,7 @@ export interface StaffMember {
     role: string;
     managed_year: number | null;
 }
-
+//everything is good here too 
 /** GET /users — List all staff (non-principal) */
 export async function fetchStaffMembers(): Promise<StaffMember[]> {
     return apiClient.get<StaffMember[]>('/users');

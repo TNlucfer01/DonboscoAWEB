@@ -20,10 +20,27 @@ router.post('/fetch-students',
     ],
     validate,
     async (req, res, next) => {
+        console.log(req.body);
         try { return success(res, await svc.fetchStudents(req.body)); }
         catch (e) { next(e); }
     }
 );
+
+// GET /api/attendance/fetch-students-pri — Principal: one row per student with period1–period5
+// Query params: year (1-4), date (YYYY-MM-DD), period (1-5, optional — if given, only fetch that slot)
+router.get('/fetch-students-pri',
+    auth, roleGuard('PRINCIPAL'),
+    async (req, res, next) => {
+        try {
+            const { year, date, period } = req.query;
+            if (!year || !date) {
+                return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'year and date query params are required' } });
+            }
+            return success(res, await svc.fetchStudentsPrincipal({ year, date, period: period ? Number(period) : null }));
+        } catch (e) { next(e); }
+    }
+);
+
 
 // POST /api/attendance/submit — Staff only
 // Handles multiple students at once via the records[] array.
@@ -63,6 +80,25 @@ router.put('/correct',
     async (req, res, next) => {
         try {
             return success(res, await svc.correct(req.body, req.user.userId));
+        } catch (e) { next(e); }
+    }
+);
+
+// POST /api/attendance/correct-bulk — Principal: bulk upsert (create + update) for all 5 slots
+// Each record: { record_id (or null), student_id, slot_id, date, new_status, od_reason? }
+router.post('/correct-bulk',
+    auth, roleGuard('PRINCIPAL'),
+    [
+        body('records').isArray({ min: 1 }).withMessage('records array required'),
+        body('records.*.student_id').isInt({ min: 1 }),
+        body('records.*.slot_id').isInt({ min: 1 }),
+        body('records.*.date').isDate(),
+        body('records.*.new_status').isIn(['PRESENT', 'ABSENT', 'OD', 'INFORMED_LEAVE']),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            return success(res, await svc.correctBulk(req.body.records, req.user.userId));
         } catch (e) { next(e); }
     }
 );

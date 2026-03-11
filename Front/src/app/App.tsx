@@ -7,6 +7,7 @@ import { Toaster } from './components/ui/sonner';
 import AppRoutes from '../routes/routes';
 import { User } from '../features/shared/types';
 import { getToken, clearToken } from '../api/apiClient';
+import { logout as apiLogout } from '../api/auth.api';
 
 const USER_KEY = 'dbcas_user';
 
@@ -33,7 +34,12 @@ export default function App() {
 
   const handleLogin = (role: string, name: string) => setUser({ role, name });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiLogout(); // Calls POST /auth/logout (clears httpOnly refresh cookie)
+    } catch {
+      // Even if logout API fails, clear local state
+    }
     clearToken();
     setUser(null);
   };

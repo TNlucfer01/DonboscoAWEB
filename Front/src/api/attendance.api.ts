@@ -47,7 +47,7 @@ export async function fetchAttendanceView(year: string, date: string): Promise<A
 /** Fetch students for correction (Principal) — same view endpoint, filtered by period */
 export async function fetchCorrectionStudents(
     year: string, _batch: string, period: string, date: string
-): Promise<CorrectionStudent[]> {
+): Promise<CorrectionStudent[]> {//date should have 2 fromt ot end 
     const data = await apiClient.get<any[]>('/attendance/fetch-students', { year, date_from: date, date_to: date });
 
     return data
@@ -72,24 +72,39 @@ export async function saveAttendanceCorrection(students: CorrectionStudent[]): P
     }
 }
 
-/** POST /attendance/fetch-students — Staff fetch students for attendance */
+/** POST /attendance/fetch-students — Staff fetch students for attendance
+ *  Returns { students, remaining_minutes }
+ */
+export interface FetchStudentsResponse {
+    students: StaffStudent[];
+    remainingMinutes: number;
+}
+
 export async function fetchStaffStudents(
     year: string, batch_id: string, batch_type: string, slot_id: string, _subject: string
-): Promise<StaffStudent[]> {
-    const data = await apiClient.post<any[]>('/attendance/fetch-students', {
+): Promise<FetchStudentsResponse> {
+    const data = await apiClient.post<any>('/attendance/fetch-students', {
         year: parseInt(year),
         batch_id: parseInt(batch_id),
         batch_type,
         slot_id: parseInt(slot_id),
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0], // what is this 
     });
 
-    return data.map(s => ({
+    // Backend may return array directly or object with remaining_minutes
+    const studentArray = Array.isArray(data) ? data : (data.students || data);
+    const remainingMinutes = Array.isArray(data)
+        ? (data[0]?.remaining_minutes ?? 60)
+        : (data.remaining_minutes ?? 60);
+
+    const students: StaffStudent[] = (Array.isArray(studentArray) ? studentArray : []).map((s: any) => ({
         id: s.student_id,
         rollNo: s.roll_number,
         name: s.name,
         status: s.status || 'Present',
     }));
+
+    return { students, remainingMinutes };
 }
 
 /** POST /attendance/submit — Submit staff attendance */
@@ -139,4 +154,12 @@ export async function saveODLeaveEntries(entry: {
     semester_id: number;
 }): Promise<void> {
     await apiClient.post('/attendance/od-il', entry);
+}
+
+/** PUT /attendance/od-il/:id — Update existing OD/leave entry */
+export async function updateODILEntry(id: number, data: {
+    status: string;
+    od_reason?: string;
+}): Promise<void> {
+    await apiClient.put(`/attendance/od-il/${id}`, data);
 }

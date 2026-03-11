@@ -78,7 +78,8 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 			<Route path="/yc/add-student" element={<Protected user={user} requiredRole="year_coordinator"><AddStudent       {...pp} /></Protected>} />
 			<Route path="/yc/od-leave" element={<Protected user={user} requiredRole="year_coordinator"><ODLeaveEntry     {...pp} /></Protected>} />
 			<Route path="/yc/attendance-view" element={<Protected user={user} requiredRole="year_coordinator"><YCAttendanceView {...pp} /></Protected>} />
-
+			{/*add the following
+												report  extractions page*/}
 			{/* Staff Routes */}
 			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
 		</Routes>

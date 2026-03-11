@@ -1,4 +1,4 @@
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../../app/components/Layout';
 import { Button } from '../../app/components/ui/button';
 import { Input } from '../../app/components/ui/input';
@@ -6,9 +6,10 @@ import { Label } from '../../app/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
-import { LAB_BATCH_OPTIONS, THEORY_BATCH_OPTIONS, GENDER_OPTIONS, YEAR_OPTIONS } from '../shared/constants';
+import { GENDER_OPTIONS, YEAR_OPTIONS } from '../shared/constants';
 import { addStudent, getStudents } from '../../api/student.api';
 import { fetchBatches, Batch } from '../../api/batch.api';
+import { ApiError } from '../../api/apiClient';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -19,6 +20,23 @@ interface StudentData {
 	parent_phone: string;
 	theoryBatch?: { name: string };
 	labBatch?: { name: string };
+}
+
+// ─── Validation Helpers ──────────────────────────────────────────────────────
+function validatePhone(phone: string): boolean {
+	return /^[6-9]\d{9}$/.test(phone);
+}
+
+function validateStudentForm(data: {
+	name: string; roll_number: string; parent_phone: string;
+	lab_batch: string; current_year: string;
+}): string | null {
+	if (!data.name.trim()) return 'Student name is required';
+	if (!data.roll_number.trim()) return 'Roll number is required';
+	if (!data.parent_phone || !validatePhone(data.parent_phone)) return 'Please enter a valid 10-digit parent phone number';
+	if (!data.current_year || Number(data.current_year) < 1 || Number(data.current_year) > 4) return 'Year must be between 1 and 4';
+	if (!data.lab_batch) return 'Lab batch is required';
+	return null;
 }
 
 export default function AddStudent({ user, onLogout }: PageProps) {
@@ -35,6 +53,7 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 	const [address, setaddress] = useState('');
 	const [current_year, setcurrent_year] = useState('');
 	const [loading, setLoading] = useState(false);
+	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
 	const [theoryBatches, setTheoryBatches] = useState<Batch[]>([]);
 	const [labBatches, setLabBatches] = useState<Batch[]>([]);
@@ -62,20 +81,35 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!name || !roll_number || !parent_phone || !lab_batch || !current_year) return toast.error('Please fill in required fields (*)');
+		setFieldErrors({});
+
+		// Client-side validation
+		const validationError = validateStudentForm({ name, roll_number, parent_phone, lab_batch, current_year });
+		if (validationError) return toast.error(validationError);
+
+		// Optional phone validation
+		if (phone && !validatePhone(phone)) return toast.error('Please enter a valid 10-digit student phone number');
+
 		setLoading(true);
 		try {
-
 			await addStudent(name, roll_number, parent_phone, Number(theory_batch), Number(lab_batch), phone, Number(current_year), email, dob, gender, address);
 			toast.success(`Student ${name} (${roll_number}) added successfully!`);
 			setName(''); setroll_number(''); setparent_phone(''); setlab_Batch(''); settheory_Batch(''); setcurrent_year('');
 			setphone(''); setemail(''); setdob(''); setgender(''); setaddress('');
+			setFieldErrors({});
 
 			// Refresh table
 			const updatedStudents = await getStudents();
 			setStudents(updatedStudents);
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to add student');
+			if (err instanceof ApiError && err.code === 'VALIDATION_ERROR') {
+				toast.error(err.message || 'Validation failed. Please check your inputs.');
+				if (err.fieldErrors) {
+					setFieldErrors(err.fieldErrors);
+				}
+			} else {
+				toast.error(err.message || 'Failed to add student');
+			}
 		}
 		finally { setLoading(false); }
 	};
@@ -97,13 +131,15 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 									<div>
 										<Label htmlFor="studentName" className="text-slate-700 uppercase text-xs font-bold">Student Name *</Label>
 										<Input id="studentName" value={name} onChange={(e) => setName(e.target.value)}
-											placeholder="Enter student name" className="mt-1 border-slate-300" required />
+											placeholder="Enter student name" className={`mt-1 border-slate-300 ${fieldErrors.name ? 'border-red-500' : ''}`} required />
+										{fieldErrors.name && <p className="text-red-600 text-xs mt-1">{fieldErrors.name}</p>}
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div>
 											<Label htmlFor="rollNumber" className="text-slate-700 uppercase text-xs font-bold">Roll Number *</Label>
 											<Input id="rollNumber" value={roll_number} onChange={(e) => setroll_number(e.target.value)}
-												placeholder="Roll No" className="mt-1 border-slate-300" required />
+												placeholder="Roll No" className={`mt-1 border-slate-300 ${fieldErrors.roll_number ? 'border-red-500' : ''}`} required />
+											{fieldErrors.roll_number && <p className="text-red-600 text-xs mt-1">{fieldErrors.roll_number}</p>}
 										</div>
 										<SelectField label="Theory Batch *" value={theory_batch} options={theoryBatches.map(b => ({ value: String(b.batch_id), label: b.name }))} onValueChange={settheory_Batch}
 											placeholder="Select Theory Batch" />
@@ -127,7 +163,8 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 										<div>
 											<Label htmlFor="parentPhone" className="text-slate-700 uppercase text-xs font-bold">Parent Phone *</Label>
 											<Input id="parentPhone" type="tel" value={parent_phone} onChange={(e) => setparent_phone(e.target.value)}
-												placeholder="10-digit phone" maxLength={10} className="mt-1 border-slate-300" required />
+												placeholder="10-digit phone" maxLength={10} className={`mt-1 border-slate-300 ${fieldErrors.parent_phone ? 'border-red-500' : ''}`} required />
+											{fieldErrors.parent_phone && <p className="text-red-600 text-xs mt-1">{fieldErrors.parent_phone}</p>}
 										</div>
 									</div>
 									<div>
@@ -203,4 +240,3 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 		</Layout>
 	);
 }
-

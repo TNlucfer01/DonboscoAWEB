@@ -11,8 +11,8 @@ export interface AttendanceSummary {
     attended: number;
     attendance_pct: number;
 }
-
-/** GET /reports/attendance-summary — Fetch all students with attendance % */
+//every thing is good
+/** GET /reports/attendance-summary — Fetch all students with attendance % */ //for each year i think 
 export async function fetchAttendanceSummary(year?: string): Promise<AttendanceSummary[]> {
     const params: Record<string, string> = {};
     if (year) params.year = year;
