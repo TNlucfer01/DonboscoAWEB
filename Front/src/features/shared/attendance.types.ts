@@ -30,6 +30,8 @@ export interface StaffStudent {
     rollNo: string;
     name: string;
     status: string;
+    isLocked?: boolean;
+    odReason?: string;
 }
 
 export interface ODLeaveStudent extends AttendanceStudent {

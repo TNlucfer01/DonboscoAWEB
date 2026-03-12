@@ -26,6 +26,7 @@ import YCAttendanceView from '../features/yc/AttendanceView';
 
 // Staff
 import StaffTakeAttendance from '../features/staff/TakeAttendance';
+import StaffAttendanceCorrection from '../features/staff/AttendanceCorrection';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -60,10 +61,7 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 					!user ? <Login onLogin={onLogin} /> :
 						user.role === 'principal' ? <Navigate to="/principal/dashboard" replace /> :
 							user.role === 'year_coordinator' ? <Navigate to="/yc/dashboard" replace /> :
-								<Navigate to="/staff/attendance" replace />
-				}
-			/>
-
+							<Navigate to="/staff/attendance" replace />}/>
 			{/* Principal Routes */}
 			<Route path="/principal/dashboard" element={<Protected user={user} requiredRole="principal"><PrincipalDashboard     {...pp} /></Protected>} />
 			<Route path="/principal/add-staff" element={<Protected user={user} requiredRole="principal"><AddStaff               {...pp} /></Protected>} />
@@ -82,6 +80,7 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 												report  extractions page*/}
 			{/* Staff Routes */}
 			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
-		</Routes>
+				<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />
+	</Routes>
 	);
 }

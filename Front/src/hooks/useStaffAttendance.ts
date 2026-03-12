@@ -36,13 +36,14 @@ export function useStaffAttendance() {
     }, []);
 
     const markAllPresent = useCallback(() => {
-        setStudents((prev) => prev.map((s) => ({ ...s, status: 'Present' })));
+        setStudents((prev) => prev.map((s) => s.isLocked ? s : { ...s, status: 'Present' }));
     }, []);
 
     const submit = useCallback(async (year: string, batch: string, period: string, subject: string, date: string) => {
         setSubmitting(true);
         try {
-            await submitStaffAttendance(year, batch, period, subject, students, date);
+            const updatedStudents = await submitStaffAttendance(year, batch, period, subject, students, date);
+            setStudents(updatedStudents);
             toast.success('Attendance saved successfully!');
         } catch (err) {
             if (err instanceof ApiError && err.code === 'PAST_DATE') {

@@ -83,14 +83,14 @@ export interface FetchStudentsResponse {
 export async function fetchStaffStudents(
     year: string, batch_id: string, batch_type: string, slot_id: string, _subject: string
 ): Promise<FetchStudentsResponse> {
-    const data = await apiClient.post<any>('/attendance/fetch-students', {
+    const data = await apiClient.post<any>('/attendance/fetch-students',{
         year: parseInt(year),
         batch_id: parseInt(batch_id),
         batch_type,
         slot_id: parseInt(slot_id),
         date: new Date().toISOString().split('T')[0], // what is this 
     });
-
+    
     // Backend may return array directly or object with remaining_minutes
     const studentArray = Array.isArray(data) ? data : (data.students || data);
     const remainingMinutes = Array.isArray(data)
@@ -99,9 +99,11 @@ export async function fetchStaffStudents(
 
     const students: StaffStudent[] = (Array.isArray(studentArray) ? studentArray : []).map((s: any) => ({
         id: s.student_id,
-        rollNo: s.roll_number,
+        rollNo: s.rollno,
         name: s.name,
         status: s.status || 'Present',
+        isLocked: !!s.is_locked,
+        odReason: s.od_reason || '',
     }));
 
     return { students, remainingMinutes };
@@ -111,18 +113,28 @@ export async function fetchStaffStudents(
 export async function submitStaffAttendance(
     _year: string, _batch: string, slot_id: string, subject_id: string,
     students: StaffStudent[], date?: string
-): Promise<void> {
+): Promise<StaffStudent[]> {
     const records = students.map(s => ({
         student_id: s.id,
         status: s.status.toUpperCase(),
     }));
 
-    await apiClient.post('/attendance/submit', {
+    const response = await apiClient.post<any>('/attendance/submit', {
         records,
         slot_id: parseInt(slot_id),
         date: date || new Date().toISOString().split('T')[0],
         subject_id: parseInt(subject_id),
     });
+
+    // Transform backend student response to frontend StaffStudent
+    return (response.student || []).map((s: any) => ({
+        id: s.student_id,
+        rollNo: s.rollno,
+        name: s.name,
+        status: s.status || 'Present',
+        isLocked: !!s.is_locked,
+        odReason: s.od_reason || '',
+    }));
 }
 
 /** GET /attendance/od-il?year=... — Fetch OD/Leave entries */

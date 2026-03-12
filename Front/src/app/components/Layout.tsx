@@ -44,7 +44,12 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 	];
 
 	const staffLinks = [
-		{ to: '/staff/attendance', icon: ClipboardEdit, label: 'Take Attendance' },
+		{
+			to: '/staff/attendance', icon: ClipboardEdit, label: 'Take Attendance',
+		},
+		{
+			to: '/staff/attendance-correction', icon: ClipboardEdit, label: 'AttendanceCorrection '
+		}
 	];
 
 	const links = user.role === 'principal' ? principalLinks : user.role === 'year_coordinator' ? ycLinks : staffLinks;
