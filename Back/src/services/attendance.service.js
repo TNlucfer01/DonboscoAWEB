@@ -1,16 +1,17 @@
-// src/services/attendance.service.js
-const dayjs = require('dayjs');
-const { Op } = require('sequelize');
-const {
+ // src/services/attendance.service.js
+ const dayjs = require('dayjs');
+ const { Op } = require('sequelize');
+ const {
     AttendanceRecord, AttendanceAuditLog,
     Student, TimetableSlot, CollegeCalendar, Semester, Subject,User
  
-} = require('../models/index');
-const AppError = require('../utils/AppError');
-const smsService = require('./sms.service');
+ } = require('../models/index');
+ 
+ const AppError = require('../utils/AppError');
+ const smsService = require('./sms.service');
 
-// ── Fetch Students for Attendance ─────────────────────────────
-async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
+ // ── Fetch Students for Attendance ─────────────────────────────
+ async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
     // 1. Holiday check
     const holiday = await CollegeCalendar.findOne({ where: { date, day_type: 'HOLIDAY' } });
     if (holiday) throw new AppError('HOLIDAY', `Attendance blocked: ${holiday.holiday_name || 'Holiday'}`, 422);
@@ -25,37 +26,50 @@ async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
     // if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
     // if (diff < 0) throw new AppError('WINDOW_NOT_OPEN', 'This period has not started yet.', 422);
     // 3. Fetch students in the batch (theory or lab based on batch_type)
+
     const batchKey = batch_type === 'THEORY' ? 'theory_batch_id' : 'lab_batch_id';
+    
+    //studnet detials 
     const students = await Student.findAll({
         where: { current_year: year, [batchKey]: batch_id },
-        attributes: ['student_id', 'name', 'roll_number', 'parent_phone'],
+        attributes: ['student_id', 'name', 'roll_number', 'current_year'],
         order: [['roll_number', 'ASC']],
     });
+
     // 4. Check for existing locked (OD/IL) rows for this slot + date
     // This prevents staff from overwriting YC-approved OD/IL entries
+   //this is needed to prevent staff from overwriting YC-approved OD/IL entries
     const existingRecords = await AttendanceRecord.findAll({
         where: { date, slot_id, student_id: students.map(s => s.student_id) },
         attributes: ['student_id', 'status', 'is_locked', 'od_reason'],
     });
+
     const lockMap = {};
     existingRecords.forEach(r => { lockMap[r.student_id] = r; });
-
-    return students.map(s => ({
+    
+    const studentData = students.map(s => ({
         student_id: s.student_id,
+        rollno: s.roll_number,
         name: s.name,
-        roll_number: s.roll_number,
+        year: s.current_year,
         is_locked: !!lockMap[s.student_id]?.is_locked,
-        status: lockMap[s.student_id]?.status || null,
+        status: lockMap[s.student_id]?.status || 'Present',
         od_reason: lockMap[s.student_id]?.od_reason || null,
-        remaining_minutes: 20, // Frontend should start a countdown timer from this value
     }));
-}
 
-// ── Submit Attendance ─────────────────────────────────────────
-// Yes, this handles multiple students at once — the `records` array contains
-// one entry per student with their status. Multiple staff can submit for
-// different batches/slots simultaneously without conflict.
-async function submit({ records, slot_id, date, subject_id, submitted_by }) {
+    return {
+        students: studentData,
+        remaining_minutes: 20 // Frontend should start a countdown timer from this value
+    };
+ }
+
+
+
+ // ── Submit Attendance ─────────────────────────────────────────
+ // Yes, this handles multiple students at once — the `records` array contains
+ // one entry per student with their status. Multiple staff can submit for
+ // different batches/slots simultaneously without conflict.
+ async function submit({ records, slot_id, date, subject_id, submitted_by }) {
     // Block past-date submissions — staff/YC should not submit for past dates
     if (dayjs(date).isBefore(dayjs(), 'day')) {
         throw new AppError('PAST_DATE', 'Cannot submit attendance for past dates', 400);
@@ -72,7 +86,6 @@ async function submit({ records, slot_id, date, subject_id, submitted_by }) {
 
     const now = new Date();
     const toInsert = [];
-
     for (const r of records) {
         const existing = await AttendanceRecord.findOne({
             where: { student_id: r.student_id, date, slot_id, semester_id: semester.semester_id }
@@ -110,11 +123,38 @@ async function submit({ records, slot_id, date, subject_id, submitted_by }) {
         }
     }
 
-    return { submitted: toInsert.length, absents: absents.length };
-}
+    // Fetch and return the updated state for all students in the request
+    const studentIds = records.map(r => r.student_id);
+    const [updatedStudents, updatedAttendance] = await Promise.all([
+        Student.findAll({
+            where: { student_id: studentIds },
+            attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+            order: [['roll_number', 'ASC']]
+        }),
+        AttendanceRecord.findAll({
+            where: { date, slot_id, student_id: studentIds },
+            attributes: ['student_id', 'status', 'is_locked', 'od_reason']
+        })
+    ]);
 
-// ── View Attendance ───────────────────────────────────────────
-async function view({ year, date_from, date_to, semester_id }, currentUser) {
+    const attendanceMap = {};
+    updatedAttendance.forEach(ar => { attendanceMap[ar.student_id] = ar; });
+
+    return {
+        student: updatedStudents.map(s => ({
+            student_id: s.student_id,
+            rollno: s.roll_number,
+            name: s.name,
+            year: s.current_year,
+            status: attendanceMap[s.student_id]?.status || null,
+            od_reason: attendanceMap[s.student_id]?.od_reason || null,
+            is_locked: !!attendanceMap[s.student_id]?.is_locked
+        }))
+    };
+ }
+
+ // ── View Attendance ───────────────────────────────────────────
+ async function view({ year, date_from, date_to, semester_id }, currentUser) {
     const where = {};
     if (semester_id) where.semester_id = semester_id;
     if (date_from && date_to) where.date = { [Op.between]: [date_from, date_to] };
@@ -134,11 +174,11 @@ async function view({ year, date_from, date_to, semester_id }, currentUser) {
         order: [['date', 'DESC'], [{ model: TimetableSlot, as: 'slot' }, 'slot_number', 'ASC']],
         limit: 2000,
     });
-}
+ }
 
-// ── Principal: Correct Attendance (single record) ─────────────
-// TODO: Support batch correction of multiple slots at once (currently corrects one record at a time)
-async function correct({ record_id, new_status, od_reason }, changed_by) {
+ // ── Principal: Correct Attendance (single record) ─────────────
+ // TODO: Support batch correction of multiple slots at once (currently corrects one record at a time)
+ async function correct({ record_id, new_status, od_reason }, changed_by) {
     const record = await AttendanceRecord.findByPk(record_id);
     if (!record) throw new AppError('NOT_FOUND', 'Record not found', 404);
 
@@ -154,12 +194,12 @@ async function correct({ record_id, new_status, od_reason }, changed_by) {
     });
 
     return { message: 'Attendance corrected', old_status, new_status };
-}
+ }
 
-// ── Principal: Bulk Upsert Attendance (all 5 slots for a student on a date) ──
-// For each record: if record_id provided → update; if null → create new record.
-// This allows principal to set attendance even for periods staff never submitted.
-async function correctBulk(records, changed_by) {
+ // ── Principal: Bulk Upsert Attendance (all 5 slots for a student on a date) ──
+ // For each record: if record_id provided → update; if null → create new record.
+ // This allows principal to set attendance even for periods staff never submitted.
+ async function correctBulk(records, changed_by) {
     const semester = await Semester.findOne({ where: { is_active: true } });
     if (!semester) throw new AppError('NO_ACTIVE_SEMESTER', 'No active semester found', 422);
 
@@ -217,11 +257,11 @@ async function correctBulk(records, changed_by) {
     }
 
     return { saved: results.length, results };
-}
+ }
 
-// ── YC: OD / IL Entry ─────────────────────────────────────────
-// TODO: Support batch OD/IL entry for multiple slots at once
-async function createODIL({ student_id, slot_id, date, status, od_reason, semester_id }, submitted_by) {
+ // ── YC: OD / IL Entry ─────────────────────────────────────────
+ // TODO: Support batch OD/IL entry for multiple slots at once
+ async function createODIL({ student_id, slot_id, date, status, od_reason, semester_id }, submitted_by) {
     if (!['OD', 'INFORMED_LEAVE'].includes(status)) {
         throw new AppError('VALIDATION_ERROR', 'Status must be OD or INFORMED_LEAVE', 400);
     }
@@ -242,10 +282,10 @@ async function createODIL({ student_id, slot_id, date, status, od_reason, semest
     }
 
     return record;
-}
+ }
 
-// TODO: Support batch update of multiple slots at once
-async function updateODIL(id, { status, od_reason }) {
+ // TODO: Support batch update of multiple slots at once
+ async function updateODIL(id, { status, od_reason }) {
     const record = await AttendanceRecord.findByPk(id);
     if (!record || !record.is_locked) throw new AppError('NOT_FOUND', 'OD/IL record not found', 404);
     if (!dayjs(record.date).isAfter(dayjs(), 'day')) {
@@ -253,17 +293,17 @@ async function updateODIL(id, { status, od_reason }) {
     }
     await record.update({ status, od_reason });
     return record;
-}
+ }
 
-// Cancel OD/IL — reserved for future use
-async function cancelODIL(id) {
+ // Cancel OD/IL — reserved for future use
+ async function cancelODIL(id) {
     const record = await AttendanceRecord.findByPk(id);
     if (!record || !record.is_locked) throw new AppError('NOT_FOUND', 'OD/IL record not found', 404);
     await record.update({ is_locked: false, status: 'ABSENT', od_reason: null });
     return { message: 'OD/IL cancelled — row is now editable for staff' };
-}
+ }
 
-async function listODIL({ year }, currentUser) {
+ async function listODIL({ year }, currentUser) {
     const studentWhere = {};
     if (currentUser.role === 'YEAR_COORDINATOR') studentWhere.current_year = currentUser.managedYear;
     else if (year) studentWhere.current_year = Number(year);
@@ -273,13 +313,13 @@ async function listODIL({ year }, currentUser) {
         include: [{ model: Student, as: 'student', where: studentWhere }],
         order: [['date', 'DESC']],
     });
-}
+ }
 
 
-// ── Principal: Fetch Students with 5-slot pivot for a given year + date ───────
-// the frontendneeds the  following 1. subject name of that particlar hour and then also the staff name 
-//i get a array of things with the following keys sno,rollno,year,status, unloack ,remarks for that hour 
-async function fetchStudentsPrincipal({ year, date ,period}) {
+ // ── Principal: Fetch Students with 5-slot pivot for a given year + date ───────
+ // the frontendneeds the  following 1. subject name of that particlar hour and then also the staff name 
+ //i get a array of things with the following keys sno,rollno,year,status, unloack ,remarks for that hour 
+ async function fetchStudentsPrincipal({ year, date ,period}) {
     if (!year || !date) throw new AppError('VALIDATION_ERROR', 'year and date are required', 400);
 
     // 1. Get all timetable slots (slot_number 1–5) to build the slotMap
@@ -299,7 +339,7 @@ async function fetchStudentsPrincipal({ year, date ,period}) {
     // const studentIds = students.map(s => s.student_id);
 
     // 3. Get all attendance records for those students on that date (all 5 slots) i want for only one slot 
-const records = await AttendanceRecord.findAll({
+ const records = await AttendanceRecord.findAll({
   where: {
     date: date, // e.g., '2026-03-11'
   },
@@ -339,8 +379,8 @@ const records = await AttendanceRecord.findAll({
   ]
   ,raw: true,
   nest: true 
-});
-// SELECT
+ });
+ // SELECT
 //     ar.record_id,
 //     ar.student_id,
 //     s.name AS student_name,
@@ -406,7 +446,7 @@ const records = await AttendanceRecord.findAll({
     //     period5: recordMap[s.student_id]?.[5] || null,
     // }));
 
-const formattedRecords = records.map(r => ({
+ const formattedRecords = records.map(r => ({
   record_id: r.record_id,
   student_id: r.student_id,
   student_name: r.student.name,
@@ -415,12 +455,12 @@ const formattedRecords = records.map(r => ({
   od_reason: r.od_reason,
   is_locked: r.is_locked,
  
-}));
+ }));
 
-// Check if records exist to avoid "cannot read property of undefined"
-const firstRecord = records[0] || {};
+ // Check if records exist to avoid "cannot read property of undefined"
+ const firstRecord = records[0] || {};
 
-return { 
+ return { 
     // 1. The Metadata (Header info)
     slot_number: firstRecord.slot?.slot_number || period,
     subject_name: firstRecord.subject?.subject_name || 'N/A',
@@ -430,7 +470,7 @@ return {
 
     // 2. The Student List
     records: formattedRecords 
-};
-}
-module.exports = { fetchStudents, submit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
+ };
+ }
+ module.exports = { fetchStudents, submit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
 
