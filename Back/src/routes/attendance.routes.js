@@ -41,7 +41,17 @@ router.get('/fetch-students-pri',
     }
 );
 
+router.post('/save-student-pri',auth,roleGuard('PRINCIPAL'),[],validate,
 
+async (req,res,next)=>{
+    try{
+        const records=req.body.records;
+        console.log(records);
+        // return success(res,await svc.saveStudentPri(records));
+    return success(res)
+    }
+    catch(e){next(e);}
+})
 // POST /api/attendance/submit — Staff only
 // Handles multiple students at once via the records[] array.
 // Multiple staff can submit for different batches/slots simultaneously.

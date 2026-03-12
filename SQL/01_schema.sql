@@ -40,8 +40,16 @@ CREATE TABLE users (
 -- 2. BATCHES
 -- student_count: auto-updated by trigger (do not set manually)
 -- ==========================================
-CREATE TABLE batches (
-    batch_id      INT  AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE lab_batches (
+    lab_batch_id      INT  AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(50) NOT NULL,
+    batch_type    ENUM('THEORY', 'LAB') NOT NULL,
+    year          TINYINT     NOT NULL,        -- 1 to 4
+    capacity      INT         NOT NULL,        -- max students allowed
+    student_count INT         NOT NULL DEFAULT 0  -- current enrolled count (trigger-managed)
+);
+CREATE TABLE theory_batches (
+    theory_batch_id      INT  AUTO_INCREMENT PRIMARY KEY,
     name          VARCHAR(50) NOT NULL,
     batch_type    ENUM('THEORY', 'LAB') NOT NULL,
     year          TINYINT     NOT NULL,        -- 1 to 4
