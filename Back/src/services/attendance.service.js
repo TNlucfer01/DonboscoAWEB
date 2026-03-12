@@ -47,15 +47,23 @@
     const lockMap = {};
     existingRecords.forEach(r => { lockMap[r.student_id] = r; });
     
-    const studentData = students.map(s => ({
-        student_id: s.student_id,
-        rollno: s.roll_number,
-        name: s.name,
-        year: s.current_year,
-        is_locked: !!lockMap[s.student_id]?.is_locked,
-        status: lockMap[s.student_id]?.status || 'Present',
-        od_reason: lockMap[s.student_id]?.od_reason || null,
-    }));
+    const studentData = students.map(s => {
+        const status = lockMap[s.student_id]?.status || 'PRESENT';
+        let od_reason = lockMap[s.student_id]?.od_reason || null;
+        
+        if (status.toUpperCase() === 'PRESENT') od_reason = 'None';
+        else if (status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
+
+        return {
+            student_id: s.student_id,
+            rollno: s.roll_number,
+            name: s.name,
+            year: s.current_year,
+            is_locked: !!lockMap[s.student_id]?.is_locked,
+            status,
+            od_reason,
+        };
+    });
 
     return {
         students: studentData,
@@ -75,10 +83,10 @@
         throw new AppError('PAST_DATE', 'Cannot submit attendance for past dates', 400);
     }
 
-    // Re-check window before committing
-    const slot = await TimetableSlot.findByPk(slot_id);
-    const diff = dayjs().diff(dayjs(`${date} ${slot.start_time}`), 'minute');
-    if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
+    // // Re-check window before committing
+    // const slot = await TimetableSlot.findByPk(slot_id);
+    // const diff = dayjs().diff(dayjs(`${date} ${slot.start_time}`), 'minute');
+    // if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
 
     // Get active semester
     const semester = await Semester.findOne({ where: { is_active: true } });
@@ -92,6 +100,10 @@
         });
         if (existing?.is_locked) continue; // skip locked OD/IL rows
 
+        let od_reason = r.od_reason || null;
+        if (r.status && r.status.toUpperCase() === 'PRESENT') od_reason = 'None';
+        else if (r.status && r.status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
+
         toInsert.push({
             student_id: r.student_id,
             semester_id: semester.semester_id,
@@ -99,11 +111,17 @@
             date,
             slot_id,
             status: r.status,
+            od_reason: od_reason,
             submitted_by,
             submitted_at: now,
-            is_locked: false,
+            is_locked: true,
         });
     }
+
+
+
+
+
 
     if (toInsert.length === 0) return { message: 'No new records to submit' };
 
@@ -111,7 +129,7 @@
     // (student_id, date, slot_id, semester_id) already exists, it updates
     // the status/submitted_by/submitted_at instead of inserting a duplicate
     await AttendanceRecord.bulkCreate(toInsert, {
-        updateOnDuplicate: ['status', 'submitted_by', 'submitted_at'],
+        updateOnDuplicate: ['status', 'od_reason', 'submitted_by', 'submitted_at', 'is_locked'],
     });
 
     // Fire SMS for absent students (non-blocking)
@@ -122,7 +140,6 @@
             smsService.sendAbsentSMS(student, date, slot_id, semester.semester_id).catch(console.error);
         }
     }
-
     // Fetch and return the updated state for all students in the request
     const studentIds = records.map(r => r.student_id);
     const [updatedStudents, updatedAttendance] = await Promise.all([
@@ -141,15 +158,23 @@
     updatedAttendance.forEach(ar => { attendanceMap[ar.student_id] = ar; });
 
     return {
-        student: updatedStudents.map(s => ({
-            student_id: s.student_id,
-            rollno: s.roll_number,
-            name: s.name,
-            year: s.current_year,
-            status: attendanceMap[s.student_id]?.status || null,
-            od_reason: attendanceMap[s.student_id]?.od_reason || null,
-            is_locked: !!attendanceMap[s.student_id]?.is_locked
-        }))
+        student: updatedStudents.map(s => {
+            const status = attendanceMap[s.student_id]?.status || null;
+            let od_reason = attendanceMap[s.student_id]?.od_reason || null;
+            
+            if (status && status.toUpperCase() === 'PRESENT') od_reason = 'None';
+            else if (status && status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
+
+            return {
+                student_id: s.student_id,
+                rollno: s.roll_number,
+                name: s.name,
+                year: s.current_year,
+                status,
+                od_reason,
+                is_locked: !!attendanceMap[s.student_id]?.is_locked
+            };
+        })
     };
  }
 

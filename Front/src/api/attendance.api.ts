@@ -114,10 +114,14 @@ export async function submitStaffAttendance(
     _year: string, _batch: string, slot_id: string, subject_id: string,
     students: StaffStudent[], date?: string
 ): Promise<StaffStudent[]> {
-    const records = students.map(s => ({
-        student_id: s.id,
-        status: s.status.toUpperCase(),
-    }));
+    const records = students.map(s => {
+        const uppercaseStatus = s.status.toUpperCase();
+        return {
+            student_id: s.id,
+            status: uppercaseStatus,
+            od_reason: uppercaseStatus === 'ABSENT' ? 'Uninformed Leave' : 'None',
+        };
+    });
 
     const response = await apiClient.post<any>('/attendance/submit', {
         records,

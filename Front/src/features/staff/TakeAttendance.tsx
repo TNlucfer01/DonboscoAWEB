@@ -189,7 +189,7 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                     Mark All Present
                                 </Button>
                                 {/* //i have to make this dynamic in the future */}
-                                <Button onClick={() => submit(year, batch, period, subject, "2026-03-11")} disabled={submitting || timerExpired}
+                                <Button onClick={() => submit(year, batch, period, subject, new Date().toISOString().split('T')[0])} disabled={submitting || timerExpired}
                                     className="bg-slate-700 hover:bg-slate-800 text-white">
                                     {timerExpired ? 'Window Closed' : submitting ? 'Submitting…' : 'Submit Attendance'}
                                 </Button>
