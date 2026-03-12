@@ -14,6 +14,7 @@ interface DatePickerFieldProps {
     date: Date | undefined;
     onDateChange: (date: Date | undefined) => void;
     label?: string;
+    maxDate?: Date;
 }
 
 
@@ -21,6 +22,7 @@ export function DatePickerField({
   date,
   onDateChange,
   label = 'Date',
+  maxDate,
 }: DatePickerFieldProps) {
   return (
     <div className="flex-1 space-y-2">
@@ -31,6 +33,7 @@ export function DatePickerField({
           selected={date}
           onSelect={onDateChange}
           className="pointer-events-auto"
+          disabled={maxDate ? (d) => d > maxDate : undefined}
         />
       </div>
       {/* Optional: show selected date below if needed */}

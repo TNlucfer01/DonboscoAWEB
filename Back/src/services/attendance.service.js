@@ -16,6 +16,11 @@
     const holiday = await CollegeCalendar.findOne({ where: { date, day_type: 'HOLIDAY' } });
     if (holiday) throw new AppError('HOLIDAY', `Attendance blocked: ${holiday.holiday_name || 'Holiday'}`, 422);
 
+    // Block future dates
+    if (dayjs(date).isAfter(dayjs(), 'day')) {
+        throw new AppError('FUTURE_DATE', 'Cannot access future dates for attendance', 400);
+    }
+
     // 2. 20-min window check — fetch the slot's start_time, compute elapsed minutes
     //for now only 
     // const slot = await TimetableSlot.findByPk(slot_id);
@@ -81,6 +86,11 @@
     // Block past-date submissions — staff/YC should not submit for past dates
     if (dayjs(date).isBefore(dayjs(), 'day')) {
         throw new AppError('PAST_DATE', 'Cannot submit attendance for past dates', 400);
+    }
+
+    // Block future dates
+    if (dayjs(date).isAfter(dayjs(), 'day')) {
+        throw new AppError('FUTURE_DATE', 'Cannot submit attendance for future dates', 400);
     }
 
     // // Re-check window before committing
@@ -177,6 +187,168 @@
         })
     };
  }
+
+ // ── Fetch Staff Correction Students ─────────────────────────────
+ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, date }) {
+    // Block future dates
+    if (dayjs(date).isAfter(dayjs(), 'day')) {
+        throw new AppError('FUTURE_DATE', 'Cannot access future dates for attendance', 400);
+    }
+
+    const batchKey = batch_type === 'THEORY' ? 'theory_batch_id' : 'lab_batch_id';
+    
+    // 1. Get all students in the batch
+    const students = await Student.findAll({
+        where: { current_year: year, [batchKey]: batch_id },
+        attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+        order: [['roll_number', 'ASC']],
+    });
+
+    if (students.length === 0) return { records: [], remaining_minutes: 0 };
+
+    // 2. Fetch existing records with metadata
+    const existingRecords = await AttendanceRecord.findAll({
+        where: { date, slot_id, student_id: students.map(s => s.student_id) },
+        include: [
+            { model: TimetableSlot, as: 'slot', attributes: ['slot_number'] },
+            { model: Subject, as: 'subject', attributes: ['subject_name', 'subject_code'] },
+            { model: User, as: 'submitter', attributes: ['name'] }
+        ]
+    });
+
+    const lockMap = {};
+    existingRecords.forEach(r => { lockMap[r.student_id] = r; });
+
+    const formattedRecords = students.map(s => {
+        const record = lockMap[s.student_id];
+        const status = record?.status || 'PRESENT';
+        let od_reason = record?.od_reason || null;
+        
+        if (status.toUpperCase() === 'PRESENT') od_reason = 'None';
+        else if (status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
+
+        return {
+            student_id: s.student_id,
+            rollno: s.roll_number,
+            name: s.name,
+            year: s.current_year,
+            is_locked: !!record?.is_locked,
+            status,
+            od_reason,
+            record_id: record?.record_id || null,
+        };
+    });
+
+    const firstRecord = existingRecords[0] || {};
+    // Fetch slot specifically if no existing records to still show metadata
+    let slotNum = firstRecord.slot?.slot_number;
+    if (!slotNum) {
+        const slot = await TimetableSlot.findByPk(slot_id);
+        slotNum = slot?.slot_number || 'N/A';
+    }
+
+    return {
+        // Metadata
+        slot_number: slotNum,
+        subject_name: firstRecord.subject?.subject_name || 'N/A',
+        subject_code: firstRecord.subject?.subject_code || 'N/A',
+        submitter_name: firstRecord.submitter?.name || 'N/A',
+        current_year: year,
+        remaining_minutes: 20, // Keep this if frontend Needs it
+
+        // Student List
+        records: formattedRecords
+    };
+ }
+
+ 
+ // ── Submit Staff Attendance Correction ─────────────────────────────
+ async function correctStaffSubmit({ records, slot_id, date, subject_id, submitted_by }) {
+    // Block future dates
+    if (dayjs(date).isAfter(dayjs(), 'day')) {
+        throw new AppError('FUTURE_DATE', 'Cannot correct attendance for future dates', 400);
+    }
+
+    const semester = await Semester.findOne({ where: { is_active: true } });
+    if (!semester) throw new AppError('NO_ACTIVE_SEMESTER', 'No active semester found', 422);
+
+    const now = new Date();
+    const toInsert = [];
+    for (const r of records) {
+        const existing = await AttendanceRecord.findOne({
+            where: { student_id: r.student_id, date, slot_id, semester_id: semester.semester_id }
+        });
+        if (existing?.is_locked && existing.status === 'OD') continue; // Only skip if locked by YC OD
+
+        let od_reason = r.od_reason || null;
+        if (r.status && r.status.toUpperCase() === 'PRESENT') od_reason = 'None';
+        else if (r.status && r.status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
+
+        toInsert.push({
+            student_id: r.student_id,
+            semester_id: semester.semester_id,
+            subject_id: subject_id || null,
+            date,
+            slot_id,
+            status: r.status,
+            od_reason: od_reason,
+            submitted_by,
+            submitted_at: now,
+            is_locked: true,
+        });
+    }
+
+    if (toInsert.length === 0) return { message: 'No new records to submit' };
+
+    await AttendanceRecord.bulkCreate(toInsert, {
+        updateOnDuplicate: ['status', 'od_reason', 'submitted_by', 'submitted_at', 'is_locked'],
+    });
+
+    // Fire SMS for absent students
+    const absents = toInsert.filter(r => r.status === 'ABSENT');
+    for (const r of absents) {
+        const student = await Student.findByPk(r.student_id, { attributes: ['name', 'parent_phone'] });
+        if (student) {
+            smsService.sendAbsentSMS(student, date, slot_id, semester.semester_id).catch(console.error);
+        }
+    }
+
+    const studentIds = records.map(r => r.student_id);
+    const [updatedStudents, updatedAttendance] = await Promise.all([
+        Student.findAll({
+            where: { student_id: studentIds },
+            attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+            order: [['roll_number', 'ASC']]
+        }),
+        AttendanceRecord.findAll({
+            where: { date, slot_id, student_id: studentIds },
+            attributes: ['student_id', 'status', 'is_locked', 'od_reason']
+        })
+    ]);
+
+    const attendanceMap = {};
+    updatedAttendance.forEach(ar => { attendanceMap[ar.student_id] = ar; });
+
+    return {
+        student: updatedStudents.map(s => {
+            const status = attendanceMap[s.student_id]?.status || null;
+            let od_reason = attendanceMap[s.student_id]?.od_reason || null;
+            if (status && status.toUpperCase() === 'PRESENT') od_reason = 'None';
+            else if (status && status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
+
+            return {
+                student_id: s.student_id,
+                rollno: s.roll_number,
+                name: s.name,
+                year: s.current_year,
+                status,
+                od_reason,
+                is_locked: !!attendanceMap[s.student_id]?.is_locked
+            };
+        })
+    };
+ }
+
 
  // ── View Attendance ───────────────────────────────────────────
  async function view({ year, date_from, date_to, semester_id }, currentUser) {
@@ -497,5 +669,5 @@
     records: formattedRecords 
  };
  }
- module.exports = { fetchStudents, submit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
+ module.exports = { fetchStudents, fetchStaffCorrectionStudents, submit, correctStaffSubmit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
 

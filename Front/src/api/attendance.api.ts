@@ -80,17 +80,27 @@ export interface FetchStudentsResponse {
     remainingMinutes: number;
 }
 
+export interface CorrectionMetadata {
+    subjectName: string;
+    subjectCode: string;
+    submitterName: string;
+}
+
+export interface FetchCorrectionStudentsResponse extends FetchStudentsResponse {
+    metadata: CorrectionMetadata;
+}
+
 export async function fetchStaffStudents(
     year: string, batch_id: string, batch_type: string, slot_id: string, _subject: string
 ): Promise<FetchStudentsResponse> {
-    const data = await apiClient.post<any>('/attendance/fetch-students',{
+    const data = await apiClient.post<any>('/attendance/fetch-students', {
         year: parseInt(year),
         batch_id: parseInt(batch_id),
         batch_type,
         slot_id: parseInt(slot_id),
         date: new Date().toISOString().split('T')[0], // what is this 
     });
-    
+
     // Backend may return array directly or object with remaining_minutes
     const studentArray = Array.isArray(data) ? data : (data.students || data);
     const remainingMinutes = Array.isArray(data)
@@ -131,6 +141,71 @@ export async function submitStaffAttendance(
     });
 
     // Transform backend student response to frontend StaffStudent
+    return (response.student || []).map((s: any) => ({
+        id: s.student_id,
+        rollNo: s.rollno,
+        name: s.name,
+        status: s.status || 'Present',
+        isLocked: !!s.is_locked,
+        odReason: s.od_reason || '',
+    }));
+}
+
+export async function fetchStaffCorrectionStudents(
+    year: string, batch_id: string, batch_type: string, slot_id: string, _subject: string, date: string
+): Promise<FetchCorrectionStudentsResponse> {
+    const data = await apiClient.post<any>('/attendance/correct-attedance/fetch-students', {
+        year: parseInt(year),
+        batch_id: parseInt(batch_id),
+        batch_type,
+        slot_id: parseInt(slot_id),
+        date,
+    });
+
+    const studentArray = Array.isArray(data) ? data : (data.records || []);
+    const remainingMinutes = Array.isArray(data)
+        ? (data[0]?.remaining_minutes ?? 60)
+        : (data.remaining_minutes ?? 60);
+
+    const students: StaffStudent[] = studentArray.map((s: any) => ({
+        id: s.student_id,
+        rollNo: s.rollno,
+        name: s.name,
+        status: s.status || 'Present',
+        isLocked: !!s.is_locked,
+        odReason: s.od_reason || '',
+    }));
+    
+    const metadata: CorrectionMetadata = {
+        subjectName: data.subject_name || 'N/A',
+        subjectCode: data.subject_code || 'N/A',
+        submitterName: data.submitter_name || 'N/A',
+    };
+
+    return { students, remainingMinutes, metadata };
+}
+
+/** POST /attendance/correct-attedance — Submit staff attendance correction */
+export async function submitStaffCorrectionAttendance(
+    _year: string, _batch: string, slot_id: string, subject_id: string,
+    students: StaffStudent[], date: string
+): Promise<StaffStudent[]> {
+    const records = students.map(s => {
+        const uppercaseStatus = s.status.toUpperCase();
+        return {
+            student_id: s.id,
+            status: uppercaseStatus,
+            od_reason: uppercaseStatus === 'ABSENT' ? 'Uninformed Leave' : 'None',
+        };
+    });
+
+    const response = await apiClient.post<any>('/attendance/submit', {
+        records,
+        slot_id: parseInt(slot_id),
+        date,
+        subject_id: parseInt(subject_id),
+    });
+
     return (response.student || []).map((s: any) => ({
         id: s.student_id,
         rollNo: s.rollno,

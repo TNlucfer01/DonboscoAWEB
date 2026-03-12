@@ -71,6 +71,40 @@ router.post('/submit',
     }
 );
 
+// POST /api/attendance/correct-attedance/fetch-students — Staff attendance correction fetching
+router.post('/correct-attedance/fetch-students',
+    auth, roleGuard('SUBJECT_STAFF', 'PRINCIPAL'),
+    [
+        body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
+        body('batch_id').isInt({ min: 1 }).withMessage('batch_id required'),
+        body('batch_type').isIn(['THEORY', 'LAB']).withMessage('batch_type required'),
+        body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try { return success(res, await svc.fetchStaffCorrectionStudents(req.body)); }
+        catch (e) { next(e); }
+    }
+);
+
+// POST /api/attendance/correct-attedance — Staff correct attendance (skips past_date logic)
+router.post('/correct-attedance',
+    auth, roleGuard('SUBJECT_STAFF'),
+    [
+        body('records').isArray({ min: 1 }).withMessage('records array required'),
+        body('slot_id').isInt({ min: 1 }),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const { records, slot_id, date, subject_id } = req.body;
+            return success(res, await svc.correctStaffSubmit({ records, slot_id, date, subject_id, submitted_by: req.user.userId }));
+        } catch (e) { next(e); }
+    }
+);
+
 // GET /api/attendance/view — YC + Principal
 router.get('/view', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'),
     async (req, res, next) => {
