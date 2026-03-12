@@ -3,8 +3,8 @@ const dayjs = require('dayjs');
 const { Op } = require('sequelize');
 const {
     AttendanceRecord, AttendanceAuditLog,
-    Student, TimetableSlot, CollegeCalendar, Semester, Subject,
-    sequelize,
+    Student, TimetableSlot, CollegeCalendar, Semester, Subject,User
+ 
 } = require('../models/index');
 const AppError = require('../utils/AppError');
 const smsService = require('./sms.service');
@@ -166,7 +166,7 @@ async function correctBulk(records, changed_by) {
     const results = [];
 
     for (const r of records) {
-        const { record_id, student_id, slot_id, date, new_status, od_reason, is_locked } = r;
+        const { record_id, student_id, slot_id, date, new_status, od_reason } = r;
 
         if (record_id) {
             // ── UPDATE existing record ────────────────────────────
@@ -174,14 +174,8 @@ async function correctBulk(records, changed_by) {
             if (!existing) continue;
 
             const old_status = existing.status;
-            const hasChange = old_status !== new_status
-                || existing.od_reason !== (od_reason || null)
-                || (is_locked !== undefined && existing.is_locked !== is_locked);
-
-            if (hasChange) {
-                const updatePayload = { status: new_status, od_reason: od_reason || null };
-                if (is_locked !== undefined) updatePayload.is_locked = is_locked;
-                await existing.update(updatePayload);
+            if (old_status !== new_status || existing.od_reason !== (od_reason || null)) {
+                await existing.update({ status: new_status, od_reason: od_reason || null });
                 await AttendanceAuditLog.create({
                     record_id,
                     changed_by,
@@ -282,93 +276,161 @@ async function listODIL({ year }, currentUser) {
 }
 
 
-// ── Principal: Fetch Students for attendance correction ────────────────────────
-// Returns: { slotMap, subjectName (when period is set), students: [...] }
-// Each period slot includes: { record_id, slot_id, status, od_reason, is_locked }
-// Optional period (1–5): narrows query to that slot only and includes subject_name.
-async function fetchStudentsPrincipal({ year, date, period = null }) {
+// ── Principal: Fetch Students with 5-slot pivot for a given year + date ───────
+// the frontendneeds the  following 1. subject name of that particlar hour and then also the staff name 
+//i get a array of things with the following keys sno,rollno,year,status, unloack ,remarks for that hour 
+async function fetchStudentsPrincipal({ year, date ,period}) {
     if (!year || !date) throw new AppError('VALIDATION_ERROR', 'year and date are required', 400);
 
-    // 1. Build slotMap: { slotNumber → slot_id } — THEORY type only to avoid collisions
-    const allSlots = await TimetableSlot.findAll({
-        where: { slot_type: 'THEORY' },
-        attributes: ['slot_id', 'slot_number'],
-        order: [['slot_number', 'ASC']],
-    });
-    const slotMap = {};
-    for (const sl of allSlots) { slotMap[sl.slot_number] = sl.slot_id; }
+    // 1. Get all timetable slots (slot_number 1–5) to build the slotMap
+    // const allSlots = await TimetableSlot.findAll({ attributes: ['slot_id', 'slot_number'] });
+    // const slotMap = {}; // { slotNumber: slot_id }
+    // slotMap[period] = period;
 
-    // 2. Get all students in the year ordered by roll number
-    const students = await Student.findAll({
-        where: { current_year: Number(year) },
-        attributes: ['student_id', 'name', 'roll_number', 'current_year'],
-        order: [['roll_number', 'ASC']],
-    });
+    // // 2. Get all students in the year good
+    // const students = await Student.findAll({
+    //     where: { current_year: Number(year) },
+    //     attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+    //     order: [['roll_number', 'ASC']],
+    // });
 
-    if (students.length === 0) return { slotMap, subjectName: null, students: [] };
+    // if (students.length === 0) return { slotMap, students: [] };
 
-    const studentIds = students.map(s => s.student_id);
+    // const studentIds = students.map(s => s.student_id);
 
-    // 3. Build where clause — filter to specific slot when period is given
-    const recordWhere = { student_id: studentIds, date };
-    if (period && slotMap[period]) {
-        recordWhere.slot_id = slotMap[period];
+    // 3. Get all attendance records for those students on that date (all 5 slots) i want for only one slot 
+const records = await AttendanceRecord.findAll({
+  where: {
+    date: date, // e.g., '2026-03-11'
+  },
+  include: [
+    {
+      model: Student,
+      as: 'student',
+      attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+      where: { current_year: year } 
+    },
+    {
+      model: TimetableSlot,
+      as: 'slot',
+      attributes: ['slot_number'],
+      where: { slot_number: period } 
+    },
+    {
+      model: Subject,
+      as: 'subject',
+      attributes: ['subject_name', 'subject_code']
+    },
+    {
+      model: User,
+      as: 'submitter',
+      attributes: ['name']
     }
+  ],
+  attributes: [
+    'record_id',
+    'student_id',
+    'status',
+    'od_reason',
+    'slot_id',
+    'subject_id',
+    'submitted_by',
+    'is_locked'
+  ]
+  ,raw: true,
+  nest: true 
+});
+// SELECT
+//     ar.record_id,
+//     ar.student_id,
+//     s.name AS student_name,
+//     s.roll_number,
+//     s.current_year,
+//     ar.status,
+//     ar.od_reason,
+//     ar.slot_id,
+//     ar.subject_id,
+//     ar.submitted_by,
+//     ar.is_locked,
+//     ts.slot_number,
+//     sub.subject_name,
+//     sub.subject_code,
+//     u.name AS submitter_name
+// FROM attendance_records AS ar
 
-    // 4. Fetch attendance_records, including Subject with explicit attribute list
-    //    (avoids the subject_code column bug — we only SELECT subject_id + subject_name)
-    const records = await AttendanceRecord.findAll({
-        where: recordWhere,
-        include: [
-            { model: TimetableSlot, as: 'slot', attributes: ['slot_number'] },
-            ...(period ? [{ model: Subject, as: 'subject', attributes: ['subject_id', 'subject_name', 'subject_code'], required: false }] : []),
-        ],
-        attributes: ['record_id', 'student_id', 'status', 'od_reason', 'slot_id', 'is_locked'],
-    });
+// INNER JOIN students AS s
+//     ON ar.student_id = s.student_id
 
-    // 5. Extract subject info from the first record that has a subject (when period is set)
-    let subjectName = null;
-    let subjectCode = null;
-    if (period) {
-        const withSubject = records.find(r => r.subject?.subject_name);
-        subjectName = withSubject?.subject?.subject_name || null;
-        subjectCode = withSubject?.subject?.subject_code || null;
-    }
+// INNER JOIN timetable_slots AS ts
+//     ON ar.slot_id = ts.slot_id
 
-    // 6. Build lookup: { student_id: { slotNumber: recordData } }
-    const recordMap = {};
-    for (const r of records) {
-        const slotNum = r.slot?.slot_number;
-        if (!slotNum) continue;
-        if (!recordMap[r.student_id]) recordMap[r.student_id] = {};
-        recordMap[r.student_id][slotNum] = {
-            record_id: r.record_id,
-            slot_id: r.slot_id,
-            status: r.status,
-            od_reason: r.od_reason || null,
-            is_locked: r.is_locked,           // expose lock status for Unlock checkbox
-        };
-    }
+// INNER JOIN subjects AS sub
+//     ON ar.subject_id = sub.subject_id
 
-    // 7. Pivot into one row per student; only include requested period column(s)
-    const periodsToInclude = period ? [Number(period)] : [1, 2, 3, 4, 5];
+// INNER JOIN users AS u
+//     ON ar.submitted_by = u.user_id
 
-    const pivoted = students.map(s => {
-        const row = {
-            student_id: s.student_id,
-            name: s.name,
-            roll_number: s.roll_number,
-            current_year: s.current_year,
-            period1: null, period2: null, period3: null, period4: null, period5: null,
-        };
-        for (const p of periodsToInclude) {
-            row[`period${p}`] = recordMap[s.student_id]?.[p] || null;
-        }
-        return row;
-    });
+// WHERE s.current_year = 2           -- specific year filter
+//   AND ar.date = '2026-03-11'       -- specific date
+//   AND ts.slot_number = 2; 
 
-    return { slotMap, subjectName, subjectCode, students: pivoted };
+
+
+// convert this in ot a sequlize query 
+
+    // 4. Build a lookup: { student_id: { slotNumber: recordData } }
+    // const recordMap = {};
+    // for (const r of records) {
+    //     const slotNum = r.slot?.slot_number;
+    //     if (!slotNum) continue;
+    //     if (!recordMap[r.student_id]) recordMap[r.student_id] = {};
+    //     recordMap[r.student_id][slotNum] = {
+    //         record_id: r.record_id,
+    //         slot_id: r.slot_id,           // needed to update the right record
+    //         status: r.status,
+    //         od_reason: r.od_reason || null,
+    //         subject: r.subject?.subject_name || null,
+    //     };
+    // }
+
+    // // 5. Pivot into one row per student — null for periods with no existing record
+    // const pivoted = students.map(s => ({
+    //     student_id: s.student_id,
+    //     name: s.name,
+    //     roll_number: s.roll_number,
+    //     current_year: s.current_year,
+    //     period1: recordMap[s.student_id]?.[1] || null,
+    //     period2: recordMap[s.student_id]?.[2] || null,
+    //     period3: recordMap[s.student_id]?.[3] || null,
+    //     period4: recordMap[s.student_id]?.[4] || null,
+    //     period5: recordMap[s.student_id]?.[5] || null,
+    // }));
+
+const formattedRecords = records.map(r => ({
+  record_id: r.record_id,
+  student_id: r.student_id,
+  student_name: r.student.name,
+  roll_number: r.student.roll_number,
+  status: r.status,
+  od_reason: r.od_reason,
+  is_locked: r.is_locked,
+ 
+}));
+
+// Check if records exist to avoid "cannot read property of undefined"
+const firstRecord = records[0] || {};
+
+return { 
+    // 1. The Metadata (Header info)
+    slot_number: firstRecord.slot?.slot_number || period,
+    subject_name: firstRecord.subject?.subject_name || 'N/A',
+    subject_code: firstRecord.subject?.subject_code || 'N/A',
+    submitter_name: firstRecord.submitter?.name || 'N/A',
+  current_year: firstRecord.student?.current_year || 'N/A',
+
+    // 2. The Student List
+    records: formattedRecords 
+};
 }
-
 module.exports = { fetchStudents, submit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
 

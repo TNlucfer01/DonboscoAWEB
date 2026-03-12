@@ -27,16 +27,16 @@ router.post('/fetch-students',
 );
 
 // GET /api/attendance/fetch-students-pri — Principal: one row per student with period1–period5
-// Query params: year (1-4), date (YYYY-MM-DD), period (1-5, optional — if given, only fetch that slot)
+// Query params: year (1-4), date (YYYY-MM-DD)
 router.get('/fetch-students-pri',
     auth, roleGuard('PRINCIPAL'),
     async (req, res, next) => {
         try {
-            const { year, date, period } = req.query;
+            const { year, date,period } = req.query;
             if (!year || !date) {
                 return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'year and date query params are required' } });
             }
-            return success(res, await svc.fetchStudentsPrincipal({ year, date, period: period ? Number(period) : null }));
+            return success(res, await svc.fetchStudentsPrincipal({ year, date,period }));
         } catch (e) { next(e); }
     }
 );
