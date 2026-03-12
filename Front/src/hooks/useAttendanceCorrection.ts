@@ -8,11 +8,11 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export interface PeriodSlot {
-    record_id: number | null;
-    slot_id: number;
-    status: string;
+    record_id: number | null;   // null = no existing record (will be created on save)
+    slot_id: number;            // always present — from slotMap for empty slots
+    status: string;             // defaults to 'PRESENT' for empty slots
     od_reason: string | null;
-    is_locked: boolean;         // from attendance_records.is_locked
+    subject: string | null;
 }
 
 export interface StudentCorrectionRow {
@@ -34,9 +34,7 @@ export const PERIOD_KEYS: PeriodKey[] = ['period1', 'period2', 'period3', 'perio
 
 // Backend response shape
 interface FetchResponse {
-    slotMap: Record<number, number>;
-    subjectName: string | null;
-    subjectCode: string | null;
+    slotMap: Record<number, number>; // { slotNumber: slot_id }
     students: RawStudentRow[];
 }
 
@@ -45,7 +43,6 @@ interface RawPeriodSlot {
     slot_id: number;
     status: string;
     od_reason: string | null;
-    is_locked: boolean;
     subject: string | null;
 }
 
@@ -70,15 +67,16 @@ function buildRow(raw: RawStudentRow, slotMap: Record<number, number>, date: str
                 slot_id: rawSlot.slot_id,
                 status: rawSlot.status,
                 od_reason: rawSlot.od_reason,
-                is_locked: rawSlot.is_locked ?? false,
+                subject: rawSlot.subject,
             };
         }
+        // No existing record — default to PRESENT; slot_id comes from slotMap
         return {
             record_id: null,
             slot_id: slotMap[slotNumber],
             status: 'PRESENT',
             od_reason: null,
-            is_locked: false,
+            subject: null,
         };
     }
 
@@ -103,25 +101,19 @@ export function useAttendanceCorrection() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentDate, setCurrentDate] = useState('');
-    const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null);
-    const [subjectName, setSubjectName] = useState<string | null>(null);
-    const [subjectCode, setSubjectCode] = useState<string | null>(null);
 
-    // period: 1-5 (optional) — if given, only fetch attendance for that slot
-    const fetch = useCallback(async (year: string, date: Date, period?: number) => {
+    const fetch = useCallback(async (year: string, date: Date) => {
         setLoading(true);
         setError(null);
-        setSelectedPeriod(period ?? null);
         try {
             const dateStr = format(date, 'yyyy-MM-dd');
-            const params: Record<string, string> = { year, date: dateStr };
-            if (period) params.period = String(period);
-            const data = await apiClient.get<FetchResponse>('/attendance/fetch-students-pri', params);
+            const data = await apiClient.get<FetchResponse>('/attendance/fetch-students-pri', {
+                year,
+                date: dateStr,
+            });
             const rows = data.students.map(s => buildRow(s, data.slotMap as any, dateStr));
             setStudents(rows);
             setCurrentDate(dateStr);
-            setSubjectName(data.subjectName ?? null);
-            setSubjectCode(data.subjectCode ?? null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch students');
         } finally {
@@ -143,14 +135,6 @@ export function useAttendanceCorrection() {
         }));
     }, []);
 
-    // Toggle is_locked for a specific period slot
-    const updateLocked = useCallback((studentId: number, period: PeriodKey, is_locked: boolean) => {
-        setStudents(prev => prev.map(s => {
-            if (s.student_id !== studentId) return s;
-            return { ...s, [period]: { ...s[period] as PeriodSlot, is_locked } };
-        }));
-    }, []);
-
     const updateRemarks = useCallback((studentId: number, remarks: string) => {
         setStudents(prev => prev.map(s =>
             s.student_id === studentId ? { ...s, remarks } : s
@@ -168,13 +152,12 @@ export function useAttendanceCorrection() {
                     const slot = s[period] as PeriodSlot;
                     if (!slot || !slot.slot_id) continue; // skip if no slot_id (no such slot in DB)
                     records.push({
-                        record_id: slot.record_id,
+                        record_id: slot.record_id,       // null → create; number → update
                         student_id: s.student_id,
                         slot_id: slot.slot_id,
                         date: currentDate,
                         new_status: slot.status,
                         od_reason: slot.od_reason || null,
-                        is_locked: slot.is_locked,   // principal can unlock records
                     });
                 }
             }
@@ -193,5 +176,5 @@ export function useAttendanceCorrection() {
         }
     }, [students, currentDate]);
 
-    return { students, loading, saving, error, selectedPeriod, subjectName, subjectCode, fetch, updatePeriodStatus, updatePeriodODReason, updateLocked, updateRemarks, save };
+    return { students, loading, saving, error, fetch, updatePeriodStatus, updatePeriodODReason, updateRemarks, save };
 }

@@ -4,7 +4,7 @@ now i want you to get the data fro, the attedance_records for the  viewing on th
 
  also in the front end api add the period no too as a input when 
  now send the period for the backend api 
-
+should send the followung data 1. subject name ,staff name , period no , is_locked,student detials like rollno ,name, year , batch
  when the backend api recives it should send the subject name for that hour (tittle of the table) + that period only then at the end add the unclock column (ehich is is_locked in the database)
  the api should repond with the 
  then  remove the current 5 slot's instead have a check box in which  witht he coumn name unloack

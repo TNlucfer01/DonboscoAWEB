@@ -4,7 +4,6 @@ import { Button } from '../../app/components/ui/button';
 import { Input } from '../../app/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../app/components/ui/select';
-import { Checkbox } from '../../app/components/ui/checkbox';
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
 import { DatePickerField } from '../shared/DatePickerField';
@@ -25,30 +24,16 @@ const STATUS_OPTIONS = [
     { value: 'INFORMED_LEAVE', label: 'IL' },
 ];
 
-const PERIOD_OPTIONS = [
-    { value: 'all', label: 'All Periods' },
-    { value: '1', label: 'Period 1' },
-    { value: '2', label: 'Period 2' },
-    { value: '3', label: 'Period 3' },
-    { value: '4', label: 'Period 4' },
-    { value: '5', label: 'Period 5' },
-];
-
 export default function AttendanceCorrection({ user, onLogout }: PageProps) {
     const [year, setYear] = useState('');
     const [date, setDate] = useState<Date | undefined>(undefined);
-    const [period, setPeriod] = useState('all');
     const [search, setSearch] = useState('');
     const [fetched, setFetched] = useState(false);
-    const {
-        students, loading, saving, error,
-        selectedPeriod, subjectName, subjectCode,
-        fetch, updatePeriodStatus, updateLocked, updateRemarks, save,
-    } = useAttendanceCorrection();
+    const { students, loading, saving, error, fetch, updatePeriodStatus, updatePeriodODReason, updateRemarks, save } = useAttendanceCorrection();
 
     const handleFetch = async () => {
         if (!year || !date) return;
-        await fetch(year, date, period !== 'all' ? Number(period) : undefined);
+        await fetch(year, date);
         setFetched(true);
         setSearch('');
     };
@@ -61,9 +46,6 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
         );
     }, [students, search]);
 
-    // When a specific period is selected, only that period key matters
-    const singlePeriodKey = selectedPeriod ? `period${selectedPeriod}` as PeriodKey : null;
-
     return (
         <Layout user={user} onLogout={onLogout}>
             <div className="space-y-6">
@@ -71,17 +53,11 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
 
                 {/* ── Filter Bar ─────────────────────────────────── */}
                 <Card className="border-2 border-slate-300">
-                    <CardHeader><CardTitle className="text-slate-800">Select Criteria</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="text-slate-800">Select Year &amp; Date</CardTitle></CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                             <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
                             <div><DatePickerField date={date} onDateChange={setDate} label="Date *" /></div>
-                            <SelectField
-                                label="Period (optional)"
-                                value={period}
-                                options={PERIOD_OPTIONS}
-                                onValueChange={setPeriod}
-                            />
                             <Button
                                 onClick={handleFetch}
                                 disabled={loading || !year || !date}
@@ -108,11 +84,7 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div>
                                         <CardTitle className="text-slate-800">
-                                            {selectedPeriod
-                                                ? `Period ${selectedPeriod}${subjectName ? ` — ${subjectName}${subjectCode ? ` (${subjectCode})` : ''}` : ''}`
-                                                : 'All Periods'
-                                            }
-                                            {' '}— Year {year} — {date && format(date, 'PPP')}
+                                            Attendance — Year {year} — {date && format(date, 'PPP')}
                                         </CardTitle>
                                         <p className="text-sm text-slate-600 mt-1">
                                             P = Present &nbsp;A = Absent &nbsp;OD = On Duty &nbsp;IL = Informed Leave
@@ -140,32 +112,15 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                     <table className="w-full border-collapse text-sm">
                                         <thead>
                                             <tr className="bg-slate-100 border-2 border-slate-300">
-                                                {singlePeriodKey ? (
-                                                    // ── Single period view: compact columns ──────────
-                                                    <>
-                                                        {['S.No', 'Roll No', 'Name', 'Year', 'Status', 'Unlock', 'Remarks'].map(h => (
-                                                            <th key={h} className="border border-slate-300 px-3 py-2 text-left text-slate-700 whitespace-nowrap">{h}</th>
-                                                        ))}
-                                                    </>
-                                                ) : (
-                                                    // ── All-period view: 5 columns ──────────────────
-                                                    <>
-                                                        {['S.No', 'Roll No', 'Name', 'Year', 'P1', 'P2', 'P3', 'P4', 'P5', 'Remarks'].map((h, hi) => {
-                                                            const pNum = hi >= 4 && hi <= 8 ? hi - 3 : null;
-                                                            return (
-                                                                <th key={h} className={`border border-slate-300 px-3 py-2 text-left text-slate-700 whitespace-nowrap`}>{h}</th>
-                                                            );
-                                                        })}
-                                                    </>
-                                                )}
+                                                {['S.No', 'Roll No', 'Name', 'Year', 'P1', 'P2', 'P3', 'P4', 'P5', 'Remarks'].map(h => (
+                                                    <th key={h} className="border border-slate-300 px-3 py-2 text-left text-slate-700 whitespace-nowrap">{h}</th>
+                                                ))}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filtered.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={singlePeriodKey ? 7 : 10} className="text-center py-6 text-slate-400">
-                                                        No students match "{search}"
-                                                    </td>
+                                                    <td colSpan={10} className="text-center py-6 text-slate-400">No students match "{search}"</td>
                                                 </tr>
                                             ) : filtered.map((s, i) => (
                                                 <tr key={s.student_id} className="border border-slate-300 hover:bg-slate-50">
@@ -174,13 +129,14 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                                     <td className="border border-slate-300 px-3 py-2 text-slate-700 whitespace-nowrap">{s.name}</td>
                                                     <td className="border border-slate-300 px-3 py-2 text-slate-600 text-center">{s.current_year}</td>
 
-                                                    {singlePeriodKey ? (
-                                                        // ── Single period: Status dropdown + Unlock checkbox ──
-                                                        <>
-                                                            <td className="border border-slate-300 px-2 py-2 min-w-[80px]">
+                                                    {/* ── Five Period Cells ──────── */}
+                                                    {PERIOD_KEYS.map(period => {
+                                                        const slot = s[period] as PeriodSlot;
+                                                        return (
+                                                            <td key={period} className="border border-slate-300 px-2 py-2 min-w-[70px]">
                                                                 <Select
-                                                                    value={(s[singlePeriodKey] as PeriodSlot).status}
-                                                                    onValueChange={v => updatePeriodStatus(s.student_id, singlePeriodKey, v)}
+                                                                    value={slot.status}
+                                                                    onValueChange={v => updatePeriodStatus(s.student_id, period, v)}
                                                                 >
                                                                     <SelectTrigger className="h-8 border-slate-300 text-xs px-2">
                                                                         <SelectValue />
@@ -192,42 +148,10 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                                                     </SelectContent>
                                                                 </Select>
                                                             </td>
-                                                            {/* Unlock checkbox — unchecks is_locked */}
-                                                            <td className="border border-slate-300 px-3 py-2 text-center">
-                                                                <Checkbox
-                                                                    checked={!(s[singlePeriodKey] as PeriodSlot).is_locked}
-                                                                    onCheckedChange={checked =>
-                                                                        updateLocked(s.student_id, singlePeriodKey, !checked)
-                                                                    }
-                                                                    title="Unlock this record for staff editing"
-                                                                />
-                                                            </td>
-                                                        </>
-                                                    ) : (
-                                                        // ── All periods: 5 status dropdowns ──────────────
-                                                        PERIOD_KEYS.map((pk, pi) => {
-                                                            const slot = s[pk] as PeriodSlot;
-                                                            return (
-                                                                <td key={pk} className="border border-slate-300 px-2 py-2 min-w-[70px]">
-                                                                    <Select
-                                                                        value={slot.status}
-                                                                        onValueChange={v => updatePeriodStatus(s.student_id, pk, v)}
-                                                                    >
-                                                                        <SelectTrigger className="h-8 border-slate-300 text-xs px-2">
-                                                                            <SelectValue />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent className="bg-white border-2 border-slate-300">
-                                                                            {STATUS_OPTIONS.map(o => (
-                                                                                <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                </td>
-                                                            );
-                                                        })
-                                                    )}
+                                                        );
+                                                    })}
 
-                                                    {/* ── Remarks always last ─────────── */}
+                                                    {/* ── Remarks ───────────────── */}
                                                     <td className="border border-slate-300 px-2 py-2 min-w-[160px]">
                                                         <Input
                                                             value={s.remarks ?? ''}
