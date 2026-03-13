@@ -699,7 +699,7 @@ async function saveStudentPri(records, changed_by) {
         const { record_id, status, is_locked, remarks, od_reason } = r;
 
         const finalRemarks = remarks !== undefined ? remarks : (od_reason || null);
-        const finalLocked = is_locked ? true : false;
+        const finalLocked = true; // Always lock record when Principal saves
         
         if (record_id) {
             const existing = await AttendanceRecord.findByPk(record_id);
