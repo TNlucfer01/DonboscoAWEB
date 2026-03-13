@@ -198,7 +198,8 @@ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_i
     const records = await AttendanceRecord.findAll({
         where: {
             date: date,
-            slot_id: slot_id
+            slot_id: slot_id,
+            is_locked: false
         },
         include: [
             {
@@ -706,6 +707,7 @@ async function saveStudentPri(records, changed_by) {
 
             const old_status = existing.status;
             
+            console.log("Updating record", record_id, "with status:", status, "remarks:", finalRemarks, "locked:", finalLocked);
             await existing.update({ 
                 status: status, 
                 od_reason: finalRemarks,
