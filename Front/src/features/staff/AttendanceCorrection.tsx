@@ -77,7 +77,12 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
 
     const handleFetch = () => {
         if (!year || !classType || !batch || !period || !subject || !date) return;
-        fetch(year, batch, classType, period, subject, date.toISOString().split('T')[0]);
+        const yearVal = date.getFullYear();
+        const monthVal = String(date.getMonth() + 1).padStart(2, '0');
+        const dayVal = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${yearVal}-${monthVal}-${dayVal}`;
+
+        fetch(year, batch, classType, period, subject, dateStr);
     };
 
     return (

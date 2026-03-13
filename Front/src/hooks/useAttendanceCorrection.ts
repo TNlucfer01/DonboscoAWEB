@@ -39,7 +39,12 @@ export function useAttendanceCorrection() {
         setLoading(true);
         setError(null);
         try {
-            const dateStr = format(date, 'yyyy-MM-dd');
+            // Fix local timezone offset issue that shifts dates backward
+            const yearVal = date.getFullYear();
+            const monthVal = String(date.getMonth() + 1).padStart(2, '0');
+            const dayVal = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${yearVal}-${monthVal}-${dayVal}`;
+
             const data = await apiClient.get<FetchResponse>('/attendance/fetch-students-pri', {
                 year,
                 date: dateStr,

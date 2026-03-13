@@ -85,7 +85,12 @@ router.post('/correct-attedance/fetch-students',
     async (req, res, next) => {
         try {
             const { year, batch_id, batch_type, slot_id, subject_id, date } = req.body;
-            return success(res, await svc.fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, subject_id, date }));
+            const data=await svc.fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, subject_id, date });
+       console.log(req.body);
+            console.log(data);
+            return success(res, data);
+        
+        
         } catch (e) { next(e); }
     }
 );
