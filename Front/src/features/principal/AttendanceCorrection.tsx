@@ -167,8 +167,17 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                                     <td className="border border-slate-300 px-3 py-2 text-slate-700 whitespace-nowrap">{s.student_name}</td>
 
                                                     {/* ── Status ──────── */}
-                                                    <td className="border border-slate-300 px-2 py-2 w-32">{s.status}
-                                                       
+                                                    <td className="border border-slate-300 px-2 py-2 w-32">
+                                                        <Select value={s.status} onValueChange={(v) => updateStatus(s.student_id, v)}>
+                                                            <SelectTrigger className="h-8 border-slate-300 text-xs">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {STATUS_OPTIONS.map(opt => (
+                                                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </td>
 
                                                     {/* ── OD Reason ───────────────── */}
@@ -187,7 +196,7 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                                         <input
                                                             type="checkbox"
                                                             checked={s.is_locked === 1}
-                                                            onChange={(e) => updateIsLocked(s.student_id, e.target.checked ? 1 : 0)}
+                                                            onChange={(e) => updateIsLocked(s.student_id, e.target.checked ? 0 : 1)}
                                                             className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 focus:ring-2"
                                                         />
                                                     </td>

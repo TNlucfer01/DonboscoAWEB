@@ -84,7 +84,7 @@ export function useAttendanceCorrection() {
     const save = useCallback(async () => {
         setSaving(true);
         try {
-            const recordsToSave = students.filter(s=>s.is_locked==1);
+            const recordsToSave = students;
 
             if (recordsToSave.length === 0) {
                 toast.info('No changes to save');
