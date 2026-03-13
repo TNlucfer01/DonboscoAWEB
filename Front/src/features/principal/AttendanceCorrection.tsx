@@ -111,7 +111,7 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                             Attendance — Year {year} — Period {period} — {date && format(date, 'PPP')}
                                         </CardTitle>
                                         <p className="text-sm text-slate-600 mt-1">
-                                            Manage attendance records. Check "Unlock" to prevent further staff modifications.
+                                            Manage attendance records. Check "Lock" to prevent further staff modifications.
                                         </p>
                                     </div>
                                     <div className="flex gap-2">
@@ -150,7 +150,7 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                     <table className="w-full border-collapse text-sm">
                                         <thead>
                                             <tr className="bg-slate-100 border-2 border-slate-300">
-                                                {['S.No', 'Roll No', 'Name', 'Status', 'OD Reason', 'Unlock', 'Remarks'].map(h => (
+                                                {['S.No', 'Roll No', 'Name', 'Status', 'OD Reason', 'Lock', 'Remarks'].map(h => (
                                                     <th key={h} className="border border-slate-300 px-3 py-2 text-left text-slate-700 whitespace-nowrap">{h}</th>
                                                 ))}
                                             </tr>
@@ -196,7 +196,7 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                                         <input
                                                             type="checkbox"
                                                             checked={s.is_locked === 1}
-                                                            onChange={(e) => updateIsLocked(s.student_id, e.target.checked ? 0 : 1)}
+                                                            onChange={(e) => updateIsLocked(s.student_id, e.target.checked ? 1 : 0)}
                                                             className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 focus:ring-2"
                                                         />
                                                     </td>
