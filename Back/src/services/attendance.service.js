@@ -690,7 +690,9 @@ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_i
     // 2. The Student List
     records: formattedRecords 
  };
- async function saveStudentPri(records, changed_by) {
+}
+
+async function saveStudentPri(records, changed_by) {
     const results = [];
     for (const r of records) {
         const { record_id, status, is_locked, remarks, od_reason } = r;
