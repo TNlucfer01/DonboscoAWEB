@@ -41,16 +41,15 @@ router.get('/fetch-students-pri',
     }
 );
 
-router.post('/save-student-pri',auth,roleGuard('PRINCIPAL'),[],validate,
-
-async (req,res,next)=>{
-    try{
-        const records=req.body.records;
-        console.log(records);
-        // return success(res,await svc.saveStudentPri(records));
-    return success(res)
-    }
-    catch(e){next(e);}
+router.post('/save-student-pri', auth, roleGuard('PRINCIPAL'), [], validate,
+async (req, res, next) => {
+    try {
+        const records = req.body.records || req.body; // Allow sending the array directly or in 'records' key
+        if (!Array.isArray(records)) {
+            return res.status(400).json({ success: false, error: { message: "records array required" } });
+        }
+        return success(res, await svc.saveStudentPri(records, req.user.userId));
+    } catch(e) { next(e); }
 })
 // POST /api/attendance/submit — Staff only
 // Handles multiple students at once via the records[] array.

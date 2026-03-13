@@ -690,7 +690,39 @@ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_i
     // 2. The Student List
     records: formattedRecords 
  };
+ async function saveStudentPri(records, changed_by) {
+    const results = [];
+    for (const r of records) {
+        const { record_id, status, is_locked, remarks, od_reason } = r;
+
+        const finalRemarks = remarks !== undefined ? remarks : (od_reason || null);
+        const finalLocked = is_locked ? true : false;
+        
+        if (record_id) {
+            const existing = await AttendanceRecord.findByPk(record_id);
+            if (!existing) continue;
+
+            const old_status = existing.status;
+            
+            await existing.update({ 
+                status: status, 
+                od_reason: finalRemarks,
+                is_locked: finalLocked
+            });
+
+            if (old_status !== status) {
+                await AttendanceAuditLog.create({
+                    record_id,
+                    changed_by: changed_by || existing.submitted_by,
+                    old_status,
+                    new_status: status,
+                    changed_at: new Date(),
+                });
+            }
+            results.push({ record_id, action: 'updated' });
+        }
+    }
+    return { saved: results.length, results };
  }
 
-
- module.exports = { fetchStudents, fetchStaffCorrectionStudents, submit, correctStaffSubmit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
+ module.exports = { fetchStudents, fetchStaffCorrectionStudents, submit, correctStaffSubmit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal, saveStudentPri };
