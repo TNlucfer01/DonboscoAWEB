@@ -79,12 +79,15 @@ router.post('/correct-attedance/fetch-students',
         body('batch_id').isInt({ min: 1 }).withMessage('batch_id required'),
         body('batch_type').isIn(['THEORY', 'LAB']).withMessage('batch_type required'),
         body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
+        body('subject_id').isInt({ min: 1 }).withMessage('subject_id required'),
         body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
     ],
     validate,
     async (req, res, next) => {
-        try { return success(res, await svc.fetchStaffCorrectionStudents(req.body)); }
-        catch (e) { next(e); }
+        try {
+            const { year, batch_id, batch_type, slot_id, subject_id, date } = req.body;
+            return success(res, await svc.fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, subject_id, date }));
+        } catch (e) { next(e); }
     }
 );
 

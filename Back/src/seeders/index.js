@@ -47,18 +47,23 @@ async function seed() {
             console.log('ℹ Principal already exists — skipped');
         }
 
-        // ── 4. Sample Batches (for dev testing) ───────────────────────
-        await TheoryBatch.bulkCreate([
-            { name: 'A1', year: 1, capacity: 60 },
-            { name: 'A2', year: 1, capacity: 60 },
-            { name: 'B1', year: 2, capacity: 60 },
-            { name: 'B2', year: 2, capacity: 60 },
-        ], { ignoreDuplicates: true });
+        // ── 4. Standardized Batches (Years 1-4) ───────────────────────
+        const theoryBatches = [];
+        const labBatches = [];
 
-        await LabBatch.bulkCreate([
-            { name: 'A1-LAB', year: 1, capacity: 15 },
-        ], { ignoreDuplicates: true });
-        console.log('✔ Sample batches seeded');
+        for (let year = 1; year <= 4; year++) {
+            theoryBatches.push({ name: `(year ${year} ) A`, year, capacity: 60 });
+            theoryBatches.push({ name: `(year ${year} ) B`, year, capacity: 60 });
+
+            labBatches.push({ name: `(year ${year} ) A`, year, capacity: 30 });
+            labBatches.push({ name: `(year ${year} ) B`, year, capacity: 30 });
+            labBatches.push({ name: `(year ${year} ) C`, year, capacity: 30 });
+            labBatches.push({ name: `(year ${year} ) D`, year, capacity: 30 });
+        }
+
+        await TheoryBatch.bulkCreate(theoryBatches, { ignoreDuplicates: true });
+        await LabBatch.bulkCreate(labBatches, { ignoreDuplicates: true });
+        console.log('✔ Standardized batches seeded (Theory A/B, Lab A/B/C/D) for years 1-4');
 
         console.log('\n✔ Seeding complete!');
         process.exit(0);

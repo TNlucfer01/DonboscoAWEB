@@ -12,47 +12,47 @@
 
  // ── Fetch Students for Attendance ─────────────────────────────
  async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
-    // 1. Holiday check
-    const holiday = await CollegeCalendar.findOne({ where: { date, day_type: 'HOLIDAY' } });
-    if (holiday) throw new AppError('HOLIDAY', `Attendance blocked: ${holiday.holiday_name || 'Holiday'}`, 422);
+     // 1. Holiday check
+     const holiday = await CollegeCalendar.findOne({ where: { date, day_type: 'HOLIDAY' } });
+     if (holiday) throw new AppError('HOLIDAY', `Attendance blocked: ${holiday.holiday_name || 'Holiday'}`, 422);
 
-    // Block future dates
-    if (dayjs(date).isAfter(dayjs(), 'day')) {
+     // Block future dates
+     if (dayjs(date).isAfter(dayjs(), 'day')) {
         throw new AppError('FUTURE_DATE', 'Cannot access future dates for attendance', 400);
-    }
+     }
 
-    // 2. 20-min window check — fetch the slot's start_time, compute elapsed minutes
-    //for now only 
-    // const slot = await TimetableSlot.findByPk(slot_id);
-    // if (!slot) throw new AppError('NOT_FOUND', 'Slot not found', 404);
+     // 2. 20-min window check — fetch the slot's start_time, compute elapsed minutes
+     //for now only 
+     // const slot = await TimetableSlot.findByPk(slot_id);
+     // if (!slot) throw new AppError('NOT_FOUND', 'Slot not found', 404);
 
-    // const slotStart = dayjs(`${date} ${slot.start_time}`);
-    // const diff = dayjs().diff(slotStart, 'minute');
-    // if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
-    // if (diff < 0) throw new AppError('WINDOW_NOT_OPEN', 'This period has not started yet.', 422);
-    // 3. Fetch students in the batch (theory or lab based on batch_type)
+     // const slotStart = dayjs(`${date} ${slot.start_time}`);
+     // const diff = dayjs().diff(slotStart, 'minute');
+     // if (diff > 20) throw new AppError('WINDOW_EXPIRED', 'The 20-minute submission window has closed.', 422);
+     // if (diff < 0) throw new AppError('WINDOW_NOT_OPEN', 'This period has not started yet.', 422);
+     // 3. Fetch students in the batch (theory or lab based on batch_type)
 
-    const batchKey = batch_type === 'THEORY' ? 'theory_batch_id' : 'lab_batch_id';
+     const batchKey = batch_type === 'THEORY' ? 'theory_batch_id' : 'lab_batch_id';
     
-    //studnet detials 
-    const students = await Student.findAll({
+     //studnet detials 
+     const students = await Student.findAll({
         where: { current_year: year, [batchKey]: batch_id },
         attributes: ['student_id', 'name', 'roll_number', 'current_year'],
         order: [['roll_number', 'ASC']],
-    });
+     });
 
-    // 4. Check for existing locked (OD/IL) rows for this slot + date
-    // This prevents staff from overwriting YC-approved OD/IL entries
-   //this is needed to prevent staff from overwriting YC-approved OD/IL entries
-    const existingRecords = await AttendanceRecord.findAll({
+     // 4. Check for existing locked (OD/IL) rows for this slot + date
+     // This prevents staff from overwriting YC-approved OD/IL entries
+     //this is needed to prevent staff from overwriting YC-approved OD/IL entries
+     const existingRecords = await AttendanceRecord.findAll({
         where: { date, slot_id, student_id: students.map(s => s.student_id) },
         attributes: ['student_id', 'status', 'is_locked', 'od_reason'],
-    });
+     });
 
-    const lockMap = {};
-    existingRecords.forEach(r => { lockMap[r.student_id] = r; });
+     const lockMap = {};
+     existingRecords.forEach(r => { lockMap[r.student_id] = r; });
     
-    const studentData = students.map(s => {
+     const studentData = students.map(s => {
         const status = lockMap[s.student_id]?.status || 'PRESENT';
         let od_reason = lockMap[s.student_id]?.od_reason || null;
         
@@ -68,12 +68,12 @@
             status,
             od_reason,
         };
-    });
+     });
 
-    return {
+     return {
         students: studentData,
         remaining_minutes: 20 // Frontend should start a countdown timer from this value
-    };
+     };
  }
 
 
@@ -188,76 +188,98 @@
     };
  }
 
- // ── Fetch Staff Correction Students ─────────────────────────────
- async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, date }) {
-    // Block future dates
+async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, subject_id, date }) {
     if (dayjs(date).isAfter(dayjs(), 'day')) {
         throw new AppError('FUTURE_DATE', 'Cannot access future dates for attendance', 400);
     }
 
     const batchKey = batch_type === 'THEORY' ? 'theory_batch_id' : 'lab_batch_id';
-    
-    // 1. Get all students in the batch
-    const students = await Student.findAll({
-        where: { current_year: year, [batchKey]: batch_id },
-        attributes: ['student_id', 'name', 'roll_number', 'current_year'],
-        order: [['roll_number', 'ASC']],
-    });
 
-    if (students.length === 0) return { records: [], remaining_minutes: 0 };
-
-    // 2. Fetch existing records with metadata
-    const existingRecords = await AttendanceRecord.findAll({
-        where: { date, slot_id, student_id: students.map(s => s.student_id) },
+    const records = await AttendanceRecord.findAll({
+        where: {
+            date: date,
+            slot_id: slot_id
+        },
         include: [
-            { model: TimetableSlot, as: 'slot', attributes: ['slot_number'] },
-            { model: Subject, as: 'subject', attributes: ['subject_name', 'subject_code'] },
-            { model: User, as: 'submitter', attributes: ['name'] }
-        ]
+            {
+                model: Student,
+                as: 'student',
+                attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+                where: { 
+                    current_year: year,
+                    [batchKey]: batch_id
+                } 
+            },
+            {
+                model: TimetableSlot,
+                as: 'slot',
+                attributes: ['slot_number'],
+                // where: { slot_id: slot_id } // Already filtered in root where
+            },
+            {
+                model: Subject,
+                as: 'subject',
+                attributes: ['subject_name', 'subject_code'],
+                // optionally filter by subject_id? 
+                // where: { subject_id: subject_id } // User might want to see attendance regardless of subject? Or specific subject? Better filter it:
+                where: subject_id ? { subject_id } : undefined
+            },
+            {
+                model: User,
+                as: 'submitter',
+                attributes: ['name']
+            }
+        ],
+        attributes: [
+            'record_id',
+            'student_id',
+            'status',
+            'od_reason',
+            'slot_id',
+            'subject_id',
+            'submitted_by',
+            'is_locked'
+        ],
+        raw: true,
+        nest: true
     });
 
-    const lockMap = {};
-    existingRecords.forEach(r => { lockMap[r.student_id] = r; });
+    const formattedRecords = records.map(r => ({
+        record_id: r.record_id,
+        student_id: r.student_id,
+        studentname: r.student?.name,
+        rollno: r.student?.roll_number,
+        status: r.status || 'PRESENT',
+        od_reason: r.od_reason || 'None',
+        is_locked: !!r.is_locked,
+    }));
 
-    const formattedRecords = students.map(s => {
-        const record = lockMap[s.student_id];
-        const status = record?.status || 'PRESENT';
-        let od_reason = record?.od_reason || null;
-        
-        if (status.toUpperCase() === 'PRESENT') od_reason = 'None';
-        else if (status.toUpperCase() === 'ABSENT') od_reason = 'uninformed_leave';
-
-        return {
-            student_id: s.student_id,
-            rollno: s.roll_number,
-            name: s.name,
-            year: s.current_year,
-            is_locked: !!record?.is_locked,
-            status,
-            od_reason,
-            record_id: record?.record_id || null,
-        };
-    });
-
-    const firstRecord = existingRecords[0] || {};
-    // Fetch slot specifically if no existing records to still show metadata
-    let slotNum = firstRecord.slot?.slot_number;
-    if (!slotNum) {
-        const slot = await TimetableSlot.findByPk(slot_id);
-        slotNum = slot?.slot_number || 'N/A';
+    const firstRecord = records[0] || {};
+    
+    // Also fetch batch name since user requested it
+    let batchName = 'N/A';
+    if (batch_type === 'THEORY') {
+        const { TheoryBatch } = require('../models/index');
+        const b = await TheoryBatch.findByPk(batch_id);
+        if (b) batchName = b.name;
+    } else {
+        const { LabBatch } = require('../models/index');
+        const b = await LabBatch.findByPk(batch_id);
+        if (b) batchName = b.name;
     }
 
     return {
-        // Metadata
-        slot_number: slotNum,
+        success: true,
+        year: year,
+        subject: firstRecord.subject?.subject_name || 'N/A',
         subject_name: firstRecord.subject?.subject_name || 'N/A',
         subject_code: firstRecord.subject?.subject_code || 'N/A',
+        submittername: firstRecord.submitter?.name || 'N/A',
         submitter_name: firstRecord.submitter?.name || 'N/A',
-        current_year: year,
-        remaining_minutes: 20, // Keep this if frontend Needs it
-
-        // Student List
-        records: formattedRecords
+        "batch name": batchName,
+        student: formattedRecords,
+        records: formattedRecords, // Keeping this for backward comp with my previous code in api.ts
+        slot_number: firstRecord.slot?.slot_number || 'N/A'
     };
  }
 
@@ -578,42 +600,42 @@
   nest: true 
  });
  // SELECT
-//     ar.record_id,
-//     ar.student_id,
-//     s.name AS student_name,
-//     s.roll_number,
-//     s.current_year,
-//     ar.status,
-//     ar.od_reason,
-//     ar.slot_id,
-//     ar.subject_id,
-//     ar.submitted_by,
-//     ar.is_locked,
-//     ts.slot_number,
-//     sub.subject_name,
-//     sub.subject_code,
-//     u.name AS submitter_name
-// FROM attendance_records AS ar
+ //     ar.record_id,
+ //     ar.student_id,
+ //     s.name AS student_name,
+ //     s.roll_number,
+ //     s.current_year,
+ //     ar.status,
+ //     ar.od_reason,
+ //     ar.slot_id,
+ //     ar.subject_id,
+ //     ar.submitted_by,
+ //     ar.is_locked,
+ //     ts.slot_number,
+ //     sub.subject_name,
+ //     sub.subject_code, 
+ //     u.name AS submitter_name
+ // FROM attendance_records AS ar
 
-// INNER JOIN students AS s
-//     ON ar.student_id = s.student_id
+ // INNER JOIN students AS s
+ //     ON ar.student_id = s.student_id
 
-// INNER JOIN timetable_slots AS ts
-//     ON ar.slot_id = ts.slot_id
+ // INNER JOIN timetable_slots AS ts
+ //     ON ar.slot_id = ts.slot_id
 
-// INNER JOIN subjects AS sub
-//     ON ar.subject_id = sub.subject_id
+ // INNER JOIN subjects AS sub
+ //     ON ar.subject_id = sub.subject_id
 
-// INNER JOIN users AS u
-//     ON ar.submitted_by = u.user_id
+ // INNER JOIN users AS u
+ //     ON ar.submitted_by = u.user_id
 
-// WHERE s.current_year = 2           -- specific year filter
-//   AND ar.date = '2026-03-11'       -- specific date
-//   AND ts.slot_number = 2; 
+ // WHERE s.current_year = 2           -- specific year filter
+ //   AND ar.date = '2026-03-11'       -- specific date
+ //   AND ts.slot_number = 2; 
 
 
 
-// convert this in ot a sequlize query 
+ // convert this in ot a sequlize query 
 
     // 4. Build a lookup: { student_id: { slotNumber: recordData } }
     // const recordMap = {};
@@ -669,5 +691,6 @@
     records: formattedRecords 
  };
  }
- module.exports = { fetchStudents, fetchStaffCorrectionStudents, submit, correctStaffSubmit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };
 
+
+ module.exports = { fetchStudents, fetchStaffCorrectionStudents, submit, correctStaffSubmit, view, correct, correctBulk, createODIL, updateODIL, cancelODIL, listODIL, fetchStudentsPrincipal };

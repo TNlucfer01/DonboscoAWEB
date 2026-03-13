@@ -1,0 +1,80 @@
+{
+    "success": true,
+    "data": {
+        "slot_number": 1,
+        "subject_name": "Fundamentals of Entomology",
+        "subject_code": "AET 201",
+        "submitter_name": "Jane Smith (Staff)",
+        "current_year": 2,
+        "records": [
+            {
+                "record_id": 1,
+                "student_id": 5,
+                "student_name": "Ezhil Arasan P",
+                "roll_number": "22AG010",
+                "status": "PRESENT",
+                "od_reason": "None",
+                "is_locked": 1
+            },
+            {
+                "record_id": 2,
+                "student_id": 6,
+                "student_name": "Fathima Beevi S",
+                "roll_number": "22AG011",
+                "status": "PRESENT",
+                "od_reason": "None",
+                "is_locked": 1
+            }
+        ]
+
+
+    }
+} 
+
+
+i need to get the data reponse like this when i send a post request from the staff login -> attendance correection select the  nessacary option and
+
+
+
+const records = await AttendanceRecord.findAll({
+  where: {
+    date: date, // e.g., '2026-03-11'
+  },
+  include: [
+    {
+      model: Student,
+      as: 'student',
+      attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+      where: { current_year: year } 
+    },
+    {
+      model: TimetableSlot,
+      as: 'slot',
+      attributes: ['slot_number'],
+      where: { slot_number: period } 
+    },
+    {
+      model: Subject,
+      as: 'subject',
+      attributes: ['subject_name', 'subject_code']
+    },
+    {
+      model: User,
+      as: 'submitter',
+      attributes: ['name']
+    }
+  ],
+  attributes: [
+    'record_id',
+    'student_id',
+    'status',
+    'od_reason',
+    'slot_id',
+    'subject_id',
+    'submitted_by',
+    'is_locked'
+  ]
+  ,raw: true,
+  nest: true 
+ }); use this query to get he detials then convert just it was inthe fetch principal except   the is_locked option is read only on the friend end and can't update that 
+ 

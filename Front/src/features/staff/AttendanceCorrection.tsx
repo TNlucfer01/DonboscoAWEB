@@ -146,14 +146,18 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
                         </CardHeader>
                         <CardContent>
                             {metadata && (
-                                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Subject Name</p>
-                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.subjectName}</p>
+                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.subjectName} ({metadata.subjectCode})</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-slate-500">Subject Code</p>
-                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.subjectCode}</p>
+                                        <p className="text-sm font-medium text-slate-500">Year</p>
+                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.year}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-500">Batch Name</p>
+                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.batchName}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-slate-500">Submitted By</p>

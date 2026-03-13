@@ -5,6 +5,7 @@ import { StaffStudent } from '../features/shared/attendance.types';
 import { fetchStaffCorrectionStudents, submitStaffCorrectionAttendance, CorrectionMetadata } from '../api/attendance.api';
 import { ApiError } from '../api/apiClient';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 export function useStaffAttendanceCorrection() {
     const [students, setStudents] = useState<StaffStudent[]>([]);
@@ -14,10 +15,10 @@ export function useStaffAttendanceCorrection() {
     const [remainingMinutes, setRemainingMinutes] = useState<number>(0);
     const [metadata, setMetadata] = useState<CorrectionMetadata | null>(null);
 
-    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, subject: string, date: string) => {
+    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, subject: string, dateStr: string) => {
         setLoading(true);
         try {
-            const result = await fetchStaffCorrectionStudents(year, batch, classType, period, subject, date);
+            const result = await fetchStaffCorrectionStudents(year, batch, classType, period, subject, dateStr);
             setStudents(result.students);
             setRemainingMinutes(result.remainingMinutes);
             setMetadata(result.metadata);

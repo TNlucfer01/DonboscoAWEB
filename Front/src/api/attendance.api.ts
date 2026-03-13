@@ -84,6 +84,8 @@ export interface CorrectionMetadata {
     subjectName: string;
     subjectCode: string;
     submitterName: string;
+    year: string;
+    batchName: string;
 }
 
 export interface FetchCorrectionStudentsResponse extends FetchStudentsResponse {
@@ -152,13 +154,14 @@ export async function submitStaffAttendance(
 }
 
 export async function fetchStaffCorrectionStudents(
-    year: string, batch_id: string, batch_type: string, slot_id: string, _subject: string, date: string
+    year: string, batch_id: string, batch_type: string, slot_id: string, subject_id: string, date: string
 ): Promise<FetchCorrectionStudentsResponse> {
     const data = await apiClient.post<any>('/attendance/correct-attedance/fetch-students', {
         year: parseInt(year),
         batch_id: parseInt(batch_id),
         batch_type,
         slot_id: parseInt(slot_id),
+        subject_id: parseInt(subject_id),
         date,
     });
 
@@ -169,17 +172,19 @@ export async function fetchStaffCorrectionStudents(
 
     const students: StaffStudent[] = studentArray.map((s: any) => ({
         id: s.student_id,
-        rollNo: s.rollno,
-        name: s.name,
+        rollNo: s.rollno || s.roll_number,
+        name: s.studentname || s.name || s.student_name,
         status: s.status || 'Present',
         isLocked: !!s.is_locked,
         odReason: s.od_reason || '',
     }));
     
     const metadata: CorrectionMetadata = {
-        subjectName: data.subject_name || 'N/A',
-        subjectCode: data.subject_code || 'N/A',
-        submitterName: data.submitter_name || 'N/A',
+        subjectName: data.subject_name || data.subject || 'N/A',
+        subjectCode: data.subject_code || data.subjectCode || 'N/A',
+        submitterName: data.submitter_name || data.submittername || 'N/A',
+        year: data.year || year,
+        batchName: data['batch name'] || 'N/A'
     };
 
     return { students, remainingMinutes, metadata };
@@ -199,7 +204,7 @@ export async function submitStaffCorrectionAttendance(
         };
     });
 
-    const response = await apiClient.post<any>('/attendance/submit', {
+    const response = await apiClient.post<any>('/attendance/correct-attedance', {
         records,
         slot_id: parseInt(slot_id),
         date,
@@ -208,7 +213,7 @@ export async function submitStaffCorrectionAttendance(
 
     return (response.student || []).map((s: any) => ({
         id: s.student_id,
-        rollNo: s.rollno,
+        rollNo: s.rollno || s.roll_number,
         name: s.name,
         status: s.status || 'Present',
         isLocked: !!s.is_locked,
