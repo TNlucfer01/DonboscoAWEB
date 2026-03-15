@@ -142,7 +142,7 @@ router.get('/subject-wise',
       const subjects = await sequelize.query(`
         SELECT subject_id, subject_name, subject_code
         FROM subjects
-        WHERE year = :year
+        WHERE subject_year = :year
         ORDER BY subject_name
       `, { replacements: { year }, type: QueryTypes.SELECT });
 

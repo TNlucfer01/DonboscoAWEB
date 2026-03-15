@@ -34,6 +34,7 @@ export function useAttendanceCorrection() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentDate, setCurrentDate] = useState('');
+    const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set());
 
     const fetch = useCallback(async (year: string, date: Date, period: string) => {
         setLoading(true);
@@ -55,6 +56,7 @@ export function useAttendanceCorrection() {
             setMeta(metaData);
             setStudents(records.map(r => ({ ...r, remarks: '' })));
             setCurrentDate(dateStr);
+            setDirtyIds(new Set()); // Reset dirty tracking on fresh fetch
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch students');
         } finally {
@@ -66,30 +68,34 @@ export function useAttendanceCorrection() {
         setStudents(prev => prev.map(s =>
             s.student_id === studentId ? { ...s, status } : s
         ));
+        setDirtyIds(prev => new Set(prev).add(studentId));
     }, []);
 
     const updateODReason = useCallback((studentId: number, od_reason: string) => {
         setStudents(prev => prev.map(s =>
             s.student_id === studentId ? { ...s, od_reason } : s
         ));
+        setDirtyIds(prev => new Set(prev).add(studentId));
     }, []);
 
     const updateIsLocked = useCallback((studentId: number, is_locked: number) => {
         setStudents(prev => prev.map(s =>
             s.student_id === studentId ? { ...s, is_locked } : s
         ));
+        setDirtyIds(prev => new Set(prev).add(studentId));
     }, []);
 
     const updateRemarks = useCallback((studentId: number, remarks: string) => {
         setStudents(prev => prev.map(s =>
             s.student_id === studentId ? { ...s, remarks } : s
         ));
+        setDirtyIds(prev => new Set(prev).add(studentId));
     }, []);
 
     const save = useCallback(async () => {
         setSaving(true);
         try {
-            const recordsToSave = students;
+            const recordsToSave = students.filter(s => dirtyIds.has(s.student_id));
 
             if (recordsToSave.length === 0) {
                 toast.info('No changes to save');
@@ -98,6 +104,7 @@ export function useAttendanceCorrection() {
 
             await apiClient.post('/attendance/save-student-pri', { records: recordsToSave });
             toast.success(`Saved ${recordsToSave.length} attendance records!`);
+            setDirtyIds(new Set()); // Clear dirty flags after successful save
         } catch {
             toast.error('Failed to save corrections');
         } finally {

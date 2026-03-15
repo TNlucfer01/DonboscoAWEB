@@ -37,7 +37,7 @@ interface ProtectedProps {
 }
 
 function Protected({ user, requiredRole, children }: ProtectedProps) {
-	if (!user || user.role !== requiredRole) return <Navigate to="/" replace />;
+	if (!user || user.role.toLowerCase() !== requiredRole.toLowerCase()) return <Navigate to="/" replace />;
 	return <>{children}</>;
 }
 

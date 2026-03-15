@@ -245,7 +245,7 @@ export default function Login({ onLogin }: LoginProps) {
 
                 <div className="mt-6 p-4 bg-slate-100 border border-slate-300 text-xs text-slate-600">
                     <p className="mb-2 font-medium">Demo Credentials:</p>
-                    <p>Principal: principal@donbosco.edu / Admin@1234</p>
+                    <p>Principal: principal@donbosco.edu / Password@123</p>
                 </div>
             </div>
         </div>

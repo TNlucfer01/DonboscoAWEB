@@ -38,14 +38,11 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
 
     useEffect(() => {
         if (secondsLeft <= 0) return;
-        const timer = setInterval(() => {
-            setSecondsLeft(prev => {
-                if (prev <= 1) { clearInterval(timer); return 0; }
-                return prev - 1;
-            });
+        const timer = setTimeout(() => {
+            setSecondsLeft(prev => prev - 1);
         }, 1000);
-        return () => clearInterval(timer);
-    }, [secondsLeft > 0]); // Re-start timer when secondsLeft becomes > 0
+        return () => clearTimeout(timer);
+    }, [secondsLeft]);
 
     const timerMins = Math.floor(secondsLeft / 60);
     const timerSecs = secondsLeft % 60;
@@ -164,9 +161,9 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                                          <Select value={s.status} onValueChange={(v) => updateStatus(s.id, v)} disabled={timerExpired || s.isLocked}>
                                                              <SelectTrigger className="border-slate-300"><SelectValue /></SelectTrigger>
                                                              <SelectContent className="bg-white border-2 border-slate-300">
-                                                                 <SelectItem value="Present">Present</SelectItem>
-                                                                 <SelectItem value="Absent">Absent</SelectItem>
-                                                                 {s.isLocked && s.status !== 'Present' && s.status !== 'Absent' && (
+                                                                 <SelectItem value="PRESENT">Present</SelectItem>
+                                                                 <SelectItem value="ABSENT">Absent</SelectItem>
+                                                                 {s.isLocked && s.status !== 'PRESENT' && s.status !== 'ABSENT' && (
                                                                      <SelectItem value={s.status}>{s.status}</SelectItem>
                                                                  )}
                                                              </SelectContent>

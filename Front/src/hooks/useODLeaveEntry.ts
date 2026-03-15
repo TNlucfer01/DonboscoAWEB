@@ -1,21 +1,33 @@
 // ─── useODLeaveEntry hook ─────────────────────────────────────────────────────
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { ODLeaveStudent, AttendancePeriodKey } from '../features/shared/attendance.types';
 import { fetchODLeaveStudents, saveODLeaveEntries } from '../api/attendance.api';
+import { getActiveSemester } from '../api/semester.api';
 import { ApiError } from '../api/apiClient';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-export function useODLeaveEntry(date: Date | undefined) {
+export function useODLeaveEntry(year: string) {
     const [students, setStudents] = useState<ODLeaveStudent[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [activeSemesterId, setActiveSemesterId] = useState<number | null>(null);
 
-    const load = useCallback(async (d: Date) => {
+    // Fetch active semester lazily
+    const ensureSemester = useCallback(async () => {
+        if (activeSemesterId) return activeSemesterId;
+        const sem = await getActiveSemester();
+        if (sem) {
+            setActiveSemesterId(sem.semester_id);
+            return sem.semester_id;
+        }
+        return null;
+    }, [activeSemesterId]);
+
+    const load = useCallback(async (yr: string) => {
         setLoading(true);
         try {
-            const data = await fetchODLeaveStudents(format(d, 'yyyy-MM-dd'));
+            const data = await fetchODLeaveStudents(yr);
             setStudents(data);
         } catch (err) {
             if (err instanceof ApiError && err.code === 'PAST_DATE') {
@@ -28,9 +40,9 @@ export function useODLeaveEntry(date: Date | undefined) {
         }
     }, []);
 
-    useEffect(() => {
-        if (date) load(date);
-    }, [date, load]);
+    const addStudent = useCallback((student: ODLeaveStudent) => {
+        setStudents(prev => [...prev, student]);
+    }, []);
 
     const updatePeriod = useCallback((id: number, period: AttendancePeriodKey, value: string) => {
         setStudents((prev) => prev.map((s) => s.id === id ? { ...s, [period]: value } : s));
@@ -41,18 +53,22 @@ export function useODLeaveEntry(date: Date | undefined) {
     }, []);
 
     const save = useCallback(async () => {
+        const semId = await ensureSemester();
+        if (!semId) {
+            toast.error('No active semester found. Cannot save entries.');
+            return;
+        }
         setSaving(true);
         try {
-            // saveODLeaveEntries expects a single entry; send modified entries with status in body
             for (const student of students) {
                 if (student.status) {
                     await saveODLeaveEntries({
                         student_id: student.id,
                         slot_id: student.slot_id,
                         date: student.date,
-                        status: student.status, // Sends status in body as required
+                        status: student.status,
                         od_reason: student.remarks || undefined,
-                        semester_id: 1, // Default — backend typically derives this
+                        semester_id: semId,
                     });
                 }
             }
@@ -66,7 +82,7 @@ export function useODLeaveEntry(date: Date | undefined) {
         } finally {
             setSaving(false);
         }
-    }, [students]);
+    }, [students, ensureSemester]);
 
-    return { students, loading, saving, updatePeriod, updateRemarks, save };
+    return { students, loading, saving, addStudent, updatePeriod, updateRemarks, save, load };
 }

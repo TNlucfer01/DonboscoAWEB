@@ -113,7 +113,7 @@ export async function fetchStaffStudents(
         id: s.student_id,
         rollNo: s.rollno,
         name: s.name,
-        status: s.status || 'Present',
+        status: s.status || 'PRESENT',
         isLocked: !!s.is_locked,
         odReason: s.od_reason || '',
     }));
@@ -147,7 +147,7 @@ export async function submitStaffAttendance(
         id: s.student_id,
         rollNo: s.rollno,
         name: s.name,
-        status: s.status || 'Present',
+        status: s.status || 'PRESENT',
         isLocked: !!s.is_locked,
         odReason: s.od_reason || '',
     }));
@@ -174,7 +174,7 @@ export async function fetchStaffCorrectionStudents(
         id: s.student_id,
         rollNo: s.rollno || s.roll_number,
         name: s.studentname || s.name || s.student_name,
-        status: s.status || 'Present',
+        status: s.status || 'PRESENT',
         isLocked: !!s.is_locked,
         odReason: s.od_reason || '',
     }));

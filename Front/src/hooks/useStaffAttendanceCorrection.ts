@@ -39,7 +39,7 @@ export function useStaffAttendanceCorrection() {
     }, []);
 
     const markAllPresent = useCallback(() => {
-        setStudents((prev) => prev.map((s) => s.isLocked ? s : { ...s, status: 'Present' }));
+        setStudents((prev) => prev.map((s) => s.isLocked ? s : { ...s, status: 'PRESENT' }));
     }, []);
 
     const submit = useCallback(async (year: string, batch: string, period: string, subject: string, date: string) => {
