@@ -317,7 +317,7 @@ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_i
             od_reason: od_reason,
             submitted_by,
             submitted_at: now,
-            is_locked: true,
+            is_locked: 1,
         });
     }
 
@@ -508,7 +508,7 @@ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_i
  async function updateODIL(id, { status, od_reason }) {
     const record = await AttendanceRecord.findByPk(id);
     if (!record || !record.is_locked) throw new AppError('NOT_FOUND', 'OD/IL record not found', 404);
-    if (!dayjs(record.date).isAfter(dayjs(), 'day')) {
+    if (dayjs(record.date).isBefore(dayjs(), 'day')) {
         throw new AppError('PAST_DATE', 'Cannot edit OD/IL for past dates', 400);
     }
     await record.update({ status, od_reason });
@@ -699,7 +699,7 @@ async function saveStudentPri(records, changed_by) {
         const { record_id, status, is_locked, remarks, od_reason } = r;
 
         const finalRemarks = remarks !== undefined ? remarks : (od_reason || null);
-        const finalLocked = true; // Always lock record when Principal saves
+        const finalLocked = is_locked ? true : false;
         
         if (record_id) {
             const existing = await AttendanceRecord.findByPk(record_id);

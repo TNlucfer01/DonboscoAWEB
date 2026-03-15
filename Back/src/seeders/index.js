@@ -33,7 +33,7 @@ async function seed() {
         // ── 3. Principal User ─────────────────────────────────────────
         const existingPrincipal = await User.findOne({ where: { role: 'PRINCIPAL' } });
         if (!existingPrincipal) {
-            const hash = await bcrypt.hash('Admin@1234', 10);
+            const hash = await bcrypt.hash('Password@123', 10);
             await User.create({
                 name: 'Principal Admin',
                 email: 'principal@donbosco.edu',
@@ -42,7 +42,7 @@ async function seed() {
                 managed_year: null,
                 password_hash: hash,
             });
-            console.log('✔ Principal seeded (email: principal@donbosco.edu, password: Admin@1234)');
+            console.log('✔ Principal seeded (email: principal@donbosco.edu, password: Password@123)');
         } else {
             console.log('ℹ Principal already exists — skipped');
         }
