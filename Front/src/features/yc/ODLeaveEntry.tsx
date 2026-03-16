@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { PageProps } from '../shared/types';
 import { DatePickerField } from '../shared/DatePickerField';
 import { SelectField } from '../shared/SelectField';
-import { useODLeaveEntry } from '../../hooks/useODLeaveEntry';
+import { useODLeaveEntry } from './hooks/useODLeaveEntry';
 import { YEAR_OPTIONS, ATTENDANCE_STATUS_OPTIONS } from '../shared/constants';
 import { AttendancePeriodKey, PERIOD_KEYS } from '../shared/attendance.types';
 import { useState } from 'react';

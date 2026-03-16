@@ -8,7 +8,7 @@ import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
 import { DatePickerField } from '../shared/DatePickerField';
 import { YEAR_OPTIONS, PERIOD_OPTIONS } from '../shared/constants';
-import { useAttendanceCorrection } from '../../hooks/useAttendanceCorrection';
+import { useAttendanceCorrection } from './hooks/useAttendanceCorrection';
 import { format } from 'date-fns';
 import { Loader2, Search, Download } from 'lucide-react';
 

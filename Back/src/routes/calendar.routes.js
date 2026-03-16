@@ -20,6 +20,8 @@ router.post('/',
     [
         body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
         body('day_type').isIn(['HOLIDAY', 'SATURDAY_ENABLED']).withMessage('day_type must be HOLIDAY or SATURDAY_ENABLED'),
+        body('holiday_name').if(body('day_type').equals('HOLIDAY')).notEmpty().withMessage('holiday_name required for holidays'),
+        body('holiday_description').optional().isString(),
     ],
     validate,
     async (req, res, next) => {

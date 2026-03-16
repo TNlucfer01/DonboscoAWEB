@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { PageProps } from '../shared/types';
 import { DatePickerField } from '../shared/DatePickerField';
 import { AttendanceTable } from '../shared/AttendanceTable';
-import { useAttendanceView } from '../../hooks/useAttendanceView';
+import { useAttendanceView } from '../principal/hooks/useAttendanceView';
 
 export default function YCAttendanceView({ user, onLogout }: PageProps) {
     const [date, setDate] = useState<Date | undefined>(new Date());

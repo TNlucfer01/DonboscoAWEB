@@ -1,9 +1,9 @@
 // ─── useStaffAttendance hook ──────────────────────────────────────────────────
 
 import { useState, useCallback } from 'react';
-import { StaffStudent } from '../features/shared/attendance.types';
-import { fetchStaffStudents, submitStaffAttendance } from '../api/attendance.api';
-import { ApiError } from '../api/apiClient';
+import { StaffStudent } from '../../shared/attendance.types';
+import { fetchStaffStudents, submitStaffAttendance } from '../../../api/attendance.api';
+import { ApiError } from '../../../api/apiClient';
 import { toast } from 'sonner';
 
 export function useStaffAttendance() {

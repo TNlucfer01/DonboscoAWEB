@@ -1,9 +1,9 @@
 // ─── useStaffAttendanceCorrection hook ────────────────────────────────────────
 
 import { useState, useCallback } from 'react';
-import { StaffStudent } from '../features/shared/attendance.types';
-import { fetchStaffCorrectionStudents, submitStaffCorrectionAttendance, CorrectionMetadata } from '../api/attendance.api';
-import { ApiError } from '../api/apiClient';
+import { StaffStudent } from '../../shared/attendance.types';
+import { fetchStaffCorrectionStudents, submitStaffCorrectionAttendance, CorrectionMetadata } from '../../../api/attendance.api';
+import { ApiError } from '../../../api/apiClient';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 

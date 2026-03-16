@@ -9,7 +9,7 @@ import { ChartCard, CHART_TOOLTIP_STYLE } from '../shared/ChartCard';
 import { PageProps } from '../shared/types';
 import { fetchAttendanceSummary, fetchBelowThreshold, AttendanceSummary } from '../../api/dashboard.api';
 import { getStudents } from '../../api/student.api';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function YCDashboard({ user, onLogout }: PageProps) {
     const [totalStudents, setTotalStudents] = useState(0);
@@ -50,13 +50,13 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
                 }));
                 setBatchData(batchChartData.length > 0 ? batchChartData : [{ batch: 'No Data', attendance: 0 }]);
 
-                // Trend data — generate from current data as placeholder
-                // (Backend doesn't have a monthly trend API, so we show current snapshot)
+                // Trend data — use consistent current value (no random)
+                // Backend doesn't have a monthly trend API, so we show current snapshot
                 const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
                 const current = Math.round(avgPct);
                 setTrendData(months.map((month, i) => ({
                     month,
-                    attendance: Math.max(0, current - (months.length - 1 - i) * 2 + Math.floor(Math.random() * 4)),
+                    attendance: Math.max(0, current - (months.length - 1 - i) * 2),
                 })));
 
             } catch { /* fallback to zeros */ }
@@ -84,6 +84,7 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <ChartCard title="Year-wise Attendance">
+                        <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={batchData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
                             <XAxis dataKey="batch" stroke="#475569" />
@@ -92,8 +93,10 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
                             <Legend />
                             <Bar dataKey="attendance" fill="#475569" name="Attendance %" />
                         </BarChart>
+                        </ResponsiveContainer>
                     </ChartCard>
                     <ChartCard title="Attendance Trend">
+                        <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={trendData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
                             <XAxis dataKey="month" stroke="#475569" />
@@ -102,6 +105,7 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
                             <Legend />
                             <Line type="monotone" dataKey="attendance" stroke="#475569" strokeWidth={2} name="Attendance %" />
                         </LineChart>
+                        </ResponsiveContainer>
                     </ChartCard>
                 </div>
             </div>

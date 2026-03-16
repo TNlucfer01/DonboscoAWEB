@@ -19,8 +19,8 @@ export async function getStudents(year?: number, theory_batch_id?: number, lab_b
     return Array.isArray(students) ? students : [];
 }
 
-/** PUT /students/:id — Update student (validated server-side) */
-export async function updateStudent(id: number, data: {
+/** PUT /students/:rollNumber — Update student (validated server-side) */
+export async function updateStudent(rollNumber: string, data: {
     name?: string;
     roll_number?: string;
     parent_phone?: string;
@@ -28,10 +28,10 @@ export async function updateStudent(id: number, data: {
     theory_batch_id?: number;
     lab_batch_id?: number;
 }): Promise<void> {
-    await apiClient.put(`/students/${id}`, data);
+    await apiClient.put(`/students/${rollNumber}`, data);
 }
 
-/** DELETE /students/:id — Delete student */
-export async function deleteStudent(id: number): Promise<void> {
-    await apiClient.delete(`/students/${id}`);
+/** DELETE /students/:rollNumber — Delete student */
+export async function deleteStudent(rollNumber: string): Promise<void> {
+    await apiClient.delete(`/students/${rollNumber}`);
 }

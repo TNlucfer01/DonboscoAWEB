@@ -3,7 +3,7 @@ import { Button } from '../../app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
 import { PageProps } from '../shared/types';
 import { DatePickerField } from '../shared/DatePickerField';
-import { useAuditLog } from '../../hooks/useAuditLog';
+import { useAuditLog } from './hooks/useAuditLog';
 
 export default function AuditLog({ user, onLogout }: PageProps) {
     const { logs, loading, startDate, endDate, setStartDate, setEndDate, applyFilter, clearFilter } = useAuditLog();

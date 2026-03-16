@@ -20,7 +20,6 @@ router.post('/fetch-students',
     ],
     validate,
     async (req, res, next) => {
-        console.log(req.body);
         try { return success(res, await svc.fetchStudents(req.body)); }
         catch (e) { next(e); }
     }
@@ -41,16 +40,20 @@ router.get('/fetch-students-pri',
     }
 );
 
-router.post('/save-student-pri', auth, roleGuard('PRINCIPAL'), [], validate,
-async (req, res, next) => {
-    try {
-        const records = req.body.records || req.body; // Allow sending the array directly or in 'records' key
-        if (!Array.isArray(records)) {
-            return res.status(400).json({ success: false, error: { message: "records array required" } });
-        }
-        return success(res, await svc.saveStudentPri(records, req.user.userId));
-    } catch(e) { next(e); }
-})
+router.post('/save-student-pri', auth, roleGuard('PRINCIPAL'),
+    [
+        body('records').isArray({ min: 1 }).withMessage('records array required'),
+        body('records.*.record_id').isInt({ min: 1 }).withMessage('record_id required'),
+        body('records.*.status').isIn(['PRESENT', 'ABSENT', 'OD', 'INFORMED_LEAVE']).withMessage('valid status required'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const records = req.body.records;
+            return success(res, await svc.saveStudentPri(records, req.user.userId));
+        } catch(e) { next(e); }
+    }
+);
 // POST /api/attendance/submit — Staff only
 // Handles multiple students at once via the records[] array.
 // Multiple staff can submit for different batches/slots simultaneously.
@@ -70,8 +73,8 @@ router.post('/submit',
     }
 );
 
-// POST /api/attendance/correct-attedance/fetch-students — Staff attendance correction fetching
-router.post('/correct-attedance/fetch-students',
+// POST /api/attendance/correct-attendance/fetch-students — Staff attendance correction fetching
+router.post('/correct-attendance/fetch-students',
     auth, roleGuard('SUBJECT_STAFF', 'PRINCIPAL'),
     [
         body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
@@ -86,8 +89,6 @@ router.post('/correct-attedance/fetch-students',
         try {
             const { year, batch_id, batch_type, slot_id, subject_id, date } = req.body;
             const data=await svc.fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, subject_id, date });
-       console.log(req.body);
-            console.log(data);
             return success(res, data);
         
         
@@ -95,8 +96,8 @@ router.post('/correct-attedance/fetch-students',
     }
 );
 
-// POST /api/attendance/correct-attedance — Staff correct attendance (skips past_date logic)
-router.post('/correct-attedance',
+// POST /api/attendance/correct-attendance — Staff correct attendance (skips past_date logic)
+router.post('/correct-attendance',
     auth, roleGuard('SUBJECT_STAFF'),
     [
         body('records').isArray({ min: 1 }).withMessage('records array required'),

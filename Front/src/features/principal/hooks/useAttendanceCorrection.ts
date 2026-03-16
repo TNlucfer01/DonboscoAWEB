@@ -3,7 +3,7 @@
 // Saves via POST /attendance/correct-bulk (create + update in one call).
 
 import { useState, useCallback } from 'react';
-import { apiClient } from '../api/apiClient';
+import { apiClient } from '../../../api/apiClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 

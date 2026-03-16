@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/u
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
 import { PERIOD_OPTIONS } from '../shared/constants';
-import { useStaffAttendance } from '../../hooks/useStaffAttendance';
+import { useStaffAttendance } from './hooks/useStaffAttendance';
 import { fetchBatches, Batch } from '../../api/batch.api';
 import { fetchSubjects, Subject } from '../../api/subject.api';
 import { Clock, AlertTriangle } from 'lucide-react';
@@ -186,7 +186,11 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                     Mark All Present
                                 </Button>
                                 {/* //i have to make this dynamic in the future */}
-                                <Button onClick={() => submit(year, batch, period, subject, new Date().toISOString().split('T')[0])} disabled={submitting || timerExpired}
+                                <Button onClick={() => {
+                                    const n = new Date();
+                                    const localDate = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+                                    submit(year, batch, period, subject, localDate);
+                                }} disabled={submitting || timerExpired}
                                     className="bg-slate-700 hover:bg-slate-800 text-white">
                                     {timerExpired ? 'Window Closed' : submitting ? 'Submitting…' : 'Submit Attendance'}
                                 </Button>

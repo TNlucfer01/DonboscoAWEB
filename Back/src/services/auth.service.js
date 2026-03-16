@@ -58,8 +58,10 @@ async function sendOTP(phone) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore.set(phone, { otp, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min
 
-    // TODO: Replace console.log with real MSG91 call (sms.service.js)
-    console.log(`[DEV] OTP for ${phone}: ${otp}`);
+    // Only log OTP in development; in production, integrate a real SMS provider
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DEV] OTP for ${phone}: ${otp}`);
+    }
     return { message: 'OTP sent' };
 }
 

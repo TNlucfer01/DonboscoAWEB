@@ -47,10 +47,10 @@ export const SEMESTER_OPTIONS: SelectOption[] = [
 ];
 
 export const ATTENDANCE_STATUS_OPTIONS: SelectOption[] = [
-    { value: 'P', label: 'P' },
-    { value: 'A', label: 'A' },
+    { value: 'PRESENT', label: 'P' },
+    { value: 'ABSENT', label: 'A' },
     { value: 'OD', label: 'OD' },
-    { value: 'IL', label: 'IL' },
+    { value: 'INFORMED_LEAVE', label: 'IL' },
 ];
 
 export const GENDER_OPTIONS: SelectOption[] = [

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/u
 import { PageProps } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
 import { PERIOD_OPTIONS } from '../shared/constants';
-import { useStaffAttendanceCorrection } from '../../hooks/useStaffAttendanceCorrection';
+import { useStaffAttendanceCorrection } from './hooks/useStaffAttendanceCorrection';
 import { DatePickerField } from '../shared/DatePickerField';
 import { fetchBatches, Batch } from '../../api/batch.api';
 import { fetchSubjects, Subject } from '../../api/subject.api';

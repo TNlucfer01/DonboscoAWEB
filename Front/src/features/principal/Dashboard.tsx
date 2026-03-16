@@ -12,7 +12,7 @@ import { fetchDashboardStats } from '../../api/dashboard.api'; //these are the i
 import { fetchAuditLogs } from '../../api/audit.api';
 import { AuditLogEntry } from '../shared/attendance.types';
 import {
-	BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+	BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 
 export default function PrincipalDashboard({ user, onLogout }: PageProps) {
@@ -47,11 +47,15 @@ export default function PrincipalDashboard({ user, onLogout }: PageProps) {
 		load();
 	}, []);
 
+	const now = new Date();
+	const acadStartYear = now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1; // June = month 5
+	const academicYear = `${acadStartYear}-${String(acadStartYear + 1).slice(-2)}`;
+
 	const statCards = [
 		{ icon: Users, label: 'Total Students', value: String(stats.totalStudents) },
 		{ icon: Activity, label: 'Overall Attendance', value: stats.overallAttendance },
 		{ icon: AlertTriangle, label: 'Below 80%', value: String(stats.belowThreshold) },
-		{ icon: CalendarIcon, label: 'Academic Year', value: '2025-26' },
+		{ icon: CalendarIcon, label: 'Academic Year', value: academicYear },
 	];
 
 	return (
@@ -69,6 +73,7 @@ export default function PrincipalDashboard({ user, onLogout }: PageProps) {
 				{/* Charts */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<ChartCard title="Year-wise Attendance">
+						<ResponsiveContainer width="100%" height={300}>
 						<BarChart data={stats.yearWise}>
 							<CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
 							<XAxis dataKey="year" stroke="#475569" />
@@ -78,6 +83,7 @@ export default function PrincipalDashboard({ user, onLogout }: PageProps) {
 							<Bar dataKey="attendance" fill="#475569" name="Attendance %" />
 							<Bar dataKey="target" fill="#94a3b8" name="Target %" />
 						</BarChart>
+						</ResponsiveContainer>
 					</ChartCard>
 
 					{/* Recent Manual Changes (from Audit Log) */}

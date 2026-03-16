@@ -73,7 +73,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
         if (!holidayName) return toast.error('Please enter holiday name');
         setLoading(true);
         try {
-            await markHoliday(format(date, 'yyyy-MM-dd'), `${holidayName}${holidayDescription ? ' - ' + holidayDescription : ''}`);
+            await markHoliday(format(date, 'yyyy-MM-dd'), holidayName, holidayDescription || undefined);
             toast.success(`Holiday "${holidayName}" marked for ${format(date, 'PPP')}`);
             setHolidayName(''); setHolidayDescription('');
             await loadEntries();
@@ -153,7 +153,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                     {selectedEntry && (
                                         <p className="text-sm text-blue-700 mt-1">
                                             Currently marked as: <strong>{selectedEntry.day_type === 'HOLIDAY' ? '🔴 Holiday' : '🟢 Working Saturday'}</strong>
-                                            {selectedEntry.reason && ` — ${selectedEntry.reason}`}
+                                            {selectedEntry.holiday_name && ` — ${selectedEntry.holiday_name}`}
                                         </p>
                                     )}
                                 </div>
@@ -209,7 +209,8 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                     <tr className="bg-slate-200 text-slate-800">
                                         <th className="text-left p-3 border border-slate-300 font-semibold">Date</th>
                                         <th className="text-left p-3 border border-slate-300 font-semibold">Type</th>
-                                        <th className="text-left p-3 border border-slate-300 font-semibold">Reason</th>
+                                        <th className="text-left p-3 border border-slate-300 font-semibold">Holiday Name</th>
+                                        <th className="text-left p-3 border border-slate-300 font-semibold">Description</th>
                                         <th className="text-center p-3 border border-slate-300 font-semibold w-24">Actions</th>
                                     </tr>
                                 </thead>
@@ -225,7 +226,8 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                                         {e.day_type === 'HOLIDAY' ? 'Holiday' : 'Working Saturday'}
                                                     </span>
                                                 </td>
-                                                <td className="p-3 border border-slate-300">{e.reason || '-'}</td>
+                                                <td className="p-3 border border-slate-300">{e.holiday_name || '-'}</td>
+                                                <td className="p-3 border border-slate-300">{e.holiday_description || '-'}</td>
                                                 <td className="p-3 border border-slate-300 text-center">
                                                     {canDelete && (
                                                         <button title="Delete" className="text-red-600 hover:text-red-800"

@@ -1,10 +1,10 @@
 // ─── useODLeaveEntry hook ─────────────────────────────────────────────────────
 
 import { useState, useCallback } from 'react';
-import { ODLeaveStudent, AttendancePeriodKey } from '../features/shared/attendance.types';
-import { fetchODLeaveStudents, saveODLeaveEntries } from '../api/attendance.api';
-import { getActiveSemester } from '../api/semester.api';
-import { ApiError } from '../api/apiClient';
+import { ODLeaveStudent, AttendancePeriodKey } from '../../shared/attendance.types';
+import { fetchODLeaveStudents, saveODLeaveEntries } from '../../../api/attendance.api';
+import { getActiveSemester } from '../../../api/semester.api';
+import { ApiError } from '../../../api/apiClient';
 import { toast } from 'sonner';
 
 export function useODLeaveEntry(year: string) {
