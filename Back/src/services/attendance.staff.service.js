@@ -3,7 +3,7 @@
 
 const { Op } = require('sequelize');
 const {
-    AttendanceRecord, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch,
+    AttendanceAuditLog, AttendanceRecord, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch,
 } = require('../models/index');
 const AppError = require('../utils/AppError');
 const smsService = require('./sms.service');
@@ -162,6 +162,15 @@ async function correctStaffSubmit({ records, slot_id, date, subject_id, submitte
             where: { student_id: r.student_id, date, slot_id, semester_id: semester.semester_id }
         });
         if (existing?.is_locked && existing.status === 'OD') continue;
+        
+        if (existing && existing.status !== r.status) {
+            await AttendanceAuditLog.create({
+                record_id: existing.record_id,
+                changed_by: submitted_by,
+                old_status: existing.status, new_status: r.status,
+                changed_at: new Date(),
+            });
+        }
 
         toInsert.push({
             student_id: r.student_id,

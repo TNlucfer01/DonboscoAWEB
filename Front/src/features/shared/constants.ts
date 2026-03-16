@@ -33,13 +33,7 @@ export const PERIOD_OPTIONS: SelectOption[] = [
     { value: '5', label: 'Period 5' },
 ];
 
-export const SUBJECT_OPTIONS: SelectOption[] = [
-    { value: 'CS101', label: 'Computer Science (CS101)' },
-    { value: 'MA101', label: 'Mathematics (MA101)' },
-    { value: 'PH101', label: 'Physics (PH101)' },
-    { value: 'CH101', label: 'Chemistry (CH101)' },
-    { value: 'EE101', label: 'Electrical Engineering (EE101)' },
-];
+
 
 export const SEMESTER_OPTIONS: SelectOption[] = [
     { value: 'odd', label: 'Odd' },
@@ -52,6 +46,11 @@ export const ATTENDANCE_STATUS_OPTIONS: SelectOption[] = [
     { value: 'OD', label: 'OD' },
     { value: 'INFORMED_LEAVE', label: 'IL' },
 ];
+export const YC_ATTENDANCE_STATUS_OPTIONS: SelectOption[] = [
+    { value: 'OD', label: 'OD' },
+    { value: 'INFORMED_LEAVE', label: 'IL' },
+];
+
 
 export const GENDER_OPTIONS: SelectOption[] = [
     { value: 'Male', label: 'Male' },

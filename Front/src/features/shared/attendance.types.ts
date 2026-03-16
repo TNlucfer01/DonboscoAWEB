@@ -1,18 +1,6 @@
 // ─── Attendance Types ─────────────────────────────────────────────────────────
 // Shared across all attendance-related features and API responses.
 
-export interface AttendanceStudent {
-    id: number;
-    sno: number;
-    rollNo: string;
-    name: string;
-    batch: string;
-    period1: string;
-    period2: string;
-    period3: string;
-    period4: string;
-    period5: string;
-}
 
 export interface CorrectionStudent {
     id: number;
@@ -32,6 +20,18 @@ export interface StaffStudent {
     status: string;
     isLocked?: boolean;
     odReason?: string;
+}
+export interface AttendanceStudent {
+    id: number;
+    sno: number;
+    rollNo: string;
+    name: string;
+    batch: string;
+    period1: string;
+    period2: string;
+    period3: string;
+    period4: string;
+    period5: string;
 }
 
 export interface ODLeaveStudent extends AttendanceStudent {
