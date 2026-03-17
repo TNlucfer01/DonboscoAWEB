@@ -46,7 +46,7 @@ export default function App() {
 
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-right"  />
       <BrowserRouter>
         <AppRoutes user={user} onLogin={handleLogin} onLogout={handleLogout} />
       </BrowserRouter>

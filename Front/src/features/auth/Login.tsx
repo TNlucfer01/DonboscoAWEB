@@ -62,7 +62,7 @@ function ForgotPassword({ onBack }: ForgotPasswordProps) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-50 flex items-center bg-[#00702d] justify-center p-4">
             <div className="w-full max-w-md bg-white border-2 border-slate-300 p-8">
                 <div className="text-center mb-6">
                     <div className="flex justify-center mb-4">

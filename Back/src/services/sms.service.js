@@ -90,4 +90,6 @@ async function sendMonthlyWarnings() {
     console.log(`✔ Monthly SMS sent to ${results.length} students below 80%`);
 }
 
+//add a thing for the forget passoword otp genration too
+
 module.exports = { sendSMS, sendAbsentSMS, sendMonthlyWarnings };

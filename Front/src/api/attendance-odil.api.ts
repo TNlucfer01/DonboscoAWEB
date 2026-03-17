@@ -5,18 +5,36 @@ import { ODLeaveStudent } from '../features/shared/attendance.types';
 export async function fetchODLeaveStudents(year: string): Promise<ODLeaveStudent[]> {
     const data = await apiClient.get<any[]>('/attendance/od-il', { year });
 
-    return data.map((r, index) => ({
-        id: r.record_id,
-        sno: index + 1,
-        rollNo: r.student?.roll_number || '-',
-        name: r.student?.name || 'Unknown',
-        batch: r.student?.batch?.name || '-',
-        period1: '-', period2: '-', period3: '-', period4: '-', period5: '-',
-        status: r.status,
-        remarks: r.od_reason || '',
-        date: r.date,
-        slot_id: r.slot_id,
-        attendancePercentage: 0,
+    const grouped = new Map<string, ODLeaveStudent>();
+
+    data.forEach((r) => {
+        const key = `${r.student_id}-${r.date}`;
+        if (!grouped.has(key)) {
+            grouped.set(key, {
+                id: r.student_id,
+                sno: 0, // Assigned later
+                rollNo: r.student?.roll_number || '-',
+                name: r.student?.name || 'Unknown',
+                batch: r.student?.batch?.name || '-',
+                period1: '-', period2: '-', period3: '-', period4: '-', period5: '-',
+                status: r.status,
+                remarks: r.od_reason || '',
+                date: r.date,
+                slot_id: r.slot_id,
+                attendancePercentage: 0,
+            });
+        }
+        
+        const student = grouped.get(key)!;
+        if (r.slot_id >= 1 && r.slot_id <= 5) {
+            const periodKey = `period${r.slot_id}` as keyof ODLeaveStudent;
+            (student as any)[periodKey] = r.status;
+        }
+    });
+
+    return Array.from(grouped.values()).map((s, index) => ({
+        ...s,
+        sno: index + 1
     }));
 }
 

@@ -61,7 +61,29 @@ export function useODLeaveEntry(year: string) {
         setSaving(true);
         try {
             for (const student of students) {
-                if (student.status) {
+                let updatedPeriods = false;
+
+                // Save for each period that has a value (not '-')
+                for (let i = 1; i <= 5; i++) {
+                    const periodKey = `period${i}` as AttendancePeriodKey;
+                    const pStatus = student[periodKey];
+                    
+                    if (pStatus && pStatus !== '-') {
+                        await saveODLeaveEntries({
+                            student_id: student.id,
+                            slot_id: i,
+                            date: student.date,
+                            status: pStatus,
+                            od_reason: student.remarks || undefined,
+                            semester_id: semId,
+                        });
+                        updatedPeriods = true;
+                    }
+                }
+
+                // If no periods were set (e.g. an existing record loaded from the backend),
+                // but it has a valid status, save it using its original slot_id
+                if (!updatedPeriods && student.status && student.status !== '-') {
                     await saveODLeaveEntries({
                         student_id: student.id,
                         slot_id: student.slot_id,
