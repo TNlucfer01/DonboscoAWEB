@@ -122,7 +122,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                             <CardTitle className="text-slate-800">College Calendar</CardTitle>
                             <div className="flex gap-4 text-sm mt-2">
                                 {[
-                                    { color: 'bg-white border-2 border-slate-300', label: 'Working Day' },
+                                    { color: 'bg-[#f7f3ea] border-2 border-slate-300', label: 'Working Day' },
                                     { style: { backgroundColor: '#fee2e2', border: '2px solid #991b1b' }, label: 'Holiday' },
                                     { style: { backgroundColor: '#dcfce7', border: '2px solid #166534' }, label: 'Working Saturday' },
                                 ].map(({ color, style, label }) => (
@@ -219,7 +219,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                         const entryDate = parseISO(e.date);
                                         const canDelete = entryDate >= today;
                                         return (
-                                            <tr key={e.calendar_id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                                            <tr key={e.calendar_id} className={i % 2 === 0 ? 'bg-[#f7f3ea]' : 'bg-slate-50'}>
                                                 <td className="p-3 border border-slate-300">{format(entryDate, 'PPP')}</td>
                                                 <td className="p-3 border border-slate-300">
                                                     <span className={`inline-block px-2 py-1 text-xs ${e.day_type === 'HOLIDAY' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-green-100 text-green-800 border border-green-300'}`}>

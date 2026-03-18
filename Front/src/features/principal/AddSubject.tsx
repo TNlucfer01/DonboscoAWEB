@@ -13,7 +13,7 @@ import { SelectField } from '../shared/SelectField';
 import { YEAR_OPTIONS, SEMESTER_OPTIONS } from '../shared/constants';
 import { Subject, fetchSubjects, addSubject, deleteSubject } from '../../api/subject.api';
 import { toast } from 'sonner';
-import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2, BookPlus } from 'lucide-react';
 
 export default function AddSubject({ user, onLogout }: PageProps) {
     const [name, setName] = useState('');
@@ -54,11 +54,11 @@ export default function AddSubject({ user, onLogout }: PageProps) {
                 subject_year: parseInt(year),
                 semester: semester.toUpperCase(),
                 credits: parseInt(credits),
-                description: description || undefined,
+                //description: description || undefined,
             });
             toast.success(`Subject ${name} (${code}) added successfully!`);
             setName(''); setCode(''); setYear(''); setSemester(''); setCredits(''); setDescription('');
-            await loadSubjects();
+            await loadSubjects();1
         } catch (err: any) {
             toast.error(err.message || 'Failed to add subject');
         } finally {
@@ -82,42 +82,53 @@ export default function AddSubject({ user, onLogout }: PageProps) {
 
     return (
         <Layout user={user} onLogout={onLogout}>
-            <div className="space-y-8">
+            <div className="space-y-10">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl font-bold text-foreground">Curriculum Management</h1>
+                    <p className="text-muted-foreground">Define and organize academic subjects for each year</p>
+                </div>
+
                 {/* ── Add Subject Form ──────────────────────────────── */}
-                <div className="max-w-2xl">
-                    <h1 className="text-2xl text-slate-800 mb-6">Subject Management</h1>
-                    <Card className="border-2 border-slate-300">
-                        <CardHeader><CardTitle className="text-slate-800">Add New Subject</CardTitle></CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="subjectName" className="text-slate-700">Subject Name *</Label>
-                                    <Input id="subjectName" value={name} onChange={(e) => setName(e.target.value)}
-                                        placeholder="Enter subject name" className="mt-1 border-slate-300" />
+                <div className="max-w-4xl">
+                    <Card className="border-none shadow-xl shadow-black/5 bg-card overflow-hidden">
+                        <CardHeader className="bg-primary/5 pb-6">
+                            <CardTitle className="text-foreground flex items-center gap-2">
+                                <BookPlus className="w-5 h-5 text-primary" />
+                                Register New Subject
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-8">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="subjectName" className="text-sm font-semibold text-foreground ml-1">Subject Name *</Label>
+                                        <Input id="subjectName" value={name} onChange={(e) => setName(e.target.value)}
+                                            placeholder="Enter full subject title" className="h-11 rounded-xl bg-background border-border" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="subjectCode" className="text-sm font-semibold text-foreground ml-1">Subject Code *</Label>
+                                        <Input id="subjectCode" value={code} onChange={(e) => setCode(e.target.value)}
+                                            placeholder="e.g., AGRI-101" className="h-11 rounded-xl bg-background border-border" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
+                                        <SelectField label="Semester *" value={semester} options={SEMESTER_OPTIONS} onValueChange={setSemester} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="credits" className="text-sm font-semibold text-foreground ml-1">Credits *</Label>
+                                        <Input id="credits" type="number" min="1" max="6" value={credits}
+                                            onChange={(e) => setCredits(e.target.value)} placeholder="Credit hours (1-6)" className="h-11 rounded-xl bg-background border-border" />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <Label htmlFor="description" className="text-sm font-semibold text-foreground ml-1">Description</Label>
+                                        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
+                                            placeholder="Brief overview of the subject curriculum (optional)" rows={3} className="rounded-xl bg-background border-border resize-none" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label htmlFor="subjectCode" className="text-slate-700">Subject Code *</Label>
-                                    <Input id="subjectCode" value={code} onChange={(e) => setCode(e.target.value)}
-                                        placeholder="e.g., CS101" className="mt-1 border-slate-300" />
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
-                                    <SelectField label="Semester *" value={semester} options={SEMESTER_OPTIONS} onValueChange={setSemester} />
-                                </div>
-                                <div>
-                                    <Label htmlFor="credits" className="text-slate-700">Credits *</Label>
-                                    <Input id="credits" type="number" min="1" max="6" value={credits}
-                                        onChange={(e) => setCredits(e.target.value)} placeholder="Enter credit hours" className="mt-1 border-slate-300" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="description" className="text-slate-700">Description</Label>
-                                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Enter subject description (optional)" rows={3} className="mt-1 border-slate-300" />
-                                </div>
-                                <div className="pt-4">
-                                    <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-slate-700 hover:bg-slate-800 text-white">
-                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {loading ? 'Saving…' : 'Save Subject'}
+                                <div className="flex justify-end pt-4">
+                                    <Button type="submit" disabled={loading} className="px-10 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BookPlus className="mr-2 h-4 w-4" />}
+                                        {loading ? 'Processing…' : 'Finalize & Save Subject'}
                                     </Button>
                                 </div>
                             </form>
@@ -126,60 +137,76 @@ export default function AddSubject({ user, onLogout }: PageProps) {
                 </div>
 
                 {/* ── Subject List Table ────────────────────────────── */}
-                <div>
-                    <h2 className="text-xl text-slate-800 mb-4">Subject List</h2>
-                    <div className="border-2 border-slate-300 overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-slate-200 text-slate-800">
-                                    <th className="text-left p-3 border border-slate-300 font-semibold">Subject Name</th>
-                                    <th className="text-left p-3 border border-slate-300 font-semibold">Code</th>
-                                    <th className="text-left p-3 border border-slate-300 font-semibold">Year</th>
-                                    <th className="text-left p-3 border border-slate-300 font-semibold">Semester</th>
-                                    <th className="text-left p-3 border border-slate-300 font-semibold">Credits</th>
-                                    <th className="text-center p-3 border border-slate-300 font-semibold w-32">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {listLoading ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center p-6 text-slate-500">
-                                            <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                                        </td>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <h2 className="text-xl font-bold text-foreground">Catalogue of Subjects</h2>
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{subjectList.length} Registered Subjects</span>
+                    </div>
+
+                    <div className="rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/5 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-muted/30 border-b border-border">
+                                        <th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Subject Details</th>
+                                        <th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Timeline</th>
+                                        <th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Credits</th>
+                                        <th className="text-center p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-32">Actions</th>
                                     </tr>
-                                ) : subjectList.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center p-6 text-slate-500">
-                                            No subjects found. Add one using the form above.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    subjectList.map((s, i) => (
-                                        <tr key={s.subject_id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                                            <td className="p-3 border border-slate-300">{s.subject_name}</td>
-                                            <td className="p-3 border border-slate-300">{s.subject_code}</td>
-                                            <td className="p-3 border border-slate-300">{yearLabel(s.subject_year)}</td>
-                                            <td className="p-3 border border-slate-300 capitalize">{s.semester.toLowerCase()}</td>
-                                            <td className="p-3 border border-slate-300">{s.credits}</td>
-                                            <td className="p-3 border border-slate-300 text-center">
-                                                <div className="flex justify-center gap-2">
-                                                    <button title="Edit" className="text-blue-600 hover:text-blue-800">
-                                                        <Pencil className="h-4 w-4" />
-                                                    </button>
-                                                    <button title="Delete" className="text-red-600 hover:text-red-800"
-                                                        onClick={() => handleDelete(s.subject_id, s.subject_name)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
+                                </thead>
+                                <tbody className="divide-y divide-border/30">
+                                    {listLoading ? (
+                                        <tr>
+                                            <td colSpan={4} className="p-12 text-center text-muted-foreground font-medium italic">
+                                                <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary opacity-50 mb-2" />
+                                                Retrieving curriculum data...
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </Layout>
+                                    ) : subjectList.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="p-12 text-center text-muted-foreground italic bg-muted/5 font-medium">
+                                                No subjects have been registered in the curriculum yet.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        subjectList.map((s) => (
+                                            <tr key={s.subject_id} className="hover:bg-muted/20 transition-colors group">
+                                                <td className="p-4">
+                                                    <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.subject_name}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide mt-1 inline-block px-1.5 py-0.5 bg-muted/50 rounded">{s.subject_code}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-foreground font-semibold text-xs">{yearLabel(s.subject_year)}</div>
+                                                    <div className="text-[10px] text-secondary font-bold uppercase mt-0.5">{s.semester.toLowerCase()} Semester</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="text-xs font-black text-foreground">{s.credits}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-medium ml-1">Credits</span>
+                                                </td>
+                                                <td className="p-4 text-center text-foreground font-medium">
+                                                    <div className="flex justify-center gap-1">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                                                            onClick={() => handleDelete(s.subject_id, s.subject_name)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</Layout>
     );
 }

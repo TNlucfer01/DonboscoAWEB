@@ -186,7 +186,7 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
                                                      <div className="flex items-center gap-2">
                                                          <Select value={s.status} onValueChange={(v) => updateStatus(s.id, v)} disabled={timerExpired || s.isLocked}>
                                                              <SelectTrigger className="border-slate-300"><SelectValue /></SelectTrigger>
-                                                             <SelectContent className="bg-white border-2 border-slate-300">
+                                                             <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                                                                  <SelectItem value="PRESENT">Present</SelectItem>
                                                                  <SelectItem value="ABSENT">Absent</SelectItem>
                                                                  {s.isLocked && s.status !== 'PRESENT' && s.status !== 'ABSENT' && (

@@ -221,7 +221,7 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 										</thead>
 										<tbody>
 											{students.map((student) => (
-												<tr key={student.student_id} className="bg-white border-b hover:bg-slate-50">
+												<tr key={student.student_id} className="bg-[#f7f3ea] border-b hover:bg-slate-50">
 													<td className="px-6 py-4 font-medium text-slate-800">{student.roll_number}</td>
 													<td className="px-6 py-4">{student.name}</td>
 													<td className="px-6 py-4">{student.theoryBatch?.name || '-'}</td>

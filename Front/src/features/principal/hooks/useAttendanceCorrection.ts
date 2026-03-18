@@ -27,6 +27,10 @@ export interface FetchResponse {
     records: studentpri[];
 }
 
+
+
+5
+
 export function useAttendanceCorrection() {
     const [meta, setMeta] = useState<Omit<FetchResponse, 'records'> | null>(null);
     const [students, setStudents] = useState<studentpri[]>([]);

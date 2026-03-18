@@ -39,24 +39,33 @@ export async function fetchDashboardStats(): Promise<{
 
         const totalStudents = summary.length;
         const avgPct = totalStudents > 0
-            ? (summary.reduce((sum, s) => sum + (s.attendance_pct || 0), 0) / totalStudents)
+            ? (summary.reduce((sum, s) => {
+                const pct = s.attendance_pct;
+                return sum + (isNaN(pct) ? 0 : (pct || 0));
+            }, 0) / totalStudents)
             : 0;
 
         // Group by year
         const yearMap: Record<number, number[]> = {};
         summary.forEach(s => {
             if (!yearMap[s.current_year]) yearMap[s.current_year] = [];
-            yearMap[s.current_year].push(s.attendance_pct || 0);
+            const pct = s.attendance_pct;
+            yearMap[s.current_year].push(isNaN(pct) ? 0 : (pct || 0));
         });
 
         const yearLabels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-        const yearWise = [1, 2, 3, 4].map((y, i) => ({
-            year: yearLabels[i],
-            attendance: yearMap[y]
-                ? Math.round(yearMap[y].reduce((a, b) => a + b, 0) / yearMap[y].length)
-                : 0,
-            target: 75,
-        }));
+        const yearWise = [1, 2, 3, 4].map((y, i) => {
+            const yearData = yearMap[y] || [];
+            const yearAvg = yearData.length > 0 
+                ? (yearData.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0) / yearData.length)
+                : 0;
+            
+            return {
+                year: yearLabels[i],
+                attendance: Math.round(yearAvg),
+                target: 75,
+            };
+        });
 
         return {
             totalStudents,

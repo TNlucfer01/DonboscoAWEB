@@ -42,7 +42,7 @@ export function SelectField({
                 <SelectTrigger id={id} className="mt-1 border-slate-300">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-2 border-slate-300">
+                <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                     {options.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}

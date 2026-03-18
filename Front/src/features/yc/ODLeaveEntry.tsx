@@ -147,7 +147,7 @@ export default function ODLeaveEntry({ user, onLogout }: PageProps) {
 												<td key={pk} className="border border-slate-300 px-2 py-2">
 													<Select value={s[pk]} onValueChange={(v) => updatePeriod(s.id, pk, v)}>
 														<SelectTrigger className="h-8 border-slate-300 text-xs"><SelectValue /></SelectTrigger>
-														<SelectContent className="bg-white border-2 border-slate-300">
+														<SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
 															{YC_ATTENDANCE_STATUS_OPTIONS.map((o) => (
 																<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
 															))}

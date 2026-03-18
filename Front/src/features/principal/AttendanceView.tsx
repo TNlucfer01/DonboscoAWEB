@@ -97,106 +97,122 @@ export default function AttendanceView({ user, onLogout }: PageProps) {
 
     // ── Color helper for percentage ───────────────────────────
     const pctColor = (pct: number) => {
-        if (pct >= 80) return 'text-green-700 bg-green-50';
-        if (pct >= 60) return 'text-amber-700 bg-amber-50';
-        return 'text-red-700 bg-red-50';
+        if (pct >= 80) return 'text-green-600 bg-green-50/50';
+        if (pct >= 60) return 'text-amber-600 bg-amber-50/50';
+        return 'text-red-600 bg-red-50/50';
     };
 
     return (
         <Layout user={user} onLogout={onLogout}>
-            <div className="space-y-6">
-                <h1 className="text-2xl text-slate-800">Subject-wise Attendance View</h1>
+            <div className="space-y-8 max-w-full">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl font-bold text-foreground">Attendance Analytics</h1>
+                    <p className="text-muted-foreground">Subject-wise performance tracking and reporting</p>
+                </div>
 
                 {/* ── Filters ───────────────────────────────────── */}
-                <Card className="border-2 border-slate-300">
-                    <CardHeader><CardTitle className="text-slate-800">Filter</CardTitle></CardHeader>
+                <Card className="border-none shadow-sm shadow-black/5 bg-card">
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-foreground text-sm font-bold uppercase tracking-wider opacity-60">
+                            Report Configuration
+                        </CardTitle>
+                    </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                            <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
+                        <div className="flex flex-wrap gap-6 items-end">
+                            <div className="min-w-[150px]">
+                                <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
+                            </div>
                             <DatePickerField date={dateFrom} onDateChange={setDateFrom} label="Date From" maxDate={dateTo || new Date()} />
                             <DatePickerField date={dateTo} onDateChange={setDateTo} label="Date To" maxDate={new Date()} />
-                            <Button onClick={handleFetch} disabled={loading || !year}
-                                className="bg-slate-700 hover:bg-slate-800 text-white h-10">
-                                {loading ? 'Loading…' : 'View Attendance'}
+                            <Button 
+                                onClick={handleFetch} 
+                                disabled={loading || !year}
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground h-11 px-8 rounded-xl font-bold transition-all shadow-lg shadow-primary/20"
+                            >
+                                {loading ? 'Processing…' : 'Generate Report'}
                             </Button>
                         </div>
-                        {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+                        {error && <p className="text-destructive text-sm mt-4 p-3 bg-destructive/10 rounded-lg">{error}</p>}
                     </CardContent>
                 </Card>
 
                 {/* ── Results Table ──────────────────────────────── */}
                 {fetched && (
-                    <Card className="border-2 border-slate-300">
-                        <CardHeader>
+                    <Card className="border-none shadow-xl shadow-black/5 bg-card overflow-hidden">
+                        <CardHeader className="border-b border-border/50 bg-muted/20 pb-6">
                             <div className="flex items-center justify-between flex-wrap gap-4">
                                 <div>
-                                    <CardTitle className="text-slate-800">
-                                        Year {year} — {students.length} Students — {subjects.length} Subjects
-                                    </CardTitle>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        {dateFrom ? format(dateFrom, 'PPP') : 'All dates'}
-                                        {' → '}
-                                        {dateTo ? format(dateTo, 'PPP') : 'Present'}
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <CardTitle className="text-foreground text-xl">
+                                            Academic Report: Year {year}
+                                        </CardTitle>
+                                        <span className="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full uppercase">
+                                            {students.length} Students
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground font-medium">
+                                        Period: {dateFrom ? format(dateFrom, 'MMM d, yyyy') : 'Inception'} 
+                                        {' → '} 
+                                        {dateTo ? format(dateTo, 'MMM d, yyyy') : 'Current'}
                                     </p>
                                 </div>
                                 {students.length > 0 && (
-                                    <Button variant="outline" onClick={exportCSV} className="border-slate-300 text-slate-700">
-                                        <Download className="h-4 w-4 mr-2" /> Export CSV
+                                    <Button variant="outline" onClick={exportCSV} className="rounded-xl border-border text-foreground hover:bg-muted transition-all">
+                                        <Download className="h-4 w-4 mr-2 text-primary" /> Export Data (.csv)
                                     </Button>
                                 )}
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-0">
                             {students.length === 0 ? (
-                                <p className="text-center py-8 text-slate-400">No attendance data found for this filter.</p>
+                                <div className="text-center py-16 text-muted-foreground bg-muted/10">
+                                    <p>No attendance data found for the selected criteria.</p>
+                                </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full border-collapse text-sm">
                                         <thead>
-                                            {/* ── Header Row 1: Subject Names (spans 3 cols each) ── */}
-                                            <tr className="bg-slate-100 border-2 border-slate-300">
-                                                <th rowSpan={2} className="border border-slate-300 px-3 py-2 text-left text-slate-700 sticky left-0 bg-slate-100 z-10">S.No</th>
-                                                <th rowSpan={2} className="border border-slate-300 px-3 py-2 text-left text-slate-700 sticky left-12 bg-slate-100 z-10">Roll No</th>
-                                                <th rowSpan={2} className="border border-slate-300 px-3 py-2 text-left text-slate-700">Name</th>
-                                                <th rowSpan={2} className="border border-slate-300 px-3 py-2 text-center text-slate-700">Year</th>
+                                            {/* ── Header Row 1: Fixed Columns + Subject Spans ── */}
+                                            <tr className="bg-muted/30">
+                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider sticky left-0 bg-card z-20">#</th>
+                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider sticky left-[45px] bg-card z-20">Roll No</th>
+                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Student Name</th>
                                                 {subjects.map(s => (
                                                     <th key={s.subject_id} colSpan={3}
-                                                        className="border border-slate-300 px-3 py-2 text-center text-slate-800 bg-slate-200 font-semibold">
-                                                        {s.subject_name}
-                                                        <br />
-                                                        <span className="text-xs font-normal text-slate-500">({s.subject_code})</span>
+                                                        className="border-b border-r border-border px-4 py-3 text-center bg-primary/5">
+                                                        <span className="block text-[11px] font-black text-secondary uppercase tracking-tight leading-tight">{s.subject_name}</span>
+                                                        <span className="block text-[9px] font-medium text-muted-foreground opacity-70">{s.subject_code}</span>
                                                     </th>
                                                 ))}
                                             </tr>
                                             {/* ── Header Row 2: Sub-headers ── */}
-                                            <tr className="bg-slate-50 border border-slate-300">
+                                            <tr className="bg-muted/10">
                                                 {subjects.map(s => (
-                                                    <React.Fragment key={`sub-${s.subject_id}`}>
-                                                        <th className="border border-slate-300 px-2 py-1 text-center text-xs text-slate-600">Total</th>
-                                                        <th className="border border-slate-300 px-2 py-1 text-center text-xs text-slate-600">Present</th>
-                                                        <th className="border border-slate-300 px-2 py-1 text-center text-xs text-slate-600">%</th>
+                                                    <React.Fragment key={`sub-h-${s.subject_id}`}>
+                                                        <th className="border-b border-r border-border px-2 py-2 text-center text-[9px] font-black text-muted-foreground/80 uppercase">Tot</th>
+                                                        <th className="border-b border-r border-border px-2 py-2 text-center text-[9px] font-black text-muted-foreground/80 uppercase">Pre</th>
+                                                        <th className="border-b border-r border-border px-2 py-2 text-center text-[9px] font-black text-muted-foreground/80 uppercase">%</th>
                                                     </React.Fragment>
                                                 ))}
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody className="divide-y divide-border/50">
                                             {students.map((st, i) => (
-                                                <tr key={st.student_id} className="border border-slate-300 hover:bg-slate-50">
-                                                    <td className="border border-slate-300 px-3 py-2 text-slate-700 sticky left-0 bg-white">{i + 1}</td>
-                                                    <td className="border border-slate-300 px-3 py-2 text-slate-700 font-mono text-xs sticky left-12 bg-white">{st.roll_number}</td>
-                                                    <td className="border border-slate-300 px-3 py-2 text-slate-700 whitespace-nowrap">{st.name}</td>
-                                                    <td className="border border-slate-300 px-3 py-2 text-center text-slate-700">{st.current_year}</td>
+                                                <tr key={st.student_id} className="hover:bg-muted/30 transition-colors">
+                                                    <td className="border-r border-border px-4 py-3 text-muted-foreground font-medium text-xs sticky left-0 bg-card">{i + 1}</td>
+                                                    <td className="border-r border-border px-4 py-3 font-mono text-xs font-bold text-foreground sticky left-[45px] bg-card">{st.roll_number}</td>
+                                                    <td className="border-r border-border px-4 py-3 text-foreground font-medium whitespace-nowrap">{st.name}</td>
                                                     {subjects.map(sub => {
                                                         const stats = st.subjects[sub.subject_id];
                                                         return (
                                                             <React.Fragment key={`${st.student_id}-${sub.subject_id}`}>
-                                                                <td className="border border-slate-300 px-2 py-2 text-center text-slate-600 text-xs">
+                                                                <td className="border-r border-border px-2 py-3 text-center text-muted-foreground text-xs font-medium">
                                                                     {stats?.total_hours ?? 0}
                                                                 </td>
-                                                                <td className="border border-slate-300 px-2 py-2 text-center text-slate-600 text-xs">
+                                                                <td className="border-r border-border px-2 py-3 text-center text-muted-foreground text-xs font-medium">
                                                                     {stats?.present_hours ?? 0}
                                                                 </td>
-                                                                <td className={`border border-slate-300 px-2 py-2 text-center text-xs font-semibold ${stats ? pctColor(stats.percentage) : 'text-slate-400'}`}>
+                                                                <td className={`border-r border-border px-2 py-3 text-center text-xs font-black ${stats ? pctColor(stats.percentage) : 'text-muted-foreground/30'}`}>
                                                                     {stats?.percentage ?? 0}%
                                                                 </td>
                                                             </React.Fragment>
