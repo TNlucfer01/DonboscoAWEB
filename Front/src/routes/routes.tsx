@@ -8,6 +8,7 @@ import { User } from '../features/shared/types';
 
 // Auth
 import Login from '../features/auth/Login';
+import LandingPage from '../features/auth/LandingPage';
 
 // Principal
 import PrincipalDashboard from '../features/principal/Dashboard';
@@ -54,11 +55,11 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 
 	return (
 		<Routes>
-			{/* Root — redirect by role or show login */}
+			{/* Root — show Landing (with Login transition) when not logged in */}
 			<Route
 				path="/"
 				element={
-					!user ? <Login onLogin={onLogin} /> :
+					!user ? <LandingPage onLogin={onLogin} /> :
 						user.role === 'principal' ? <Navigate to="/principal/dashboard" replace /> :
 							user.role === 'year_coordinator' ? <Navigate to="/yc/dashboard" replace /> :
 							<Navigate to="/staff/attendance" replace />}/>

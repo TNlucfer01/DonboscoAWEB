@@ -1,0 +1,44 @@
+/* ─── DBCAMS Page Transition Animations ──────────────────────────────────────
+   Landing page slides OUT to the right,
+   Login panel slides IN from the top → downward.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Landing exits right */
+@keyframes slideOutRight {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(100%); opacity: 0; }
+}
+
+/* Login drops in from top */
+@keyframes slideInFromTop {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* Reverse: Login slides back up */
+@keyframes slideOutTop {
+    from { transform: translateY(0);     opacity: 1; }
+    to   { transform: translateY(-100%); opacity: 0; }
+}
+
+/* Reverse: Landing slides back from right */
+@keyframes slideInFromRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+
+.dbcams-landing-exit {
+    animation: slideOutRight 0.55s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+.dbcams-login-enter {
+    animation: slideInFromTop 0.55s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+.dbcams-login-exit {
+    animation: slideOutTop 0.45s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+.dbcams-landing-enter {
+    animation: slideInFromRight 0.45s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
