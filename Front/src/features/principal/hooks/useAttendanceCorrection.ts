@@ -22,6 +22,8 @@ export interface FetchResponse {
     slot_number: number;
     subject_name: string;
     subject_code: string;
+    subject_id?: number;
+    submitted_by?: number;
     submitter_name: string;
     current_year: number;
     records: studentpri[];
@@ -40,7 +42,7 @@ export function useAttendanceCorrection() {
     const [currentDate, setCurrentDate] = useState('');
     const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set());
 
-    const fetch = useCallback(async (year: string, date: Date, period: string) => {
+    const fetch = useCallback(async (year: string, date: Date, period: string, batchId?: string, batchType?: string) => {
         setLoading(true);
         setError(null);
         try {
@@ -50,11 +52,11 @@ export function useAttendanceCorrection() {
             const dayVal = String(date.getDate()).padStart(2, '0');
             const dateStr = `${yearVal}-${monthVal}-${dayVal}`;
 
-            const data = await apiClient.get<FetchResponse>('/attendance/fetch-students-pri', {
-                year,
-                date: dateStr,
-                period,
-            });
+            const params: Record<string, string> = { year, date: dateStr, period };
+            if (batchId) params.batch_id = batchId;
+            if (batchType) params.batch_type = batchType;
+
+            const data = await apiClient.get<FetchResponse>('/attendance/fetch-students-pri', params);
             const { records, ...metaData } = data;
 
             setMeta(metaData);

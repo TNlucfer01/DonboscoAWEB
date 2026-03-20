@@ -10,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/u
 import { PageProps } from '../shared/types';
 import { StaffMember, fetchStaffMembers, addStaffMember, deleteStaffMember } from '../../api/staff.api';
 import { SelectField } from '../shared/SelectField';
-import { toast } from 'sonner';
 import { Pencil, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { StaffDetailsDialog } from '../shared/StaffDetailsDialog';
+import { toast } from 'sonner';
 
 const ROLE_OPTIONS = [
 	{ value: 'YEAR_COORDINATOR', label: 'Year Co-ordinator' },
@@ -153,50 +154,52 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 						<span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{staffList.length} Active Records</span>
 					</div>
 					
-					<div className="rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/5 overflow-hidden">
+					<div className="rounded-2xl border border-border/50 bg-background shadow-xl shadow-black/5 overflow-hidden">
 						<div className="overflow-x-auto">
 							<table className="w-full text-sm">
 								<thead>
 									<tr className="bg-muted/30 border-b border-border">
-										<th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Name</th>
-										<th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Contact Details</th>
-										<th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Designation</th>
-										<th className="text-center p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-32">Actions</th>
+										<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Name</th>
+										<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Contact Details</th>
+										<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Designation</th>
+										<th className="px-6 py-4 text-center text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-32">Actions</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-border/30">
 									{listLoading ? (
 										<tr>
-											<td colSpan={4} className="p-12 text-center text-muted-foreground">
+											<td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
 												<Loader2 className="mx-auto h-8 w-8 animate-spin text-primary opacity-50" />
 												<p className="mt-2 font-medium">Synchronizing records...</p>
 											</td>
 										</tr>
 									) : staffList.length === 0 ? (
 										<tr>
-											<td colSpan={4} className="p-12 text-center text-muted-foreground italic bg-muted/5">
+											<td colSpan={4} className="px-6 py-12 text-center text-muted-foreground italic bg-muted/5">
 												No staff members found in the current directory.
 											</td>
 										</tr>
 									) : (
 										staffList.map((s) => (
 											<tr key={s.user_id} className="hover:bg-muted/20 transition-colors group">
-												<td className="p-4">
-													<div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.name}</div>
+												<td className="px-6 py-4">
+													<div className="font-bold text-foreground group-hover:text-primary transition-colors">
+														<StaffDetailsDialog staffId={s.user_id} staffName={s.name} />
+													</div>
 													<div className="text-[10px] text-muted-foreground font-medium uppercase mt-0.5">ID: {s.user_id}</div>
 												</td>
-												<td className="p-4">
+												<td className="px-6 py-4">
 													<div className="text-foreground font-medium">{s.email}</div>
 													<div className="text-xs text-muted-foreground">{s.phone_number}</div>
 												</td>
-												<td className="p-4">
+												<td className="px-6 py-4">
 													<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
 														s.role === 'YEAR_COORDINATOR' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'
 													}`}>
 														{roleLabel(s.role)}
 													</span>
 												</td>
-												<td className="p-4 text-center">
+												<td className="px-6 py-4 text-center">
 													<div className="flex justify-center gap-1">
 														<Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors">
 															<Pencil className="h-4 w-4" />

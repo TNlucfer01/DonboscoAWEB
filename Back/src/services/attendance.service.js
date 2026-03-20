@@ -20,6 +20,7 @@ module.exports = {
     saveStudentPri: principalSvc.saveStudentPri,
     correct: principalSvc.correct,
     correctBulk: principalSvc.correctBulk,
+    getBatch: principalSvc.getBatch,
 
     // YC OD/IL
     createODIL: odilSvc.createODIL,

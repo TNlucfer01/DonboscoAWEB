@@ -25,30 +25,30 @@ export default function YCAttendanceView({ user, onLogout }: PageProps) {
     return (
         <Layout user={user} onLogout={onLogout}>
             <div className="space-y-6">
-                <h1 className="text-2xl text-slate-800">Attendance View</h1>
+                <h1 className="text-2xl text-foreground">Attendance View</h1>
 
-                <Card className="border-2 border-slate-300">
-                    <CardHeader><CardTitle className="text-slate-800">Select Date</CardTitle></CardHeader>
+                <Card className="border-2 border-border">
+                    <CardHeader><CardTitle className="text-foreground">Select Date</CardTitle></CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-4">
                             <DatePickerField date={date} onDateChange={handleDateChange} label="Date:" />
-                            {loading && <p className="text-slate-500 text-sm">Loading…</p>}
+                            {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
                         </div>
                         {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
                     </CardContent>
                 </Card>
 
-                <Card className="border-2 border-slate-300">
+                <Card className="border-2 border-border">
                     <CardHeader>
-                        <CardTitle className="text-slate-800">
+                        <CardTitle className="text-foreground">
                             Attendance — {date ? format(date, 'PPP') : 'Select a date'}
                         </CardTitle>
-                        <p className="text-sm text-slate-600 mt-2">P = Present, A = Absent, OD = On Duty, IL = Informed Leave</p>
+                        <p className="text-sm text-muted-foreground font-medium mt-2">P = Present, A = Absent, OD = On Duty, IL = Informed Leave</p>
                     </CardHeader>
                     <CardContent>
                         {fetched && students.length > 0
                             ? <AttendanceTable students={students} />
-                            : !loading && <p className="text-slate-500 text-sm">Select a date to load attendance.</p>
+                            : !loading && <p className="text-muted-foreground text-sm">Select a date to load attendance.</p>
                         }
                     </CardContent>
                 </Card>

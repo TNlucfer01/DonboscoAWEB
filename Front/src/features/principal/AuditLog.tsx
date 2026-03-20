@@ -11,55 +11,55 @@ export default function AuditLog({ user, onLogout }: PageProps) {
     return (
         <Layout user={user} onLogout={onLogout}>
             <div className="space-y-6">
-                <h1 className="text-2xl text-slate-800">Audit Log</h1>
+                <h1 className="text-2xl text-foreground">Audit Log</h1>
 
                 {/* Date Range Filter */}
-                <Card className="border-2 border-slate-300">
-                    <CardHeader><CardTitle className="text-slate-800">Filter by Date Range</CardTitle></CardHeader>
+                <Card className="border-2 border-border">
+                    <CardHeader><CardTitle className="text-foreground">Filter by Date Range</CardTitle></CardHeader>
                     <CardContent>
                         <div className="flex flex-col sm:flex-row gap-4 items-end">
                             <DatePickerField date={startDate} onDateChange={setStartDate} label="Start Date" />
                             <DatePickerField date={endDate} onDateChange={setEndDate} label="End Date" />
-                            <Button onClick={applyFilter} className="bg-slate-700 hover:bg-slate-800 text-white">Apply Filter</Button>
-                            <Button onClick={clearFilter} variant="outline" className="border-slate-300 text-slate-700">Clear Filter</Button>
+                            <Button onClick={applyFilter} className="bg-primary hover:bg-primary/90 text-primary-foreground hover:bg-primary/90 text-white">Apply Filter</Button>
+                            <Button onClick={clearFilter} variant="outline" className="border-border text-foreground opacity-90">Clear Filter</Button>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Logs Table */}
-                <Card className="border-2 border-slate-300">
+                <Card className="border-2 border-border">
                     <CardHeader>
-                        <CardTitle className="text-slate-800">Attendance Changes Log</CardTitle>
-                        <p className="text-sm text-slate-600">All changes made by Principal — Read only, no undo</p>
+                        <CardTitle className="text-foreground">Attendance Changes Log</CardTitle>
+                        <p className="text-sm text-muted-foreground font-medium">All changes made by Principal — Read only, no undo</p>
                     </CardHeader>
                     <CardContent>
                         {loading ? (
-                            <p className="text-slate-500 text-sm">Loading…</p>
+                            <p className="text-muted-foreground text-sm">Loading…</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="bg-slate-100 border-2 border-slate-300">
+                            <div className="overflow-x-auto rounded-lg border border-border bg-background">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-muted/30 border-b border-border">
+                                        <tr>
                                             {['Timestamp', 'Student', 'Roll No', 'Date', 'Period', 'Old Status', 'New Status', 'Changed By'].map((h) => (
-                                                <th key={h} className="border border-slate-300 px-4 py-3 text-left text-slate-700">{h}</th>
+                                                <th key={h} className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-border/30">
                                         {logs.map((log) => (
-                                            <tr key={log.id} className="border border-slate-300 hover:bg-slate-50">
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{log.timestamp}</td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{log.student}</td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{log.rollNo}</td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{log.dateOfPeriod}</td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{log.period}</td>
-                                                <td className="border border-slate-300 px-4 py-3">
-                                                    <span className="inline-block px-2 py-1 bg-red-100 border border-red-300 text-red-800 text-sm">{log.oldStatus}</span>
+                                            <tr key={log.id} className="hover:bg-muted/20 transition-colors group">
+                                                <td className="px-6 py-4 text-muted-foreground font-medium text-xs">{log.timestamp}</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-foreground opacity-90">{log.student}</td>
+                                                <td className="px-6 py-4 text-foreground font-semibold whitespace-nowrap">{log.rollNo}</td>
+                                                <td className="px-6 py-4 text-muted-foreground font-medium text-xs">{log.dateOfPeriod}</td>
+                                                <td className="px-6 py-4 text-muted-foreground font-medium text-xs">{log.period}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-block px-2 py-1 bg-destructive/10 border border-destructive/20 text-destructive text-sm font-bold rounded-md">{log.oldStatus}</span>
                                                 </td>
-                                                <td className="border border-slate-300 px-4 py-3">
-                                                    <span className="inline-block px-2 py-1 bg-green-100 border border-green-300 text-green-800 text-sm">{log.newStatus}</span>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-block px-2 py-1 bg-primary/10 border border-primary/20 text-primary text-sm font-bold rounded-md">{log.newStatus}</span>
                                                 </td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{log.changedBy}</td>
+                                                <td className="px-6 py-4 text-muted-foreground font-medium text-xs">{log.changedBy}</td>
                                             </tr>
                                         ))}
                                     </tbody>

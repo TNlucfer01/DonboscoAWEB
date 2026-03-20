@@ -13,6 +13,7 @@ import { DatePickerField } from '../shared/DatePickerField';
 import { fetchBatches, Batch } from '../../api/batch.api';
 import { fetchSubjects, Subject } from '../../api/subject.api';
 import { Clock, AlertTriangle } from 'lucide-react';
+import { StudentDetailsDialog } from '../shared/StudentDetailsDialog';
 
 const YEAR_RADIO = ['1', '2', '3', '4'];
 const YEAR_LABELS: Record<string, string> = { '1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year' };
@@ -85,20 +86,20 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
     return (
         <Layout user={user} onLogout={onLogout}>
             <div className="space-y-6">
-                <h1 className="text-2xl text-slate-800">Attendance Correction</h1>
+                <h1 className="text-2xl text-foreground">Attendance Correction</h1>
 
-                <Card className="border-2 border-slate-300">
-                    <CardHeader><CardTitle className="text-slate-800">Select Class Details</CardTitle></CardHeader>
+                <Card className="border-2 border-border">
+                    <CardHeader><CardTitle className="text-foreground">Select Class Details</CardTitle></CardHeader>
                     <CardContent>
                         <div className="space-y-6">
                             {/* Year — Radio (UX preference for this field) */}
                             <div>
-                                <Label className="text-slate-700 mb-3 block">Step 1: Select Year *</Label>
+                                <Label className="text-foreground opacity-90 mb-3 block">Step 1: Select Year *</Label>
                                 <RadioGroup value={year} onValueChange={setYear} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                     {YEAR_RADIO.map((v) => (
                                         <div key={v} className="flex items-center space-x-2">
-                                            <RadioGroupItem value={v} id={`year${v}`} className="border-slate-300" />
-                                            <Label htmlFor={`year${v}`} className="text-slate-700 cursor-pointer">{YEAR_LABELS[v]}</Label>
+                                            <RadioGroupItem value={v} id={`year${v}`} className="border-border" />
+                                            <Label htmlFor={`year${v}`} className="text-foreground opacity-90 cursor-pointer">{YEAR_LABELS[v]}</Label>
                                         </div>
                                     ))}
                                 </RadioGroup>
@@ -116,7 +117,7 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
                             <div><DatePickerField date={date} onDateChange={setDate} label="Step 6: Select Date *" maxDate={new Date()} /></div>
                             <div>
                                 <Button onClick={handleFetch} disabled={loading}
-                                    className="w-full sm:w-auto bg-slate-700 hover:bg-slate-800 text-white">
+                                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground hover:bg-primary/90 text-white">
                                     {loading ? 'Fetching…' : 'Fetch Students'}
                                 </Button>
                             </div>
@@ -125,10 +126,10 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
                 </Card>
 
                 {fetched && students.length > 0 && (
-                    <Card className="border-2 border-slate-300">
+                    <Card className="border-2 border-border">
                         <CardHeader>
                             <div className="flex items-center justify-between flex-wrap gap-4">
-                                <CardTitle className="text-slate-800">
+                                <CardTitle className="text-foreground">
                                     Mark Attendance — Year {year} — Batch {batch} — Period {period}
                                 </CardTitle>
                                 {/* Countdown Timer */}
@@ -148,45 +149,47 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
                         </CardHeader>
                         <CardContent>
                             {metadata && (
-                                <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-6 p-4 bg-muted/10 border border-border rounded-lg">
                                     <div>
-                                        <p className="text-sm font-medium text-slate-500">Subject Name</p>
-                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.subjectName} ({metadata.subjectCode})</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Subject Name</p>
+                                        <p className="mt-1 text-foreground font-semibold">{metadata.subjectName} ({metadata.subjectCode})</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-slate-500">Year</p>
-                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.year}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Year</p>
+                                        <p className="mt-1 text-foreground font-semibold">{metadata.year}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-slate-500">Batch Name</p>
-                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.batchName}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Batch Name</p>
+                                        <p className="mt-1 text-foreground font-semibold">{metadata.batchName}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-slate-500">Submitted By</p>
-                                        <p className="mt-1 text-slate-800 font-semibold">{metadata.submitterName}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Submitted By</p>
+                                        <p className="mt-1 text-foreground font-semibold">{metadata.submitterName}</p>
                                     </div>
                                 </div>
                             )}
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse">
+                            <div className="overflow-x-auto rounded-lg border border-border bg-background">
+                                <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="bg-slate-100 border-2 border-slate-300">
+                                        <tr className="bg-muted/30 border-b border-border">
                                             {['S.No', 'Roll No', 'Name', 'Status', 'Remarks'].map((h) => (
-                                                <th key={h} className="border border-slate-300 px-4 py-3 text-left text-slate-700">{h}</th>
+                                                <th key={h} className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-border/30">
                                         {students.map((s, i) => (
-                                            <tr key={s.id} className="border border-slate-300 hover:bg-slate-50">
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{i + 1}</td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{s.rollNo}</td>
-                                                <td className="border border-slate-300 px-4 py-3 text-slate-700">{s.name}</td>
-                                                 <td className="border border-slate-300 px-4 py-3">
+                                            <tr key={s.id} className="hover:bg-muted/20 transition-colors group">
+                                                <td className="px-6 py-4 text-muted-foreground font-medium text-xs">{i + 1}</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-foreground opacity-90">{s.rollNo}</td>
+                                                <td className="px-6 py-4 text-foreground font-semibold whitespace-nowrap">
+                                                    <StudentDetailsDialog studentId={s.id} studentName={s.name} />
+                                                </td>
+                                                 <td className="px-6 py-4">
                                                      <div className="flex items-center gap-2">
                                                          <Select value={s.status} onValueChange={(v) => updateStatus(s.id, v)} disabled={timerExpired || s.isLocked}>
-                                                             <SelectTrigger className="border-slate-300"><SelectValue /></SelectTrigger>
-                                                             <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
+                                                             <SelectTrigger><SelectValue /></SelectTrigger>
+                                                             <SelectContent className="bg-popover border border-border">
                                                                  <SelectItem value="PRESENT">Present</SelectItem>
                                                                  <SelectItem value="ABSENT">Absent</SelectItem>
                                                                  {s.isLocked && s.status !== 'PRESENT' && s.status !== 'ABSENT' && (
@@ -201,19 +204,19 @@ export default function StaffAttendanceCorrection({ user, onLogout }: PageProps)
                                                          )}
                                                      </div>
                                                  </td>
-                                                 <td className="border border-slate-300 px-4 py-3 text-slate-700 whitespace-pre-wrap max-w-xs">{s.odReason || '-'}</td>
+                                                 <td className="px-6 py-4 text-muted-foreground whitespace-pre-wrap max-w-xs">{s.odReason || '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                             <div className="mt-6 flex justify-end gap-4">
-                                <Button variant="outline" onClick={markAllPresent} disabled={timerExpired} className="border-slate-300 text-slate-700">
+                                <Button variant="outline" onClick={markAllPresent} disabled={timerExpired} className="border-border text-foreground opacity-90">
                                     Mark All Present
                                 </Button>
                                 {/* //i have to make this dynamic in the future */}
                                 <Button onClick={() => submit(year, batch, period, subject, date ? date.toISOString().split('T')[0] : "")} disabled={submitting || timerExpired || !date}
-                                    className="bg-slate-700 hover:bg-slate-800 text-white">
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground hover:bg-primary/90 text-white">
                                     {timerExpired ? 'Window Closed' : submitting ? 'Submitting…' : 'Submit Attendance'}
                                 </Button>
                             </div>

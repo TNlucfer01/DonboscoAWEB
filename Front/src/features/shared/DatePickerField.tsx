@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
-import { format, getDaysInMonth, setMonth, setYear, setDate as setDay, isAfter, startOfDay } from 'date-fns';
+import { format, isAfter, startOfDay } from 'date-fns';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { cn } from '../../app/components/ui/utils';
+import { Button } from '../../app/components/ui/button';
+import { Calendar } from '../../app/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../../app/components/ui/popover';
 import { Label } from '../../app/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../app/components/ui/select';
 
 interface DatePickerFieldProps {
     date: Date | undefined;
@@ -10,103 +13,52 @@ interface DatePickerFieldProps {
     maxDate?: Date;
 }
 
-const MONTHS = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-];
-
 export function DatePickerField({
   date,
   onDateChange,
   label = 'Date',
   maxDate = new Date(),
 }: DatePickerFieldProps) {
-  // Use today as fallback if date is undefined for dropdown defaults
-  const current = date || new Date();
-  
-  const [selectedDay, setSelectedDay] = useState(current.getDate().toString());
-  const [selectedMonth, setSelectedMonth] = useState(current.getMonth().toString());
-  const [selectedYear, setSelectedYear] = useState(current.getFullYear().toString());
-
-  // Sync internal state with external date prop
-  useEffect(() => {
-    if (date) {
-      setSelectedDay(date.getDate().toString());
-      setSelectedMonth(date.getMonth().toString());
-      setSelectedYear(date.getFullYear().toString());
-    }
-  }, [date]);
-
-  // Generate Year options (last 2 years + current)
-  const years = Array.from({ length: 3 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
-
-  // Generate Month options
-  const months = MONTHS.map((name, i) => ({ value: i.toString(), label: name }));
-
-  // Generate Day options based on selected Month/Year
-  const daysInMonth = getDaysInMonth(new Date(parseInt(selectedYear), parseInt(selectedMonth)));
-  const days = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
-
-  const handleChange = (type: 'day' | 'month' | 'year', value: string) => {
-    let d = parseInt(type === 'day' ? value : selectedDay);
-    let m = parseInt(type === 'month' ? value : selectedMonth);
-    let y = parseInt(type === 'year' ? value : selectedYear);
-
-    // Adjust day if it exceeds the new month's capacity
-    const newMaxDays = getDaysInMonth(new Date(y, m));
-    if (d > newMaxDays) d = newMaxDays;
-
-    const newDate = new Date(y, m, d);
-    
-    // Enforce maxDate
-    if (maxDate && isAfter(startOfDay(newDate), startOfDay(maxDate))) {
-      // If the selected date is after maxDate, snap to maxDate or current valid
-      onDateChange(maxDate);
-    } else {
-      onDateChange(newDate);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-2 flex-1 min-w-[280px]">
-      <Label className="text-sm font-semibold text-foreground ml-1">{label}</Label>
-      <div className="flex gap-2">
-        {/* Day Select */}
-        <div className="w-20">
-          <Select value={selectedDay} onValueChange={(v) => handleChange('day', v)}>
-            <SelectTrigger className="h-11 rounded-xl border-border bg-card">
-              <SelectValue placeholder="Day" />
-            </SelectTrigger>
-            <SelectContent className="max-h-60 rounded-xl">
-              {days.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Month Select */}
-        <div className="flex-1">
-          <Select value={selectedMonth} onValueChange={(v) => handleChange('month', v)}>
-            <SelectTrigger className="h-11 rounded-xl border-border bg-card">
-              <SelectValue placeholder="Month" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Year Select */}
-        <div className="w-24">
-          <Select value={selectedYear} onValueChange={(v) => handleChange('year', v)}>
-            <SelectTrigger className="h-11 rounded-xl border-border bg-card">
-              <SelectValue placeholder="Year" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <div className="flex flex-col gap-2 flex-1 min-w-[240px]">
+      <Label className="text-sm font-black text-secondary tracking-widest uppercase ml-1 opacity-70">{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "h-11 justify-start text-left font-bold rounded-xl border-border bg-card shadow-sm hover:bg-muted/50 transition-all active:scale-[0.98]",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+            {date ? format(date, "PPP") : <span className="opacity-50 font-medium">Select calendar date...</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 rounded-2xl border-border shadow-2xl bg-card" align="start">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={onDateChange}
+            disabled={(d) => (maxDate ? isAfter(startOfDay(d), startOfDay(maxDate)) : false)}
+            initialFocus
+            className="rounded-2xl p-4 bg-card"
+            classNames={{
+              day_today: "bg-primary/10 text-primary font-bold border-2 border-primary/20",
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg",
+              day: "h-9 w-9 text-center p-0 font-bold aria-selected:opacity-100 hover:bg-muted/50 rounded-lg transition-colors",
+              caption_label: "font-black text-secondary uppercase tracking-widest"
+            }}
+          />
+          {maxDate && (
+             <div className="p-3 border-t border-border/10 bg-muted/20">
+                <p className="text-[10px] text-center text-muted-foreground font-medium uppercase tracking-tighter italic">
+                  * Future dates beyond {format(maxDate, "MMM d")} are restricted
+                </p>
+             </div>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

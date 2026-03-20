@@ -31,11 +31,11 @@ router.get('/fetch-students-pri',
     auth, roleGuard('PRINCIPAL'),
     async (req, res, next) => {
         try {
-            const { year, date,period } = req.query;
+            const { year, date, period, batch_id, batch_type } = req.query;
             if (!year || !date) {
                 return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'year and date query params are required' } });
             }
-            return success(res, await svc.fetchStudentsPrincipal({ year, date,period }));
+            return success(res, await svc.fetchStudentsPrincipal({ year, date, period, batch_id, batch_type }));
         } catch (e) { next(e); }
     }
 );
@@ -112,6 +112,25 @@ router.post('/correct-attendance',
         } catch (e) { next(e); }
     }
 );
+
+// post /api/attendance/getbacthes
+router.post('/getbacthes',
+    auth, roleGuard('PRINCIPAL'),
+    [
+        body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
+        body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const { year, date, slot_id } = req.body;
+            const data=await svc.getBatch(year,date,slot_id);
+            return success(res, data);
+        } catch (e) { next(e); }
+    }
+);
+
 
 // GET /api/attendance/view — YC + Principal
 router.get('/view', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'),

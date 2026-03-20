@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Layout from '../../app/components/Layout';
 import { Button } from '../../app/components/ui/button';
 import { Input } from '../../app/components/ui/input';
@@ -11,6 +11,10 @@ import { YEAR_OPTIONS, PERIOD_OPTIONS } from '../shared/constants';
 import { useAttendanceCorrection } from './hooks/useAttendanceCorrection';
 import { format } from 'date-fns';
 import { Loader2, Search, Download } from 'lucide-react';
+import { apiClient } from '../../api/apiClient';
+import { StudentDetailsDialog } from '../shared/StudentDetailsDialog';
+import { SubjectDetailsDialog } from '../shared/SubjectDetailsDialog';
+import { StaffDetailsDialog } from '../shared/StaffDetailsDialog';
 
 const STATUS_OPTIONS = [
     { value: 'PRESENT', label: 'P' },
@@ -26,11 +30,51 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [search, setSearch] = useState('');
     const [fetched, setFetched] = useState(false);
+    
+    // Batch Auto-Detection UI
+    const [batches, setBatches] = useState<{ id: number, name: string, type: string }[]>([]);
+    const [selectedBatchId, setSelectedBatchId] = useState('');
+    const [selectedBatchType, setSelectedBatchType] = useState('');
+    const [loadingBatches, setLoadingBatches] = useState(false);
+
     const { meta, students, loading, saving, error, fetch, updateStatus, updateODReason, updateIsLocked, updateRemarks, save } = useAttendanceCorrection();
+
+    // Effect: when year, date, period change -> fetch batches for this combination
+    useEffect(() => {
+        if (year && date && period) {
+            const fetchCurrentBatches = async () => {
+                setLoadingBatches(true);
+                try {
+                    const yearVal = date.getFullYear();
+                    const monthVal = String(date.getMonth() + 1).padStart(2, '0');
+                    const dayVal = String(date.getDate()).padStart(2, '0');
+                    const dateStr = `${yearVal}-${monthVal}-${dayVal}`;
+
+                    const data = await apiClient.post<{ id: number, name: string, type: string }[]>('/attendance/getbacthes', {
+                        year: Number(year),
+                        date: dateStr,
+                        slot_id: Number(period)
+                    });
+                    setBatches(data);
+                    setSelectedBatchId('');
+                    setSelectedBatchType('');
+                } catch(e) {
+                    console.error(e);
+                } finally {
+                    setLoadingBatches(false);
+                }
+            };
+            fetchCurrentBatches();
+        } else {
+            setBatches([]);
+            setSelectedBatchId('');
+            setSelectedBatchType('');
+        }
+    }, [year, date, period]);
 
     const handleFetch = async () => {
         if (!year || !date || !period) return;
-        await fetch(year, date, period);
+        await fetch(year, date, period, selectedBatchId, selectedBatchType);
         setFetched(true);
         setSearch('');
     };
@@ -90,13 +134,30 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                             <div className="min-w-[140px]">
                                 <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
                             </div>
-                            <DatePickerField date={date} onDateChange={setDate} label="Date *" />
+                            <DatePickerField date={date} onDateChange={setDate} label="Date *" maxDate={new Date()} />
                             <div className="min-w-[140px]">
                                 <SelectField label="Period *" value={period} options={PERIOD_OPTIONS} onValueChange={setPeriod} />
                             </div>
+                            
+                            {loadingBatches && <div className="text-sm font-bold text-muted-foreground flex items-center h-11"><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Loading class logic...</div>}
+                            {!loadingBatches && batches.length > 0 && (
+                                <div className="min-w-[180px]">
+                                    <SelectField 
+                                        label="Batch (Detected) *" 
+                                        value={selectedBatchId}
+                                        options={batches.map(b => ({ value: String(b.id), label: b.name }))}
+                                        onValueChange={(val) => {
+                                            setSelectedBatchId(val);
+                                            const b = batches.find(bx => String(bx.id) === val);
+                                            if (b) setSelectedBatchType(b.type);
+                                        }}
+                                    />
+                                </div>
+                            )}
+
                             <Button
                                 onClick={handleFetch}
-                                disabled={loading || !year || !date || !period}
+                                disabled={loading || !year || !date || !period || (batches.length > 0 && !selectedBatchId)}
                                 className="bg-primary hover:bg-primary/90 text-primary-foreground h-11 px-8 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
                             >
                                 {loading
@@ -140,17 +201,28 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
 
                                 {meta && (
                                     <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {[
-                                            { label: 'Subject', value: meta.subject_name },
-                                            { label: 'Code', value: meta.subject_code },
-                                            { label: 'Submitted By', value: meta.submitter_name },
-                                            { label: 'Academic Year', value: `Year ${meta.current_year}` }
-                                        ].map((item, idx) => (
-                                            <div key={idx} className="bg-[#f7f3ea]/50 border border-border/50 p-4 rounded-2xl">
-                                                <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">{item.label}</div>
-                                                <div className="text-sm font-bold text-foreground">{item.value}</div>
-                                            </div>
-                                        ))}
+                                {[
+                                    { label: 'Subject / Code', value: (
+                                        <div className="flex flex-col">
+                                            <SubjectDetailsDialog subjectId={meta.subject_id!} subjectName={meta.subject_name} />
+                                            <span className="text-[10px] opacity-60 font-mono mt-0.5">{meta.subject_code}</span>
+                                        </div>
+                                    ) },
+                                    { label: 'Submitted By (Staff)', value: (
+                                        <StaffDetailsDialog staffId={meta.submitted_by!} staffName={meta.submitter_name} />
+                                    ) },
+                                    { label: 'Academic Intake', value: (
+                                        <span className="text-secondary font-black">Year {meta.current_year}</span>
+                                    ) },
+                                    { label: 'Correction Status', value: (
+                                        <span className="px-2 py-0.5 bg-accent/20 text-accent text-[10px] rounded-md font-black uppercase tracking-widest">Active Session</span>
+                                    ) }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="bg-card/40 border border-border/40 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-primary/20 transition-all group">
+                                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-black mb-2 opacity-50 group-hover:opacity-100 transition-opacity">{item.label}</div>
+                                        <div className="text-sm font-extrabold text-foreground">{item.value}</div>
+                                    </div>
+                                ))}
                                     </div>
                                 )}
 
@@ -167,9 +239,9 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                             </CardHeader>
 
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse text-sm">
-                                        <thead>
+                                <div className="overflow-x-auto rounded-lg border border-border bg-background">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-muted/30 border-b border-border">
                                             <tr className="bg-muted/10">
                                                 {['#', 'Roll No', 'Student Name', 'Attendance Status', 'OD / IL Justification', 'Lock', 'Admin Remarks'].map(h => (
                                                     <th key={h} className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider border-b border-border/50">{h}</th>
@@ -183,9 +255,11 @@ export default function AttendanceCorrection({ user, onLogout }: PageProps) {
                                                 </tr>
                                             ) : filtered.map((s, i) => (
                                                 <tr key={s.student_id} className="hover:bg-muted/30 transition-colors group">
-                                                    <td className="px-6 py-4 text-muted-foreground font-medium text-xs w-12 text-center">{i + 1}</td>
-                                                    <td className="px-6 py-4 font-mono font-bold text-foreground opacity-90">{s.roll_number}</td>
-                                                    <td className="px-6 py-4 text-foreground font-semibold whitespace-nowrap">{s.student_name}</td>
+                                                    <td className="px-6 py-4 text-muted-foreground font-medium text-xs w-12 text-center sticky left-0 bg-[#f7f3ea] z-10 border-r border-border/30">{i + 1}</td>
+                                                    <td className="px-6 py-4 font-mono font-bold text-foreground opacity-90 sticky left-[48px] bg-[#f7f3ea] z-10 border-r border-border/30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{s.roll_number}</td>
+                                                    <td className="px-6 py-4 text-foreground font-semibold whitespace-nowrap">
+                                                        <StudentDetailsDialog studentId={s.student_id} studentName={s.student_name} />
+                                                    </td>
 
                                                     {/* ── Status ──────── */}
                                                     <td className="px-6 py-4 w-40">

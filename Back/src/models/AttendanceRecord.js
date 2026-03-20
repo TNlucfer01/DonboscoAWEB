@@ -22,6 +22,11 @@ const AttendanceRecord = sequelize.define('AttendanceRecord', {
         allowNull: true, // Staff picks subject at mark-time
         references: { model: 'subjects', key: 'subject_id' },
     },
+    class_type: {
+        type: DataTypes.ENUM('THEORY', 'LAB'),
+        allowNull: false,
+        defaultValue: 'THEORY',
+    },
     date: {
         type: DataTypes.DATEONLY,
         allowNull: false,

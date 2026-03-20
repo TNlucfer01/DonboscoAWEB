@@ -91,7 +91,7 @@ async function getBelowThreshold({ year, semester_id, threshold = 80 }) {
 async function getByStudent(studentId) {
     return sequelize.query(`
         SELECT
-            ar.date, ar.slot_id, ar.status, ar.od_reason,
+            ar.date, ar.slot_id, ar.status, ar.od_reason, ar.subject_id,
             sub.subject_name, ts.slot_number, ts.start_time
         FROM attendance_records ar
         LEFT JOIN subjects sub ON sub.subject_id = ar.subject_id
@@ -105,16 +105,22 @@ async function getByStudent(studentId) {
  * GET /reports/subject-wise
  * Per-student per-subject attendance breakdown.
  */
-async function getSubjectWise({ year, semester_id, date_from, date_to }) {
+async function getSubjectWise({ year, semester_id, date_from, date_to, subject_id }) {
     const replacements = { year };
+    const subjectConditions = ['subject_year = :year'];
+
+    if (subject_id) {
+        subjectConditions.push('subject_id = :subjectId');
+        replacements.subjectId = Number(subject_id);
+    }
 
     // 1. Get subjects for this year
     const subjects = await sequelize.query(`
         SELECT subject_id, subject_name, subject_code
         FROM subjects
-        WHERE subject_year = :year
+        WHERE ${subjectConditions.join(' AND ')}
         ORDER BY subject_name
-    `, { replacements: { year }, type: QueryTypes.SELECT });
+    `, { replacements, type: QueryTypes.SELECT });
 
     // 2. Build join conditions
     const joinConditions = [];
@@ -126,6 +132,9 @@ async function getSubjectWise({ year, semester_id, date_from, date_to }) {
     if (semester_id) {
         joinConditions.push('AND ar.semester_id = :semId');
         replacements.semId = Number(semester_id);
+    }
+    if (subject_id) {
+        joinConditions.push('AND ar.subject_id = :subjectId');
     }
 
     // 3. Get per-student per-subject attendance
@@ -169,4 +178,53 @@ async function getSubjectWise({ year, semester_id, date_from, date_to }) {
     return { subjects, students: Object.values(studentMap) };
 }
 
-module.exports = { yearScope, getAttendanceSummary, getBelowThreshold, getByStudent, getSubjectWise };
+/**
+ * GET /reports/by-staff/:id
+ * Detailed submission history for a staff member (User)
+ */
+async function getByStaff(staffId) {
+    return sequelize.query(`
+        SELECT 
+            ar.date,
+            ar.slot_id,
+            ts.slot_number,
+            ts.start_time,
+            ar.subject_id,
+            sub.subject_name,
+            sub.subject_code,
+            COUNT(ar.record_id) as students_marked,
+            SUM(ar.status = 'PRESENT') as present_count
+        FROM attendance_records ar
+        LEFT JOIN subjects sub ON ar.subject_id = sub.subject_id
+        LEFT JOIN timetable_slots ts ON ar.slot_id = ts.slot_id
+        WHERE ar.submitted_by = :staffId
+        GROUP BY ar.date, ar.slot_id, ts.slot_number, ts.start_time, ar.subject_id, sub.subject_name, sub.subject_code
+        ORDER BY ar.date DESC, ts.slot_number ASC
+    `, { replacements: { staffId }, type: QueryTypes.SELECT });
+}
+
+/**
+ * GET /reports/by-subject/:id
+ * Detailed attendance history for a single subject
+ */
+async function getBySubject(subjectId) {
+    return sequelize.query(`
+        SELECT 
+            ar.date,
+            ar.slot_id,
+            ts.slot_number,
+            ts.start_time,
+            u.user_id as staff_id,
+            u.name as staff_name,
+            COUNT(ar.record_id) as total_students,
+            SUM(ar.status = 'PRESENT') as present_count
+        FROM attendance_records ar
+        LEFT JOIN timetable_slots ts ON ar.slot_id = ts.slot_id
+        LEFT JOIN users u ON ar.submitted_by = u.user_id
+        WHERE ar.subject_id = :subjectId
+        GROUP BY ar.date, ar.slot_id, ts.slot_number, ts.start_time, u.name
+        ORDER BY ar.date DESC, ts.slot_number ASC
+    `, { replacements: { subjectId }, type: QueryTypes.SELECT });
+}
+
+module.exports = { yearScope, getAttendanceSummary, getBelowThreshold, getByStudent, getSubjectWise, getByStaff, getBySubject };

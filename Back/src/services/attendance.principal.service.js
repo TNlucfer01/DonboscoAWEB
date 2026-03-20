@@ -2,19 +2,60 @@
 // Principal attendance: fetch, save, correct single, correct bulk
 
 const {
-    AttendanceRecord, AttendanceAuditLog, Student, TimetableSlot, Subject, User,
+    AttendanceRecord, AttendanceAuditLog, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch, sequelize
 } = require('../models/index');
+const { Sequelize } = require('sequelize');
 const AppError = require('../utils/AppError');
 const { getActiveSemester } = require('../utils/attendanceHelpers');
 
+async function getBatch(year, date, slotId) {
+    if (!year || !date || !slotId) throw new AppError('VALIDATION_ERROR', 'year, date, and slot_id are required', 400);
+
+    const record = await AttendanceRecord.findOne({
+        where: { 
+            date: date,
+            slot_id: slotId 
+        },
+        include: [{
+            model: Student,
+            as: 'student',
+            where: { current_year: year },
+            attributes: [] // We only need the join to filter by year
+        }],
+        attributes: ['class_type']
+    });
+
+    if (!record) return []; // Return empty if no record exists for this slot
+
+    // 2. Based on the detected type, fetch ALL batches for that year
+    if (record.class_type === 'THEORY') {
+        return await TheoryBatch.findAll({
+            where: { year: year },
+            attributes: ['name', ['theory_batch_id', 'id'], [Sequelize.literal("'THEORY'"), 'type']]
+        });
+    } else if (record.class_type === 'LAB') {
+        return await LabBatch.findAll({
+            where: { year: year },
+            attributes: ['name', ['lab_batch_id', 'id'], [Sequelize.literal("'LAB'"), 'type']]
+        });
+    }
+    return [];
+}
+
+
+
 // ── Fetch Students for Principal View (single period) ─────────
-async function fetchStudentsPrincipal({ year, date, period }) {
+async function fetchStudentsPrincipal({ year, date, period, batch_id, batch_type }) {
     if (!year || !date) throw new AppError('VALIDATION_ERROR', 'year and date are required', 400);
+
+    const studentWhere = { current_year: year };
+    if (batch_type === 'THEORY' && batch_id) studentWhere.theory_batch_id = batch_id;
+    if (batch_type === 'LAB' && batch_id) studentWhere.lab_batch_id = batch_id;
 
     const records = await AttendanceRecord.findAll({
         where: { date },
         include: [
-            { model: Student, as: 'student', attributes: ['student_id', 'name', 'roll_number', 'current_year'], where: { current_year: year } },
+            { model: Student, as: 'student', attributes: ['student_id', 'name', 'roll_number', 'current_year'], where: studentWhere },
             { model: TimetableSlot, as: 'slot', attributes: ['slot_number'], where: { slot_number: period } },
             { model: Subject, as: 'subject', attributes: ['subject_name', 'subject_code'] },
             { model: User, as: 'submitter', attributes: ['name'] },
@@ -38,6 +79,8 @@ async function fetchStudentsPrincipal({ year, date, period }) {
         slot_number: first.slot?.slot_number || period,
         subject_name: first.subject?.subject_name || 'N/A',
         subject_code: first.subject?.subject_code || 'N/A',
+        subject_id: first.subject_id,
+        submitted_by: first.submitted_by,
         submitter_name: first.submitter?.name || 'N/A',
         current_year: first.student?.current_year || 'N/A',
         records: formattedRecords,
@@ -140,5 +183,4 @@ async function correctBulk(records, changed_by) {
 
     return { saved: results.length, results };
 }
-
-module.exports = { fetchStudentsPrincipal, saveStudentPri, correct, correctBulk };
+module.exports = { fetchStudentsPrincipal, getBatch, saveStudentPri, correct, correctBulk };

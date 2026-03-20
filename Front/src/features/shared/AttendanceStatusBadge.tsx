@@ -6,7 +6,7 @@ const STATUS_COLORS: Record<string, string> = {
     OD: 'bg-blue-100 border-blue-300 text-blue-800',
     IL: 'bg-yellow-100 border-yellow-300 text-yellow-800',
 };
-const DEFAULT_COLOR = 'bg-slate-100 border-slate-300 text-slate-800';
+const DEFAULT_COLOR = 'bg-muted/20 border-border text-foreground';
 
 export function AttendanceStatusBadge({ status }: { status: string }) {
     return (

@@ -55,6 +55,30 @@ router.get('/by-student/:id',
   }
 );
 
+// GET /api/reports/by-staff/:id
+// Detailed history of attendance taken by a specific staff member
+router.get('/by-staff/:id',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const results = await reportSvc.getByStaff(req.params.id);
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
+
+// GET /api/reports/by-subject/:id
+// Detailed attendance history for a specific subject
+router.get('/by-subject/:id',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const results = await reportSvc.getBySubject(req.params.id);
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
+
 // GET /api/reports/subject-wise
 // Returns per-student per-subject attendance breakdown for date range + year
 router.get('/subject-wise',
@@ -68,7 +92,8 @@ router.get('/subject-wise',
           year,
           semester_id: req.query.semester_id,
           date_from: req.query.date_from,
-          date_to: req.query.date_to
+          date_to: req.query.date_to,
+          subject_id: req.query.subject_id
       });
       
       return success(res, results);

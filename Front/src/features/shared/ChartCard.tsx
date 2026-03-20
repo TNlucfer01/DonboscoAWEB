@@ -21,9 +21,9 @@ interface ChartCardProps {
 
 export function ChartCard({ title, height = 250, children }: ChartCardProps) {
     return (
-        <Card className="border-2 border-slate-300">
+        <Card className="border-2 border-border">
             <CardHeader>
-                <CardTitle className="text-slate-800">{title}</CardTitle>
+                <CardTitle className="text-foreground">{title}</CardTitle>
             </CardHeader>
             <CardContent>
                 <ResponsiveContainer width="100%" height={height}>

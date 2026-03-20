@@ -75,8 +75,8 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
     return (
         <Layout user={user} onLogout={onLogout}>
             <div className="space-y-6">
-                <h1 className="text-2xl text-slate-800">Year Coordinator Dashboard</h1>
-                <p className="text-slate-600">Managing Students</p>
+                <h1 className="text-2xl text-foreground">Year Coordinator Dashboard</h1>
+                <p className="text-muted-foreground font-medium">Managing Students</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {stats.map((s) => <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} />)}

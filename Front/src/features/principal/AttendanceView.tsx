@@ -9,6 +9,9 @@ import { DatePickerField } from '../shared/DatePickerField';
 import { YEAR_OPTIONS } from '../shared/constants';
 import { apiClient } from '../../api/apiClient';
 import { Download } from 'lucide-react';
+import { Subject, fetchSubjects } from '../../api/subject.api';
+import { StudentDetailsDialog } from '../shared/StudentDetailsDialog';
+import { SubjectDetailsDialog } from '../shared/SubjectDetailsDialog';
 
 interface SubjectInfo {
     subject_id: number;
@@ -46,6 +49,19 @@ export default function AttendanceView({ user, onLogout }: PageProps) {
     const [error, setError] = useState<string | null>(null);
     const [fetched, setFetched] = useState(false);
 
+    const [subjectId, setSubjectId] = useState('ALL');
+    const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+
+    React.useEffect(() => {
+        if (year) {
+            fetchSubjects(year).then(setAvailableSubjects).catch(console.error);
+            setSubjectId('ALL'); // reset subject when year changes
+        } else {
+            setAvailableSubjects([]);
+            setSubjectId('ALL');
+        }
+    }, [year]);
+
     const handleFetch = async () => {
         if (!year) return;
         setLoading(true);
@@ -54,6 +70,7 @@ export default function AttendanceView({ user, onLogout }: PageProps) {
             const params: Record<string, string> = { year };
             if (dateFrom) params.date_from = format(dateFrom, 'yyyy-MM-dd');
             if (dateTo) params.date_to = format(dateTo, 'yyyy-MM-dd');
+            if (subjectId && subjectId !== 'ALL') params.subject_id = subjectId;
 
             const data = await apiClient.get<SubjectWiseResponse>('/reports/subject-wise', params);
             setSubjects(data.subjects);
@@ -122,6 +139,14 @@ export default function AttendanceView({ user, onLogout }: PageProps) {
                             <div className="min-w-[150px]">
                                 <SelectField label="Year *" value={year} options={YEAR_OPTIONS} onValueChange={setYear} />
                             </div>
+                            <div className="min-w-[180px]">
+                                <SelectField 
+                                    label="Subject (Optional)" 
+                                    value={subjectId} 
+                                    options={[{ value: 'ALL', label: 'All Subjects (Year)' }, ...availableSubjects.map(s => ({ value: String(s.subject_id), label: `${s.subject_name}` }))]} 
+                                    onValueChange={setSubjectId} 
+                                />
+                            </div>
                             <DatePickerField date={dateFrom} onDateChange={setDateFrom} label="Date From" maxDate={dateTo || new Date()} />
                             <DatePickerField date={dateTo} onDateChange={setDateTo} label="Date To" maxDate={new Date()} />
                             <Button 
@@ -169,18 +194,20 @@ export default function AttendanceView({ user, onLogout }: PageProps) {
                                     <p>No attendance data found for the selected criteria.</p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse text-sm">
+                                <div className="overflow-x-auto rounded-lg border border-border bg-background">
+                                    <table className="w-full text-sm">
                                         <thead>
                                             {/* ── Header Row 1: Fixed Columns + Subject Spans ── */}
                                             <tr className="bg-muted/30">
-                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider sticky left-0 bg-card z-20">#</th>
-                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider sticky left-[45px] bg-card z-20">Roll No</th>
+                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider sticky left-0 bg-[#f7f3ea] z-20">#</th>
+                                                <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider sticky left-[45px] bg-[#f7f3ea] z-20">Roll No</th>
                                                 <th rowSpan={2} className="border-b border-r border-border px-4 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Student Name</th>
                                                 {subjects.map(s => (
                                                     <th key={s.subject_id} colSpan={3}
                                                         className="border-b border-r border-border px-4 py-3 text-center bg-primary/5">
-                                                        <span className="block text-[11px] font-black text-secondary uppercase tracking-tight leading-tight">{s.subject_name}</span>
+                                                        <span className="block text-[11px] font-black text-secondary uppercase tracking-tight leading-tight">
+                                                            <SubjectDetailsDialog subjectId={s.subject_id} subjectName={s.subject_name} />
+                                                        </span>
                                                         <span className="block text-[9px] font-medium text-muted-foreground opacity-70">{s.subject_code}</span>
                                                     </th>
                                                 ))}
@@ -199,9 +226,11 @@ export default function AttendanceView({ user, onLogout }: PageProps) {
                                         <tbody className="divide-y divide-border/50">
                                             {students.map((st, i) => (
                                                 <tr key={st.student_id} className="hover:bg-muted/30 transition-colors">
-                                                    <td className="border-r border-border px-4 py-3 text-muted-foreground font-medium text-xs sticky left-0 bg-card">{i + 1}</td>
-                                                    <td className="border-r border-border px-4 py-3 font-mono text-xs font-bold text-foreground sticky left-[45px] bg-card">{st.roll_number}</td>
-                                                    <td className="border-r border-border px-4 py-3 text-foreground font-medium whitespace-nowrap">{st.name}</td>
+                                                    <td className="border-r border-border px-4 py-3 text-muted-foreground font-medium text-xs sticky left-0 bg-[#f7f3ea] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{i + 1}</td>
+                                                    <td className="border-r border-border px-4 py-3 font-mono text-xs font-bold text-foreground sticky left-[45px] bg-[#f7f3ea] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{st.roll_number}</td>
+                                                    <td className="border-r border-border px-4 py-3 text-foreground font-medium whitespace-nowrap">
+                                                        <StudentDetailsDialog studentId={st.student_id} studentName={st.name} />
+                                                    </td>
                                                     {subjects.map(sub => {
                                                         const stats = st.subjects[sub.subject_id];
                                                         return (

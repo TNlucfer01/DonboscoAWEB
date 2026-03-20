@@ -14,6 +14,8 @@ import { YEAR_OPTIONS, SEMESTER_OPTIONS } from '../shared/constants';
 import { Subject, fetchSubjects, addSubject, deleteSubject } from '../../api/subject.api';
 import { toast } from 'sonner';
 import { Pencil, Trash2, Loader2, BookPlus } from 'lucide-react';
+import { SubjectDetailsDialog } from '../shared/SubjectDetailsDialog';
+
 
 export default function AddSubject({ user, onLogout }: PageProps) {
     const [name, setName] = useState('');
@@ -143,47 +145,49 @@ export default function AddSubject({ user, onLogout }: PageProps) {
                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{subjectList.length} Registered Subjects</span>
                     </div>
 
-                    <div className="rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/5 overflow-hidden">
+                    <div className="rounded-2xl border border-border/50 bg-background shadow-xl shadow-black/5 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="bg-muted/30 border-b border-border">
-                                        <th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Subject Details</th>
-                                        <th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Timeline</th>
-                                        <th className="text-left p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Credits</th>
-                                        <th className="text-center p-4 text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-32">Actions</th>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Subject Details</th>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Timeline</th>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Credits</th>
+                                        <th className="px-6 py-4 text-center text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-32">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/30">
                                     {listLoading ? (
                                         <tr>
-                                            <td colSpan={4} className="p-12 text-center text-muted-foreground font-medium italic">
+                                            <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground font-medium italic">
                                                 <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary opacity-50 mb-2" />
                                                 Retrieving curriculum data...
                                             </td>
                                         </tr>
                                     ) : subjectList.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="p-12 text-center text-muted-foreground italic bg-muted/5 font-medium">
+                                            <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground italic bg-muted/5 font-medium">
                                                 No subjects have been registered in the curriculum yet.
                                             </td>
                                         </tr>
                                     ) : (
                                         subjectList.map((s) => (
                                             <tr key={s.subject_id} className="hover:bg-muted/20 transition-colors group">
-                                                <td className="p-4">
-                                                    <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.subject_name}</div>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-foreground group-hover:text-primary transition-colors">
+                                                        <SubjectDetailsDialog subjectId={s.subject_id} subjectName={s.subject_name} />
+                                                    </div>
                                                     <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide mt-1 inline-block px-1.5 py-0.5 bg-muted/50 rounded">{s.subject_code}</div>
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="px-6 py-4">
                                                     <div className="text-foreground font-semibold text-xs">{yearLabel(s.subject_year)}</div>
                                                     <div className="text-[10px] text-secondary font-bold uppercase mt-0.5">{s.semester.toLowerCase()} Semester</div>
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="px-6 py-4">
                                                     <span className="text-xs font-black text-foreground">{s.credits}</span>
                                                     <span className="text-[10px] text-muted-foreground font-medium ml-1">Credits</span>
                                                 </td>
-                                                <td className="p-4 text-center text-foreground font-medium">
+                                                <td className="px-6 py-4 text-center text-foreground font-medium">
                                                     <div className="flex justify-center gap-1">
                                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors">
                                                             <Pencil className="h-4 w-4" />

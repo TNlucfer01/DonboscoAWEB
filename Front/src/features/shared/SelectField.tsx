@@ -35,14 +35,14 @@ export function SelectField({
 }: SelectFieldProps) {
     return (
         <div className={className}>
-            <Label htmlFor={id} className="text-slate-700">
+            <Label htmlFor={id} className="text-foreground opacity-90">
                 {label}
             </Label>
             <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-                <SelectTrigger id={id} className="mt-1 border-slate-300">
+                <SelectTrigger id={id} className="mt-1 border-border">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
+                <SelectContent className="bg-[#f7f3ea] border-2 border-border">
                     {options.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
