@@ -20,8 +20,9 @@ export function DatePickerField({
   maxDate = new Date(),
 }: DatePickerFieldProps) {
   return (
-    <div className="flex flex-col gap-2 flex-1 min-w-[240px]">
-      <Label className="text-sm font-black text-secondary tracking-widest uppercase ml-1 opacity-70">{label}</Label>
+    <div className="flex flex-col gap-2 w-full sm:min-w-[200px]">  {/* BUG-016: responsive width */}
+      {/* BUG-014: Label style matches SelectField — gentle opacity instead of bold+uppercase */}
+      <Label className="text-sm font-medium text-foreground opacity-90">{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -35,7 +36,8 @@ export function DatePickerField({
             {date ? format(date, "PPP") : <span className="opacity-50 font-medium">Select calendar date...</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 rounded-2xl border-border shadow-2xl bg-card" align="start">
+        {/* BUG-015: max-w constraint prevents popover overflow on mobile */}
+        <PopoverContent className="w-auto max-w-[calc(100vw-2rem)] p-0 rounded-2xl border-border shadow-2xl bg-card" align="start">
           <Calendar
             mode="single"
             selected={date}

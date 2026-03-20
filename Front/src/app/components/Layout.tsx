@@ -6,6 +6,7 @@ import {
 	BookPlus,
 	Calendar,
 	ClipboardEdit,
+	ClipboardList,
 	Eye,
 	FileText,
 	LogOut,
@@ -13,7 +14,7 @@ import {
 	X,
 	GraduationCap
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 
 interface LayoutProps {
@@ -25,6 +26,16 @@ interface LayoutProps {
 export default function Layout({ children, user, onLogout }: LayoutProps) {
 	const location = useLocation();
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+
+	// BUG-020: Lock body scroll when mobile sidebar is open
+	useEffect(() => {
+		if (sidebarOpen) {
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = '';
+		}
+		return () => { document.body.style.overflow = ''; };
+	}, [sidebarOpen]);
 
 	const principalLinks = [
 		{ to: '/principal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -44,7 +55,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 	];
 
 	const staffLinks = [
-		{ to: '/staff/attendance', icon: ClipboardEdit, label: 'Take Attendance' },
+		{ to: '/staff/attendance', icon: ClipboardList, label: 'Take Attendance' },
 		{ to: '/staff/attendance-correction', icon: ClipboardEdit, label: 'Attendance Correction' }
 	];
 
@@ -58,6 +69,7 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 					<div className="flex items-center gap-4">
 						<button
 							onClick={() => setSidebarOpen(!sidebarOpen)}
+							aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
 							className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
 						>
 							{sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

@@ -90,7 +90,8 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                             {/* Year — Radio (UX preference for this field) */}
                             <div>
                                 <Label className="text-foreground opacity-90 mb-3 block">Step 1: Select Year *</Label>
-                                <RadioGroup value={year} onValueChange={setYear} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {/* BUG-027: grid-cols-4 on all sizes — labels are short enough */}
+                            <RadioGroup value={year} onValueChange={setYear} className="grid grid-cols-4 gap-4">
                                     {YEAR_RADIO.map((v) => (
                                         <div key={v} className="flex items-center space-x-2">
                                             <RadioGroupItem value={v} id={`year${v}`} className="border-border" />
@@ -111,13 +112,21 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                             />
                             <div>
                                 <Button onClick={handleFetch} disabled={loading}
-                                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground hover:bg-primary/90 text-white">
+                                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white">
                                     {loading ? 'Fetching…' : 'Fetch Students'}
                                 </Button>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* BUG-026: Empty state when fetch returns no students */}
+                {fetched && students.length === 0 && (
+                    <div className="text-center py-16 bg-muted/10 rounded-2xl border border-dashed border-border/50">
+                        <p className="text-muted-foreground font-medium">No students found for the selected class and period.</p>
+                        <p className="text-sm text-muted-foreground/70 mt-1">Please verify the batch and period selection above.</p>
+                    </div>
+                )}
 
                 {fetched && students.length > 0 && (
                     <Card className="border-2 border-border">
@@ -126,12 +135,13 @@ export default function StaffTakeAttendance({ user, onLogout }: PageProps) {
                                 <CardTitle className="text-foreground">
                                     Mark Attendance — Year {year} — Batch {batch} — Period {period}
                                 </CardTitle>
-                                {/* Countdown Timer */}
-                                <div className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-mono font-semibold ${timerExpired
-                                        ? 'bg-red-100 border border-red-300 text-red-800'
+                                {/* Countdown Timer — BUG-010/011: themed colors, rounded-xl */}
+                                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-mono font-semibold ${
+                                    timerExpired
+                                        ? 'bg-destructive/10 border border-destructive/30 text-destructive'
                                         : secondsLeft < 300
-                                            ? 'bg-amber-100 border border-amber-300 text-amber-800'
-                                            : 'bg-green-100 border border-green-300 text-green-800'
+                                            ? 'bg-accent/20 border border-accent/40 text-secondary'
+                                            : 'bg-primary/10 border border-primary/30 text-primary'
                                     }`}>
                                     {timerExpired ? (
                                         <><AlertTriangle className="h-4 w-4" /> Submission window closed</>

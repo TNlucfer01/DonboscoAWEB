@@ -147,7 +147,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                 />
                             )}
                             {date && (
-                                <div className="mt-4 p-3 bg-muted/10 border border-border">
+                                <div className="mt-4 p-3 bg-muted/10 border border-border rounded-xl">
                                     <p className="text-sm text-foreground opacity-90">Selected: <strong>{format(date, 'PPP')}</strong></p>
                                     {isPast && <p className="text-sm text-red-700 mt-1">Past dates cannot be modified</p>}
                                     {selectedEntry && (
@@ -177,7 +177,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                         placeholder="e.g., National Holiday" rows={3} className="mt-1 border-border" disabled={!isFuture} />
                                 </div>
                                 <Button onClick={handleMarkHoliday} disabled={!isFuture || loading}
-                                    className="w-full bg-red-700 hover:bg-red-800 text-white">
+                                    className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Mark as Holiday
                                 </Button>
@@ -190,7 +190,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                                 <p className="text-sm text-muted-foreground font-medium mb-4">Only Saturdays can be enabled as working days.</p>
                                 <Button onClick={handleEnableSaturday}
                                     disabled={!isFuture || !date || date.getDay() !== 6 || loading}
-                                    className="w-full bg-green-700 hover:bg-green-800 text-white">
+                                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Enable Saturday as Working Day
                                 </Button>
