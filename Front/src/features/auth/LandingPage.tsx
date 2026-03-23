@@ -5,7 +5,9 @@
 //   • Both happen simultaneously — pure CSS transitions, no JS timers.
 
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import Login from './Login';
+import logo from '../../assest/logo.png';
 import '../../styles/transitions.css';
 
 interface LandingPageProps {
@@ -13,12 +15,8 @@ interface LandingPageProps {
 }
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
-const GradCap = ({ size = 24, color = 'white' }: { size?: number; color?: string }) => (
-	<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
-		fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-		<path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-		<path d="M6 12v5c3 3 9 3 12 0v-5" />
-	</svg>
+const GradCap = ({ size = 44 }: { size?: number; color?: string }) => (
+	<img src={logo} alt="College Logo" style={{ width: size, height: size, objectFit: 'contain' }} />
 );
 
 const ArrowRight = () => (
@@ -76,7 +74,16 @@ const FontStyle = () => (
 );
 
 export default function LandingPage({ onLogin }: LandingPageProps) {
-	const [loginOpen, setLoginOpen] = useState(false);
+	const location = useLocation();
+	const navigate = useNavigate();
+	const [loginOpen, setLoginOpen] = useState(location.search.includes('login=true'));
+
+	const handleBack = () => {
+		setLoginOpen(false);
+		if (location.search.includes('login=true')) {
+			navigate('/', { replace: true });
+		}
+	};
 
 	return (
 		<div style={{
@@ -115,16 +122,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 				}}>
 					{/* Logo */}
 					<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-						<div style={{
-							width: 44, height: 44, borderRadius: '50%',
-							background: '#9CAF88',
-							border: '2px solid #8B5E3C',
-							display: 'flex', alignItems: 'center', justifyContent: 'center',
-							boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-							flexShrink: 0,
-						}}>
-							<GradCap size={20} />
-						</div>
+						<GradCap size={48} />
 						<div style={{ minWidth: 0 }}>
 							<p style={{
 								margin: 0, fontSize: 12, fontWeight: 700,
@@ -184,16 +182,12 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 
 					{/* Crest badge */}
 					<div style={{
-						width: 80, height: 80, borderRadius: '50%',
-						background: '#9CAF88',
-						border: '3px solid #D6A75E',
-						display: 'flex', alignItems: 'center', justifyContent: 'center',
 						marginBottom: 24,
-						boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
 						transition: 'transform 0.7s ease',
 						transform: loginOpen ? 'scale(0.85)' : 'scale(1)',
+						display: 'flex', alignItems: 'center', justifyContent: 'center'
 					}}>
-						<GradCap size={38} />
+						<GradCap size={110} />
 					</div>
 
 					{/* College name */}
@@ -289,7 +283,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 					borderLeft: loginOpen ? '2px solid #9CAF88' : 'none',
 				}}>
 				{/* Pass onBack so Login renders its own back button top-right */}
-				<Login onLogin={onLogin} onBack={() => setLoginOpen(false)} />
+				<Login onLogin={onLogin} onBack={handleBack} />
 			</div>
 		</div>
 	);

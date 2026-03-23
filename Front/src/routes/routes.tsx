@@ -38,7 +38,8 @@ interface ProtectedProps {
 }
 
 function Protected({ user, requiredRole, children }: ProtectedProps) {
-	if (!user || user.role.toLowerCase() !== requiredRole.toLowerCase()) return <Navigate to="/" replace />;
+	if (!user) return <Navigate to="/?login=true" replace />;
+	if (user.role.toLowerCase() !== requiredRole.toLowerCase()) return <Navigate to="/?login=true" replace />;
 	return <>{children}</>;
 }
 
@@ -84,7 +85,7 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 			<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />
 
 			{/* Catch-all redirect to index (which handles login state) */}
-			<Route path="*" element={<Navigate to="/" replace />} />
+			<Route path="*" element={<Navigate to="/?login=true" replace />} />
 		</Routes>
 	);
 }
