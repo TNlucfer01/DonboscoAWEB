@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { Input } from '../../app/components/ui/input';
 import { Label } from '../../app/components/ui/label';
-import { login as authLogin, forgotPassword, resetPassword, ApiError } from '../../api/auth.api';
+import { login as authLogin, forgotPassword, verifyOTP, resetPassword, ApiError } from '../../api/auth.api';
 
 // ─── Google Fonts (Newsreader + Manrope) ─────────────────────────────────────
 const FontLoader = () => (
@@ -70,6 +70,8 @@ function ForgotPassword({ onBack }: { onBack: () => void }) {
                 await forgotPassword(phone);
                 setStep(2);
             } else if (step === 2) {
+                if (otp.length !== 6) { setError('Please enter the 6-digit OTP'); return; }
+                await verifyOTP(phone, otp);  // ← actually validates OTP against backend
                 setStep(3);
             } else {
                 if (newPassword.length < 6) { setError('Password must be at least 6 characters'); return; }
@@ -85,79 +87,83 @@ function ForgotPassword({ onBack }: { onBack: () => void }) {
     };
 
     return (
-        <div className="min-h-screen flex font-manrope" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
+        <div className="h-full min-h-screen flex items-center justify-center relative bg-[#fbf9f3]"
+            style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
             <FontLoader />
-            {/* Left Panel */}
-            <LeftPanel />
-            {/* Right Panel — Reset Password */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-16 bg-[#fbf9f3]">
-                <div className="w-full max-w-md">
-                    <div className="mb-10">
-                        <h1 className="text-3xl font-bold text-[#1b1c19] mb-2" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
-                            Reset Password
-                        </h1>
-                        <p className="text-sm text-[#8B5E3C]" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
-                            Follow the steps to regain access to your DBCAMS account
-                        </p>
-                    </div>
 
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center justify-between">
-                            <span>{error}</span>
-                            <button onClick={() => setError('')} className="ml-2 text-red-400 hover:text-red-700">✕</button>
+            {/* ── Forgot Password Form (full width inside right panel) ── */}
+            <div className="w-full max-w-md px-6 sm:px-8">
+                <div className="mb-10">
+                    <h1 className="text-3xl font-bold text-[#1b1c19] mb-2" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
+                        Reset Password
+                    </h1>
+                    <p className="text-sm text-[#8B5E3C]">
+                        Follow the steps to regain access to your DBCAMS account
+                    </p>
+                </div>
+
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start justify-between gap-2">
+                        <span>{error}</span>
+                        <button type="button" onClick={() => setError('')} 
+                            className="text-red-400 hover:text-red-700 flex-shrink-0 mt-0.5">✕</button>
+                    </div>
+                )}
+
+                {/* Step indicator */}
+                <div className="flex items-center gap-2 mb-8">
+                    {[1, 2, 3].map((s) => (
+                        <div key={s} className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${step >= s ? 'bg-[#476500] text-white' : 'bg-[#e4e2dd] text-[#757968]'}`}>{s}</div>
+                            {s < 3 && <div className={`h-0.5 w-8 rounded-full transition-all ${step > s ? 'bg-[#476500]' : 'bg-[#e4e2dd]'}`} />}
+                        </div>
+                    ))}
+                    <span className="ml-2 text-xs text-[#757968]">
+                        {step === 1 ? 'Phone Number' : step === 2 ? 'Verify OTP' : 'New Password'}
+                    </span>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {step === 1 && (
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-[#44493a]">Registered Phone Number</Label>
+                            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+                                placeholder="Enter 10-digit phone number" maxLength={10}
+                                className="w-full h-12 px-4 rounded-xl bg-[#e4e2dd] border-none outline-none text-[#1b1c19] placeholder-[#757968] focus:ring-2 focus:ring-[#476500]/30 transition-all" />
+                        </div>
+                    )}
+                    {step === 2 && (
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-[#44493a]">Enter OTP</Label>
+                            <input type="text" value={otp} onChange={e => setOtp(e.target.value)}
+                                placeholder="6-digit OTP" maxLength={6}
+                                className="w-full h-12 px-4 rounded-xl bg-[#e4e2dd] border-none outline-none text-[#1b1c19] placeholder-[#757968] text-center tracking-widest text-lg font-bold focus:ring-2 focus:ring-[#476500]/30 transition-all" />
+                        </div>
+                    )}
+                    {step === 3 && (
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-[#44493a]">New Password</Label>
+                            <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                placeholder="At least 6 characters"
+                                className="w-full h-12 px-4 rounded-xl bg-[#e4e2dd] border-none outline-none text-[#1b1c19] placeholder-[#757968] focus:ring-2 focus:ring-[#476500]/30 transition-all" />
                         </div>
                     )}
 
-                    {/* Step indicator */}
-                    <div className="flex items-center gap-2 mb-8">
-                        {[1, 2, 3].map((s) => (
-                            <div key={s} className="flex items-center gap-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${step >= s ? 'bg-[#476500] text-white' : 'bg-[#e4e2dd] text-[#757968]'}`}>{s}</div>
-                                {s < 3 && <div className={`h-0.5 w-8 rounded-full transition-all ${step > s ? 'bg-[#476500]' : 'bg-[#e4e2dd]'}`} />}
-                            </div>
-                        ))}
-                        <span className="ml-2 text-xs text-[#757968]">
-                            {step === 1 ? 'Phone Number' : step === 2 ? 'Verify OTP' : 'New Password'}
-                        </span>
-                    </div>
+                    <button type="submit" disabled={loading}
+                        className="w-full h-12 rounded-xl text-white font-semibold text-sm transition-all hover:-translate-y-0.5 active:scale-[0.99] disabled:opacity-60"
+                        style={{ background: 'linear-gradient(135deg, #344b00, #6B8E23)', boxShadow: '0 4px 16px rgba(52,75,0,0.25)' }}>
+                        {loading ? 'Processing…' : step === 1 ? 'Send OTP' : step === 2 ? 'Verify OTP' : 'Reset Password'}
+                    </button>
+                    <button type="button" onClick={onBack}
+                        className="w-full h-12 rounded-xl text-[#476500] font-medium text-sm bg-[#e4e2dd] hover:bg-[#dae2c8] transition-all">
+                        ← Back to Login
+                    </button>
+                </form>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {step === 1 && (
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-[#44493a]">Registered Phone Number</Label>
-                                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                                    placeholder="Enter 10-digit phone number" maxLength={10}
-                                    className="w-full h-12 px-4 rounded-xl bg-[#e4e2dd] border-none outline-none text-[#1b1c19] placeholder-[#757968] focus:ring-2 focus:ring-[#476500]/30 transition-all" />
-                            </div>
-                        )}
-                        {step === 2 && (
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-[#44493a]">Enter OTP</Label>
-                                <input type="text" value={otp} onChange={e => setOtp(e.target.value)}
-                                    placeholder="6-digit OTP" maxLength={6}
-                                    className="w-full h-12 px-4 rounded-xl bg-[#e4e2dd] border-none outline-none text-[#1b1c19] placeholder-[#757968] text-center tracking-widest text-lg font-bold focus:ring-2 focus:ring-[#476500]/30 transition-all" />
-                            </div>
-                        )}
-                        {step === 3 && (
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-[#44493a]">New Password</Label>
-                                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                    placeholder="At least 6 characters"
-                                    className="w-full h-12 px-4 rounded-xl bg-[#e4e2dd] border-none outline-none text-[#1b1c19] placeholder-[#757968] focus:ring-2 focus:ring-[#476500]/30 transition-all" />
-                            </div>
-                        )}
-
-                        <button type="submit" disabled={loading}
-                            className="w-full h-12 rounded-xl text-white font-semibold text-sm transition-all hover:-translate-y-0.5 active:scale-[0.99] disabled:opacity-60"
-                            style={{ background: 'linear-gradient(135deg, #344b00, #6B8E23)', boxShadow: '0 4px 16px rgba(52,75,0,0.25)' }}>
-                            {loading ? 'Processing…' : step === 1 ? 'Send OTP' : step === 2 ? 'Verify OTP' : 'Reset Password'}
-                        </button>
-                        <button type="button" onClick={onBack}
-                            className="w-full h-12 rounded-xl text-[#476500] font-medium text-sm bg-[#e4e2dd] hover:bg-[#dae2c8] transition-all">
-                            ← Back to Login
-                        </button>
-                    </form>
-                </div>
+                {/* Footer */}
+                <p className="mt-10 text-center text-[11px] text-[#9CAF88]">
+                    &copy; {new Date().getFullYear()} Don Bosco College of Agriculture. All rights reserved.
+                </p>
             </div>
         </div>
     );

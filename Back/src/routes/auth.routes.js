@@ -4,7 +4,7 @@ const { body } = require('express-validator');
 const router = express.Router();
 const ctrl = require('../controllers/auth.controller');
 const validate = require('../middleware/validate');
-const { loginLimiter } = require('../middleware/rateLimiter');
+const { loginLimiter, otpLimiter } = require('../middleware/rateLimiter');
 
 // POST /api/auth/login
 router.post('/login',
@@ -22,13 +22,26 @@ router.post('/refresh', ctrl.refresh);
 
 // POST /api/auth/forgot-password
 router.post('/forgot-password',
+    otpLimiter,
     [body('phone').isMobilePhone().withMessage('Valid phone number required')],
     validate,
     ctrl.forgotPassword
 );
 
+// POST /api/auth/verify-otp
+router.post('/verify-otp',
+    otpLimiter,
+    [
+        body('phone').isMobilePhone().withMessage('Valid phone number required'),
+        body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+    ],
+    validate,
+    ctrl.verifyOTP
+);
+
 // POST /api/auth/reset-password
 router.post('/reset-password',
+    otpLimiter,
     [
         body('phone').isMobilePhone().withMessage('Valid phone number required'),
         body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),

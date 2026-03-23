@@ -81,7 +81,10 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 												report  extractions page*/}
 			{/* Staff Routes */}
 			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
-				<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />
-	</Routes>
+			<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />
+
+			{/* Catch-all redirect to index (which handles login state) */}
+			<Route path="*" element={<Navigate to="/" replace />} />
+		</Routes>
 	);
 }

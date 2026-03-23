@@ -3,7 +3,7 @@
 
 const { Op } = require('sequelize');
 const {
-    AttendanceAuditLog, AttendanceRecord, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch,
+    AttendanceAuditLog, AttendanceRecord, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch, sequelize,
 } = require('../models/index');
 const AppError = require('../utils/AppError');
 const smsService = require('./sms.service');
@@ -59,15 +59,20 @@ async function submit({ records, slot_id, date, subject_id, submitted_by }) {
 
     const semester = await getActiveSemester();
     const now = new Date();
-    const toInsert = [];
+    const studentIds = records.map(r => r.student_id);
 
-    for (const r of records) {
-        const existing = await AttendanceRecord.findOne({
-            where: { student_id: r.student_id, date, slot_id, semester_id: semester.semester_id }
-        });
-        if (existing?.is_locked) continue;
+    // ── Batch-fetch ALL existing records in one query (fixes N+1) ──
+    const existingRecords = await AttendanceRecord.findAll({
+        where: { student_id: studentIds, date, slot_id, semester_id: semester.semester_id },
+        attributes: ['student_id', 'is_locked'],
+    });
+    const lockedSet = new Set(
+        existingRecords.filter(e => e.is_locked).map(e => e.student_id)
+    );
 
-        toInsert.push({
+    const toInsert = records
+        .filter(r => !lockedSet.has(r.student_id))
+        .map(r => ({
             student_id: r.student_id,
             semester_id: semester.semester_id,
             subject_id: subject_id || null,
@@ -77,8 +82,7 @@ async function submit({ records, slot_id, date, subject_id, submitted_by }) {
             submitted_by,
             submitted_at: now,
             is_locked: true,
-        });
-    }
+        }));
 
     if (toInsert.length === 0) return { message: 'No new records to submit' };
 
@@ -86,13 +90,19 @@ async function submit({ records, slot_id, date, subject_id, submitted_by }) {
         updateOnDuplicate: ['status', 'od_reason', 'submitted_by', 'submitted_at', 'is_locked'],
     });
 
-    // Fire SMS for absent students (non-blocking)
-    for (const r of toInsert.filter(r => r.status === 'ABSENT')) {
-        const student = await Student.findByPk(r.student_id, { attributes: ['name', 'parent_phone'] });
-        if (student) smsService.sendAbsentSMS(student, date, slot_id, semester.semester_id).catch(console.error);
+    // ── Batch-fetch absent students for SMS in one query (fixes N+1) ──
+    const absentIds = toInsert.filter(r => r.status === 'ABSENT').map(r => r.student_id);
+    if (absentIds.length > 0) {
+        const absentStudents = await Student.findAll({
+            where: { student_id: absentIds },
+            attributes: ['student_id', 'name', 'parent_phone'],
+        });
+        for (const student of absentStudents) {
+            smsService.sendAbsentSMS(student, date, slot_id, semester.semester_id).catch(console.error);
+        }
     }
 
-    return _fetchUpdatedStudents(records.map(r => r.student_id), date, slot_id);
+    return _fetchUpdatedStudents(studentIds, date, slot_id);
 }
 
 // ── Fetch Students for Staff Correction ───────────────────────
@@ -158,30 +168,33 @@ async function correctStaffSubmit({ records, slot_id, date, subject_id, submitte
     const toInsert = [];
 
     for (const r of records) {
-        const existing = await AttendanceRecord.findOne({
-            where: { student_id: r.student_id, date, slot_id, semester_id: semester.semester_id }
-        });
-        if (existing?.is_locked && existing.status === 'OD') continue;
-        
-        if (existing && existing.status !== r.status) {
-            await AttendanceAuditLog.create({
-                record_id: existing.record_id,
-                changed_by: submitted_by,
-                old_status: existing.status, new_status: r.status,
-                changed_at: new Date(),
+        await sequelize.transaction(async (t) => {
+            const existing = await AttendanceRecord.findOne({
+                where: { student_id: r.student_id, date, slot_id, semester_id: semester.semester_id },
+                transaction: t,
             });
-        }
+            if (existing?.is_locked && existing.status === 'OD') return;
 
-        toInsert.push({
-            student_id: r.student_id,
-            semester_id: semester.semester_id,
-            subject_id: subject_id || null,
-            date, slot_id,
-            status: r.status,
-            od_reason: resolveODReason(r.status, r.od_reason),
-            submitted_by,
-            submitted_at: now,
-            is_locked: 1,
+            if (existing && existing.status !== r.status) {
+                await AttendanceAuditLog.create({
+                    record_id: existing.record_id,
+                    changed_by: submitted_by,
+                    old_status: existing.status, new_status: r.status,
+                    changed_at: new Date(),
+                }, { transaction: t });
+            }
+
+            toInsert.push({
+                student_id: r.student_id,
+                semester_id: semester.semester_id,
+                subject_id: subject_id || null,
+                date, slot_id,
+                status: r.status,
+                od_reason: resolveODReason(r.status, r.od_reason),
+                submitted_by,
+                submitted_at: now,
+                is_locked: 1,
+            });
         });
     }
 
@@ -192,7 +205,7 @@ async function correctStaffSubmit({ records, slot_id, date, subject_id, submitte
     });
 
     for (const r of toInsert.filter(r => r.status === 'ABSENT')) {
-        const student = await Student.findByPk(r.student_id, { attributes: ['name', 'parent_phone'] });
+        const student = await Student.findByPk(r.student_id, { attributes: ['student_id', 'name', 'roll_number', 'parent_phone'] });
         if (student) smsService.sendAbsentSMS(student, date, slot_id, semester.semester_id).catch(console.error);
     }
 

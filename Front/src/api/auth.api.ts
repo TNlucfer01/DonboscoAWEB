@@ -38,6 +38,10 @@ export async function forgotPassword(phone: string): Promise<void> {
     await apiClient.post('/auth/forgot-password', { phone });
 }
 
+export async function verifyOTP(phone: string, otp: string): Promise<void> {
+    await apiClient.post('/auth/verify-otp', { phone, otp });
+}
+
 export async function resetPassword(phone: string, otp: string, newPassword: string): Promise<void> {
     await apiClient.post('/auth/reset-password', { phone, otp, newPassword });
 }

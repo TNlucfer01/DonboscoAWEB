@@ -10,9 +10,9 @@ const sequelize = new Sequelize(
     port: Number(process.env.DB_PORT) || 3306,
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
+      max: 50,        // supports ~200 concurrent users (rule: ~25% of users)
+      min: 5,         // keep a warm pool ready at all times
+      acquire: 20000, // fail fast (20s) instead of queuing forever
       idle: 10000,
     },
   }

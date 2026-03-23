@@ -97,40 +97,50 @@ async function saveStudentPri(records, changed_by) {
 
         if (!record_id) continue;
 
-        const existing = await AttendanceRecord.findByPk(record_id);
-        if (!existing) continue;
+        await sequelize.transaction(async (t) => {
+            const existing = await AttendanceRecord.findByPk(record_id, { transaction: t });
+            if (!existing) return;
 
-        const old_status = existing.status;
-        await existing.update({ status, od_reason: finalRemarks, is_locked: finalLocked });
+            const old_status = existing.status;
+            await existing.update(
+                { status, od_reason: finalRemarks, is_locked: finalLocked },
+                { transaction: t }
+            );
 
-        if (old_status !== status) {
-            await AttendanceAuditLog.create({
-                record_id,
-                changed_by: changed_by || existing.submitted_by,
-                old_status, new_status: status,
-                changed_at: new Date(),
-            });
-        }
-        results.push({ record_id, action: 'updated' });
+            if (old_status !== status) {
+                await AttendanceAuditLog.create({
+                    record_id,
+                    changed_by: changed_by || existing.submitted_by,
+                    old_status, new_status: status,
+                    changed_at: new Date(),
+                }, { transaction: t });
+            }
+            results.push({ record_id, action: 'updated' });
+        });
     }
     return { saved: results.length, results };
 }
 
 // ── Single Record Correction (Principal) ─────────────────────
 async function correct({ record_id, new_status, od_reason }, changed_by) {
-    const record = await AttendanceRecord.findByPk(record_id);
-    if (!record) throw new AppError('NOT_FOUND', 'Record not found', 404);
+    return sequelize.transaction(async (t) => {
+        const record = await AttendanceRecord.findByPk(record_id, { transaction: t });
+        if (!record) throw new AppError('NOT_FOUND', 'Record not found', 404);
 
-    const old_status = record.status;
-    await record.update({ status: new_status, od_reason: od_reason || null });
+        const old_status = record.status;
+        await record.update(
+            { status: new_status, od_reason: od_reason || null },
+            { transaction: t }
+        );
 
-    await AttendanceAuditLog.create({
-        record_id, changed_by,
-        old_status, new_status,
-        changed_at: new Date(),
+        await AttendanceAuditLog.create({
+            record_id, changed_by,
+            old_status, new_status,
+            changed_at: new Date(),
+        }, { transaction: t });
+
+        return { message: 'Attendance corrected', old_status, new_status };
     });
-
-    return { message: 'Attendance corrected', old_status, new_status };
 }
 
 // ── Bulk Upsert (Principal — all 5 slots) ────────────────────
@@ -141,44 +151,53 @@ async function correctBulk(records, changed_by) {
     for (const r of records) {
         const { record_id, student_id, slot_id, date, new_status, od_reason } = r;
 
-        if (record_id) {
-            const existing = await AttendanceRecord.findByPk(record_id);
-            if (!existing) continue;
+        await sequelize.transaction(async (t) => {
+            if (record_id) {
+                const existing = await AttendanceRecord.findByPk(record_id, { transaction: t });
+                if (!existing) return;
 
-            const old_status = existing.status;
-            if (old_status !== new_status || existing.od_reason !== (od_reason || null)) {
-                await existing.update({ status: new_status, od_reason: od_reason || null });
-                await AttendanceAuditLog.create({
-                    record_id, changed_by, old_status, new_status,
-                    changed_at: new Date(),
+                const old_status = existing.status;
+                if (old_status !== new_status || existing.od_reason !== (od_reason || null)) {
+                    await existing.update(
+                        { status: new_status, od_reason: od_reason || null },
+                        { transaction: t }
+                    );
+                    await AttendanceAuditLog.create({
+                        record_id, changed_by, old_status, new_status,
+                        changed_at: new Date(),
+                    }, { transaction: t });
+                }
+                results.push({ action: 'updated', record_id, student_id, slot_id });
+            } else {
+                const [newRecord, created] = await AttendanceRecord.findOrCreate({
+                    where: { student_id, slot_id, date, semester_id: semester.semester_id },
+                    defaults: {
+                        student_id, slot_id, date,
+                        semester_id: semester.semester_id,
+                        status: new_status,
+                        od_reason: od_reason || null,
+                        submitted_by: changed_by,
+                        submitted_at: new Date(),
+                        is_locked: false,
+                    },
+                    transaction: t,
                 });
-            }
-            results.push({ action: 'updated', record_id, student_id, slot_id });
-        } else {
-            const [newRecord, created] = await AttendanceRecord.findOrCreate({
-                where: { student_id, slot_id, date, semester_id: semester.semester_id },
-                defaults: {
-                    student_id, slot_id, date,
-                    semester_id: semester.semester_id,
-                    status: new_status,
-                    od_reason: od_reason || null,
-                    submitted_by: changed_by,
-                    submitted_at: new Date(),
-                    is_locked: false,
-                },
-            });
 
-            if (!created) {
-                const old_status = newRecord.status;
-                await newRecord.update({ status: new_status, od_reason: od_reason || null });
-                await AttendanceAuditLog.create({
-                    record_id: newRecord.record_id, changed_by,
-                    old_status, new_status,
-                    changed_at: new Date(),
-                });
+                if (!created) {
+                    const old_status = newRecord.status;
+                    await newRecord.update(
+                        { status: new_status, od_reason: od_reason || null },
+                        { transaction: t }
+                    );
+                    await AttendanceAuditLog.create({
+                        record_id: newRecord.record_id, changed_by,
+                        old_status, new_status,
+                        changed_at: new Date(),
+                    }, { transaction: t });
+                }
+                results.push({ action: created ? 'created' : 'upserted', student_id, slot_id });
             }
-            results.push({ action: created ? 'created' : 'upserted', student_id, slot_id });
-        }
+        });
     }
 
     return { saved: results.length, results };

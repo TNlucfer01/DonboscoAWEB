@@ -1,8 +1,10 @@
 // src/services/auth.service.js
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models/index');
 const AppError = require('../utils/AppError');
+const smsService = require('./sms.service');
 
 // In-memory OTP store (replace with Redis in production)
 const otpStore = new Map(); // phone → { otp, expiresAt }
@@ -55,14 +57,31 @@ async function sendOTP(phone) {
     const user = await User.findOne({ where: { phone_number: phone } });
     if (!user) throw new AppError('NOT_FOUND', 'No account with this phone number', 404);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString(); // CSPRNG — not predictable
     otpStore.set(phone, { otp, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min
 
-    // Only log OTP in development; in production, integrate a real SMS provider
-    if (process.env.NODE_ENV !== 'production') {
-        console.log(`[DEV] OTP for ${phone}: ${otp}`);
+    // Log OTP to console in development for easy testing
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[AUTH-DEV] 🔑 OTP for ${phone}: ${otp}`);
     }
-    return { message: 'OTP sent' };
+
+    // Send SMS via Fast2SMS (uses FAST_SMS env key)
+    await smsService.sendOTPSMS(phone, otp).catch(err => {
+        console.error('[AUTH] Failed to deliver OTP via SMS:', err.message);
+    });
+
+    return { message: 'OTP sent successfully' };
+}
+
+// ── Verify OTP (step 2 validation) ────────────────────────────
+// Checks the OTP is correct WITHOUT resetting the password.
+// Called by the frontend "Verify OTP" button at step 2.
+async function verifyOTP(phone, otp) {
+    const entry = otpStore.get(phone);
+    if (!entry || entry.otp !== otp || Date.now() > entry.expiresAt) {
+        throw new AppError('OTP_INVALID', 'OTP is invalid or has expired', 400);
+    }
+    return { message: 'OTP verified' };
 }
 
 // ── Reset Password ─────────────────────────────────────────────
@@ -82,4 +101,4 @@ async function resetPassword(phone, otp, newPassword) {
     return { message: 'Password reset successful' };
 }
 
-module.exports = { login, refreshAccessToken, sendOTP, resetPassword };
+module.exports = { login, refreshAccessToken, sendOTP, verifyOTP, resetPassword };
