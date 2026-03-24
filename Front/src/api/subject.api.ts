@@ -9,7 +9,7 @@ export interface Subject {
     subject_year: number;
     semester: string;
     credits: number;
-    description?: string;
+    subject_description?: string;
 }
 
 /** GET /subjects — List all subjects */
@@ -27,7 +27,7 @@ export async function addSubject(data: {
     subject_year: number;
     semester: string;
     credits: number;
-    description?: string;
+    subject_description?: string;
 }): Promise<void> {
     await apiClient.post('/subjects', data);
 }

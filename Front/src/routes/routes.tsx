@@ -8,6 +8,7 @@ import { User } from '../features/shared/types';
 
 // Auth
 import Login from '../features/auth/Login';
+import LandingPage from '../features/auth/LandingPage';
 
 // Principal
 import PrincipalDashboard from '../features/principal/Dashboard';
@@ -26,6 +27,7 @@ import YCAttendanceView from '../features/yc/AttendanceView';
 
 // Staff
 import StaffTakeAttendance from '../features/staff/TakeAttendance';
+import StaffAttendanceCorrection from '../features/staff/AttendanceCorrection';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -36,7 +38,8 @@ interface ProtectedProps {
 }
 
 function Protected({ user, requiredRole, children }: ProtectedProps) {
-	if (!user || user.role !== requiredRole) return <Navigate to="/" replace />;
+	if (!user) return <Navigate to="/?login=true" replace />;
+	if (user.role.toLowerCase() !== requiredRole.toLowerCase()) return <Navigate to="/?login=true" replace />;
 	return <>{children}</>;
 }
 
@@ -53,17 +56,14 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 
 	return (
 		<Routes>
-			{/* Root — redirect by role or show login */}
+			{/* Root — show Landing (with Login transition) when not logged in */}
 			<Route
 				path="/"
 				element={
-					!user ? <Login onLogin={onLogin} /> :
+					!user ? <LandingPage onLogin={onLogin} /> :
 						user.role === 'principal' ? <Navigate to="/principal/dashboard" replace /> :
 							user.role === 'year_coordinator' ? <Navigate to="/yc/dashboard" replace /> :
-								<Navigate to="/staff/attendance" replace />
-				}
-			/>
-
+							<Navigate to="/staff/attendance" replace />}/>
 			{/* Principal Routes */}
 			<Route path="/principal/dashboard" element={<Protected user={user} requiredRole="principal"><PrincipalDashboard     {...pp} /></Protected>} />
 			<Route path="/principal/add-staff" element={<Protected user={user} requiredRole="principal"><AddStaff               {...pp} /></Protected>} />
@@ -82,6 +82,10 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 												report  extractions page*/}
 			{/* Staff Routes */}
 			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
+			<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />
+
+			{/* Catch-all redirect to index (which handles login state) */}
+			<Route path="*" element={<Navigate to="/?login=true" replace />} />
 		</Routes>
 	);
 }

@@ -6,7 +6,8 @@ export interface CalendarEntry {
     calendar_id: number;
     date: string;
     day_type: string;
-    reason: string | null;
+    holiday_name: string | null;
+    holiday_description: string | null;
 }
 
 /** GET /calendar?year=&month= — Fetch calendar entries */
@@ -18,13 +19,13 @@ export async function fetchCalendarEntries(year?: string, month?: string): Promi
 }
 
 /** POST /calendar — Mark a holiday */
-export async function markHoliday(date: string, reason: string): Promise<void> {
-    await apiClient.post('/calendar', { date, day_type: 'HOLIDAY', reason });
+export async function markHoliday(date: string, holiday_name: string, holiday_description?: string): Promise<void> {
+    await apiClient.post('/calendar', { date, day_type: 'HOLIDAY', holiday_name, holiday_description: holiday_description || null });
 }
 
 /** POST /calendar — Enable a Saturday as working day */
 export async function enableWorkingSaturday(date: string): Promise<void> {
-    await apiClient.post('/calendar', { date, day_type: 'SATURDAY_ENABLED', reason: 'Working Saturday' });
+    await apiClient.post('/calendar', { date, day_type: 'SATURDAY_ENABLED' });
 }
 
 /** PUT /calendar/:id — Update calendar entry */

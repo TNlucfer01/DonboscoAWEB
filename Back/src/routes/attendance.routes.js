@@ -20,28 +20,40 @@ router.post('/fetch-students',
     ],
     validate,
     async (req, res, next) => {
-        console.log(req.body);
         try { return success(res, await svc.fetchStudents(req.body)); }
         catch (e) { next(e); }
     }
 );
 
 // GET /api/attendance/fetch-students-pri — Principal: one row per student with period1–period5
-// Query params: year (1-4), date (YYYY-MM-DD), period (1-5, optional — if given, only fetch that slot)
+// Query params: year (1-4), date (YYYY-MM-DD)
 router.get('/fetch-students-pri',
     auth, roleGuard('PRINCIPAL'),
     async (req, res, next) => {
         try {
-            const { year, date, period } = req.query;
+            const { year, date, period, batch_id, batch_type } = req.query;
             if (!year || !date) {
                 return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'year and date query params are required' } });
             }
-            return success(res, await svc.fetchStudentsPrincipal({ year, date, period: period ? Number(period) : null }));
+            return success(res, await svc.fetchStudentsPrincipal({ year, date, period, batch_id, batch_type }));
         } catch (e) { next(e); }
     }
 );
 
-
+router.post('/save-student-pri', auth, roleGuard('PRINCIPAL'),
+    [
+        body('records').isArray({ min: 1 }).withMessage('records array required'),
+        body('records.*.record_id').isInt({ min: 1 }).withMessage('record_id required'),
+        body('records.*.status').isIn(['PRESENT', 'ABSENT', 'OD', 'INFORMED_LEAVE']).withMessage('valid status required'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const records = req.body.records;
+            return success(res, await svc.saveStudentPri(records, req.user.userId));
+        } catch(e) { next(e); }
+    }
+);
 // POST /api/attendance/submit — Staff only
 // Handles multiple students at once via the records[] array.
 // Multiple staff can submit for different batches/slots simultaneously.
@@ -60,6 +72,65 @@ router.post('/submit',
         } catch (e) { next(e); }
     }
 );
+
+// POST /api/attendance/correct-attendance/fetch-students — Staff attendance correction fetching
+router.post('/correct-attendance/fetch-students',
+    auth, roleGuard('SUBJECT_STAFF', 'PRINCIPAL'),
+    [
+        body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
+        body('batch_id').isInt({ min: 1 }).withMessage('batch_id required'),
+        body('batch_type').isIn(['THEORY', 'LAB']).withMessage('batch_type required'),
+        body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
+        body('subject_id').isInt({ min: 1 }).withMessage('subject_id required'),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const { year, batch_id, batch_type, slot_id, subject_id, date } = req.body;
+            const data=await svc.fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_id, subject_id, date });
+            return success(res, data);
+        
+        
+        } catch (e) { next(e); }
+    }
+);
+
+// POST /api/attendance/correct-attendance — Staff correct attendance (skips past_date logic)
+router.post('/correct-attendance',
+    auth, roleGuard('SUBJECT_STAFF'),
+    [
+        body('records').isArray({ min: 1 }).withMessage('records array required'),
+        body('slot_id').isInt({ min: 1 }),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const { records, slot_id, date, subject_id } = req.body;
+            return success(res, await svc.correctStaffSubmit({ records, slot_id, date, subject_id, submitted_by: req.user.userId }));
+        } catch (e) { next(e); }
+    }
+);
+
+// post /api/attendance/getbacthes
+router.post('/getbacthes',
+    auth, roleGuard('PRINCIPAL'),
+    [
+        body('year').isInt({ min: 1, max: 4 }).withMessage('year required (1–4)'),
+        body('date').isDate().withMessage('date required (YYYY-MM-DD)'),
+        body('slot_id').isInt({ min: 1 }).withMessage('slot_id required'),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const { year, date, slot_id } = req.body;
+            const data=await svc.getBatch(year,date,slot_id);
+            return success(res, data);
+        } catch (e) { next(e); }
+    }
+);
+
 
 // GET /api/attendance/view — YC + Principal
 router.get('/view', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'),

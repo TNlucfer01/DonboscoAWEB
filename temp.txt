@@ -1,0 +1,74 @@
+hey i want you to find all the ui flaws in the frontend of my application and have the follwong theme  of the following colr primary colpr #9caf88  and the secondary color is #8b5e3c and the bg color(main canvas ) fdfdfb and the acent color #d6a75e and following cards:#f7f73ea primary text :#3a3a3a secondary text #6b6b6b 
+
+
+
+
+i want you tot login and see the website and make notes of all the ui mistakes  and improvement and than  tell the options make sure this ui/ux updates works for all the roles 
+
+
+
+
+
+1. make all the tables in all the ages looks same as the one from the  staff management and the subject management for the following pages 
+1. Attendance reciticication 
+2. holiday Marking
+3. 
+
+
+
+
+
+ALTER TABLE attendance_records
+ADD COLUMN class_type ENUM('THEORY', 'LAB') NOT NULL DEFAULT 'THEORY'
+AFTER subject_id;
+
+
+
+//in the attendance_analytics page i need te follwoing 
+1. view attendance by a single subject 
+2. view attendance by year
+
+// wherever there is a student name in the frontend when the user clicks the name . it should the ddetials of that student (and other analytics such performance )
+
+// in the attendance recticication page when i select the year and the date, period then the backend shouldsend  which typ eof class is that period then is it lab or theroy based on that we are going tto selct the batch the user wants to snd then send the whole request to the bacjned then the backend sends the detials of that particuar bacth only 
+
+
+for the bacth probleem at the 
+-- Replace the placeholders (?, ?, ?) with your variables
+-- Example: Year=2, Date='2026-03-13', Slot=1
+
+(SELECT 
+    tb.name AS batch_name, 
+    'THEORY' AS type
+FROM attendance_records ar
+JOIN students s ON ar.student_id = s.student_id
+JOIN theory_batches tb ON s.theory_batch_id = tb.theory_batch_id
+WHERE s.current_year = 2             -- Your Year Input
+  AND ar.date = '2026-03-13'         -- Your Date Input
+  AND ar.slot_id = 1                 -- Your Hour Input
+  AND ar.class_type = 'THEORY'
+GROUP BY tb.theory_batch_id)
+
+UNION
+
+(SELECT 
+    lb.name AS batch_name, 
+    'LAB' AS type
+FROM attendance_records ar
+JOIN students s ON ar.student_id = s.student_id
+JOIN lab_batches lb ON s.lab_batch_id = lb.lab_batch_id
+WHERE s.current_year = 2             -- Your Year Input
+  AND ar.date = '2026-03-13'         -- Your Date Input
+  AND ar.slot_id = 1                 -- Your Hour Input
+  AND ar.class_type = 'LAB'
+GROUP BY lb.lab_batch_id);
+
+
+
+
+it's a attendance management system 
+i want to have the same theme color  as now
+i want to have a warm and soily user  experiance 
+find and fix all thhe ui elements 
+it for both the web and mobile devices 
+

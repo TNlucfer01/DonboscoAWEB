@@ -83,7 +83,7 @@ export default function AddSubject({ user, onLogout }: AddSubjectProps) {
                     <SelectTrigger className="mt-1 border-slate-300">
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-2 border-slate-300">
+                    <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                       <SelectItem value="1">1st Year</SelectItem>
                       <SelectItem value="2">2nd Year</SelectItem>
                       <SelectItem value="3">3rd Year</SelectItem>
@@ -98,7 +98,7 @@ export default function AddSubject({ user, onLogout }: AddSubjectProps) {
                     <SelectTrigger className="mt-1 border-slate-300">
                       <SelectValue placeholder="Select semester" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-2 border-slate-300">
+                    <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                       <SelectItem value="odd">Odd</SelectItem>
                       <SelectItem value="even">Even</SelectItem>
                     </SelectContent>

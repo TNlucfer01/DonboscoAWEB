@@ -122,7 +122,7 @@ export default function AuditLog({ user, onLogout }: AuditLogProps) {
                       {startDate ? format(startDate, 'PP') : <span>Pick start date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-white border-2 border-slate-300">
+                  <PopoverContent className="w-auto p-0 bg-[#f7f3ea] border-2 border-slate-300">
                     <Calendar
                       mode="single"
                       selected={startDate}
@@ -144,7 +144,7 @@ export default function AuditLog({ user, onLogout }: AuditLogProps) {
                       {endDate ? format(endDate, 'PP') : <span>Pick end date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-white border-2 border-slate-300">
+                  <PopoverContent className="w-auto p-0 bg-[#f7f3ea] border-2 border-slate-300">
                     <Calendar
                       mode="single"
                       selected={endDate}

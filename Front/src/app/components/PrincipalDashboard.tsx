@@ -179,7 +179,7 @@ export default function PrincipalDashboard({ user, onLogout }: PrincipalDashboar
             <CardContent>
               <div className="space-y-3">
                 {recentChanges.map((change, index) => (
-                  <div key={index} className="border border-slate-300 p-3 bg-white">
+                  <div key={index} className="border border-slate-300 p-3 bg-[#f7f3ea]">
                     <div className="flex justify-between items-start mb-1">
                       <p className="text-sm text-slate-800">{change.student}</p>
                       <p className="text-xs text-slate-500">{change.date}</p>

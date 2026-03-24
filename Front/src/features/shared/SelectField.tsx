@@ -1,6 +1,6 @@
 // ─── SelectField ─────────────────────────────────────────────────────────────
 // A labeled, reusable select dropdown. Pass options from constants.ts.
-// Eliminates boilerplate repeated across 6+ components.
+// BUG-017: SelectContent uses bg-popover (CSS variable) instead of hardcoded #f7f3ea
 
 import { Label } from '../../app/components/ui/label';
 import {
@@ -35,14 +35,15 @@ export function SelectField({
 }: SelectFieldProps) {
     return (
         <div className={className}>
-            <Label htmlFor={id} className="text-slate-700">
+            <Label htmlFor={id} className="text-foreground opacity-90">
                 {label}
             </Label>
             <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-                <SelectTrigger id={id} className="mt-1 border-slate-300">
+                <SelectTrigger id={id} className="mt-1 border-border">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-2 border-slate-300">
+                {/* BUG-017 fix: use bg-popover CSS-variable-backed class, not hardcoded hex */}
+                <SelectContent className="bg-popover border-2 border-border">
                     {options.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}

@@ -90,7 +90,7 @@ export default function AddStudent({ user, onLogout }: AddStudentProps) {
                   <SelectTrigger className="mt-1 border-slate-300">
                     <SelectValue placeholder="Assign student to a batch" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-slate-300">
+                  <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                     <SelectItem value="A">Batch A</SelectItem>
                     <SelectItem value="B">Batch B</SelectItem>
                     <SelectItem value="C">Batch C</SelectItem>

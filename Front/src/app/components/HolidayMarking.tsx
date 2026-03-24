@@ -92,7 +92,7 @@ export default function HolidayMarking({ user, onLogout }: HolidayMarkingProps) 
               <CardTitle className="text-slate-800">College Calendar</CardTitle>
               <div className="flex gap-4 text-sm mt-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-white border-2 border-slate-300"></div>
+                  <div className="w-4 h-4 bg-[#f7f3ea] border-2 border-slate-300"></div>
                   <span className="text-slate-600">Working Day</span>
                 </div>
                 <div className="flex items-center gap-2">

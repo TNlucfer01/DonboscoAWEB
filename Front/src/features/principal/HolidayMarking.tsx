@@ -73,7 +73,7 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
         if (!holidayName) return toast.error('Please enter holiday name');
         setLoading(true);
         try {
-            await markHoliday(format(date, 'yyyy-MM-dd'), `${holidayName}${holidayDescription ? ' - ' + holidayDescription : ''}`);
+            await markHoliday(format(date, 'yyyy-MM-dd'), holidayName, holidayDescription || undefined);
             toast.success(`Holiday "${holidayName}" marked for ${format(date, 'PPP')}`);
             setHolidayName(''); setHolidayDescription('');
             await loadEntries();
@@ -114,21 +114,21 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
     return (
         <Layout user={user} onLogout={onLogout}>
             <div className="space-y-6">
-                <h1 className="text-2xl text-slate-800">Holiday Management</h1>
+                <h1 className="text-2xl text-foreground">Holiday Management</h1>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Calendar */}
-                    <Card className="border-2 border-slate-300">
+                    <Card className="border-2 border-border">
                         <CardHeader>
-                            <CardTitle className="text-slate-800">College Calendar</CardTitle>
+                            <CardTitle className="text-foreground">College Calendar</CardTitle>
                             <div className="flex gap-4 text-sm mt-2">
                                 {[
-                                    { color: 'bg-white border-2 border-slate-300', label: 'Working Day' },
+                                    { color: 'bg-[#f7f3ea] border-2 border-border', label: 'Working Day' },
                                     { style: { backgroundColor: '#fee2e2', border: '2px solid #991b1b' }, label: 'Holiday' },
                                     { style: { backgroundColor: '#dcfce7', border: '2px solid #166534' }, label: 'Working Saturday' },
                                 ].map(({ color, style, label }) => (
                                     <div key={label} className="flex items-center gap-2">
                                         <div className={`w-4 h-4 ${color ?? ''}`} style={style} />
-                                        <span className="text-slate-600">{label}</span>
+                                        <span className="text-muted-foreground font-medium">{label}</span>
                                     </div>
                                 ))}
                             </div>
@@ -136,24 +136,24 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                         <CardContent>
                             {listLoading ? (
                                 <div className="flex justify-center p-8">
-                                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
                                 </div>
                             ) : (
                                 <Calendar
                                     mode="single" selected={date} onSelect={setDate}
-                                    className="border border-slate-300"
+                                    className="border border-border"
                                     modifiers={{ holiday: holidayDates, workingSaturday: saturdayDates, disabled: (d) => d < today }}
                                     modifiersStyles={MODIFIERS_STYLES}
                                 />
                             )}
                             {date && (
-                                <div className="mt-4 p-3 bg-slate-50 border border-slate-300">
-                                    <p className="text-sm text-slate-700">Selected: <strong>{format(date, 'PPP')}</strong></p>
+                                <div className="mt-4 p-3 bg-muted/10 border border-border rounded-xl">
+                                    <p className="text-sm text-foreground opacity-90">Selected: <strong>{format(date, 'PPP')}</strong></p>
                                     {isPast && <p className="text-sm text-red-700 mt-1">Past dates cannot be modified</p>}
                                     {selectedEntry && (
                                         <p className="text-sm text-blue-700 mt-1">
                                             Currently marked as: <strong>{selectedEntry.day_type === 'HOLIDAY' ? '🔴 Holiday' : '🟢 Working Saturday'}</strong>
-                                            {selectedEntry.reason && ` — ${selectedEntry.reason}`}
+                                            {selectedEntry.holiday_name && ` — ${selectedEntry.holiday_name}`}
                                         </p>
                                     )}
                                 </div>
@@ -163,34 +163,34 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
 
                     {/* Forms */}
                     <div className="space-y-4">
-                        <Card className="border-2 border-slate-300">
-                            <CardHeader><CardTitle className="text-slate-800">Mark Holiday</CardTitle></CardHeader>
+                        <Card className="border-2 border-border">
+                            <CardHeader><CardTitle className="text-foreground">Mark Holiday</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <div>
-                                    <Label htmlFor="holidayName" className="text-slate-700">Holiday Name *</Label>
+                                    <Label htmlFor="holidayName" className="text-foreground opacity-90">Holiday Name *</Label>
                                     <Input id="holidayName" value={holidayName} onChange={(e) => setHolidayName(e.target.value)}
-                                        placeholder="e.g., Republic Day" className="mt-1 border-slate-300" disabled={!isFuture} />
+                                        placeholder="e.g., Republic Day" className="mt-1 border-border" disabled={!isFuture} />
                                 </div>
                                 <div>
-                                    <Label htmlFor="holidayDesc" className="text-slate-700">Description</Label>
+                                    <Label htmlFor="holidayDesc" className="text-foreground opacity-90">Description</Label>
                                     <Textarea id="holidayDesc" value={holidayDescription} onChange={(e) => setHolidayDescription(e.target.value)}
-                                        placeholder="e.g., National Holiday" rows={3} className="mt-1 border-slate-300" disabled={!isFuture} />
+                                        placeholder="e.g., National Holiday" rows={3} className="mt-1 border-border" disabled={!isFuture} />
                                 </div>
                                 <Button onClick={handleMarkHoliday} disabled={!isFuture || loading}
-                                    className="w-full bg-red-700 hover:bg-red-800 text-white">
+                                    className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Mark as Holiday
                                 </Button>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-2 border-slate-300">
-                            <CardHeader><CardTitle className="text-slate-800">Enable Working Saturday</CardTitle></CardHeader>
+                        <Card className="border-2 border-border">
+                            <CardHeader><CardTitle className="text-foreground">Enable Working Saturday</CardTitle></CardHeader>
                             <CardContent>
-                                <p className="text-sm text-slate-600 mb-4">Only Saturdays can be enabled as working days.</p>
+                                <p className="text-sm text-muted-foreground font-medium mb-4">Only Saturdays can be enabled as working days.</p>
                                 <Button onClick={handleEnableSaturday}
                                     disabled={!isFuture || !date || date.getDay() !== 6 || loading}
-                                    className="w-full bg-green-700 hover:bg-green-800 text-white">
+                                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Enable Saturday as Working Day
                                 </Button>
@@ -202,36 +202,38 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
                 {/* Existing Entries Table */}
                 {entries.length > 0 && (
                     <div>
-                        <h2 className="text-xl text-slate-800 mb-4">Calendar Entries</h2>
-                        <div className="border-2 border-slate-300 overflow-x-auto">
+                        <h2 className="text-xl text-foreground mb-4">Calendar Entries</h2>
+                        <div className="overflow-x-auto rounded-lg border border-border bg-background">
                             <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-slate-200 text-slate-800">
-                                        <th className="text-left p-3 border border-slate-300 font-semibold">Date</th>
-                                        <th className="text-left p-3 border border-slate-300 font-semibold">Type</th>
-                                        <th className="text-left p-3 border border-slate-300 font-semibold">Reason</th>
-                                        <th className="text-center p-3 border border-slate-300 font-semibold w-24">Actions</th>
+                                <thead className="bg-muted/30 border-b border-border">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Date</th>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Type</th>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Holiday Name</th>
+                                        <th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Description</th>
+                                        <th className="px-6 py-4 text-center text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-24">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-border/30">
                                     {entries.map((e, i) => {
                                         const entryDate = parseISO(e.date);
                                         const canDelete = entryDate >= today;
                                         return (
-                                            <tr key={e.calendar_id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                                                <td className="p-3 border border-slate-300">{format(entryDate, 'PPP')}</td>
-                                                <td className="p-3 border border-slate-300">
-                                                    <span className={`inline-block px-2 py-1 text-xs ${e.day_type === 'HOLIDAY' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-green-100 text-green-800 border border-green-300'}`}>
+                                            <tr key={e.calendar_id} className="hover:bg-muted/20 transition-colors group">
+                                                <td className="px-6 py-4 font-mono font-bold text-foreground opacity-90">{format(entryDate, 'PPP')}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-block px-2 py-1 text-xs font-bold rounded-md border ${e.day_type === 'HOLIDAY' ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-primary/10 text-primary border-primary/20'}`}>
                                                         {e.day_type === 'HOLIDAY' ? 'Holiday' : 'Working Saturday'}
                                                     </span>
                                                 </td>
-                                                <td className="p-3 border border-slate-300">{e.reason || '-'}</td>
-                                                <td className="p-3 border border-slate-300 text-center">
+                                                <td className="px-6 py-4 text-foreground font-semibold whitespace-nowrap">{e.holiday_name || '-'}</td>
+                                                <td className="px-6 py-4 text-muted-foreground font-medium text-xs">{e.holiday_description || '-'}</td>
+                                                <td className="px-6 py-4 text-center">
                                                     {canDelete && (
-                                                        <button title="Delete" className="text-red-600 hover:text-red-800"
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
                                                             onClick={() => handleDeleteEntry(e)}>
                                                             <Trash2 className="h-4 w-4" />
-                                                        </button>
+                                                        </Button>
                                                     )}
                                                 </td>
                                             </tr>

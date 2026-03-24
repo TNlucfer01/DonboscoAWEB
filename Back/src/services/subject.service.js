@@ -32,7 +32,7 @@ async function update(id, data) {
 }
 
 async function remove(id) {
-    const subject = await Subject.findOne({ where: { subject_code: id } });
+    const subject = await Subject.findOne({ where: { subject_id: id } });
     if (!subject) throw new AppError('NOT_FOUND', 'Subject not found', 404);
     await subject.destroy();
     return { message: 'Subject deleted' };

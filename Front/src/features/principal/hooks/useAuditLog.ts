@@ -1,8 +1,8 @@
 // ─── useAuditLog hook ────────────────────────────────────────────────────────
 
 import { useState, useEffect, useCallback } from 'react';
-import { AuditLogEntry } from '../features/shared/attendance.types';
-import { fetchAuditLogs } from '../api/audit.api';
+import { AuditLogEntry } from '../../shared/attendance.types';
+import { fetchAuditLogs } from '../../../api/audit.api';
 import { format } from 'date-fns';
 
 export function useAuditLog() {

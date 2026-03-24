@@ -3,11 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 const sequelize = require('./src/config/db');
 
 const app = express();
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(helmet());
 app.use(morgan('dev'));

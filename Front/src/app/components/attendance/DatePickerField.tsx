@@ -42,7 +42,7 @@ export function DatePickerField({
                         {date ? format(date, 'PP') : <span>Pick a date</span>}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white border-2 border-slate-300">
+                <PopoverContent className="w-auto p-0 bg-[#f7f3ea] border-2 border-slate-300">
                     <Calendar
                         mode="single"
                         selected={date}

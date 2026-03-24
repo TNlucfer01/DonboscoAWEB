@@ -1,9 +1,9 @@
 // ─── useStaffAttendance hook ──────────────────────────────────────────────────
 
 import { useState, useCallback } from 'react';
-import { StaffStudent } from '../features/shared/attendance.types';
-import { fetchStaffStudents, submitStaffAttendance } from '../api/attendance.api';
-import { ApiError } from '../api/apiClient';
+import { StaffStudent } from '../../shared/attendance.types';
+import { fetchStaffStudents, submitStaffAttendance } from '../../../api/attendance.api';
+import { ApiError } from '../../../api/apiClient';
 import { toast } from 'sonner';
 
 export function useStaffAttendance() {
@@ -13,10 +13,10 @@ export function useStaffAttendance() {
     const [fetched, setFetched] = useState(false);
     const [remainingMinutes, setRemainingMinutes] = useState<number>(0);
 
-    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, date: string) => {
+    const fetch = useCallback(async (year: string, batch: string, classType: string, period: string, subject: string) => {
         setLoading(true);
         try {
-            const result = await fetchStaffStudents(year, batch, classType, period, date);
+            const result = await fetchStaffStudents(year, batch, classType, period, subject);
             setStudents(result.students);
             setRemainingMinutes(result.remainingMinutes);
             setFetched(true);
@@ -36,13 +36,14 @@ export function useStaffAttendance() {
     }, []);
 
     const markAllPresent = useCallback(() => {
-        setStudents((prev) => prev.map((s) => ({ ...s, status: 'Present' })));
+        setStudents((prev) => prev.map((s) => s.isLocked ? s : { ...s, status: 'PRESENT' }));
     }, []);
 
     const submit = useCallback(async (year: string, batch: string, period: string, subject: string, date: string) => {
         setSubmitting(true);
         try {
-            await submitStaffAttendance(year, batch, period, subject, students, date);
+            const updatedStudents = await submitStaffAttendance(year, batch, period, subject, students, date);
+            setStudents(updatedStudents);
             toast.success('Attendance saved successfully!');
         } catch (err) {
             if (err instanceof ApiError && err.code === 'PAST_DATE') {

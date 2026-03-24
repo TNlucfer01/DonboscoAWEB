@@ -96,7 +96,7 @@ export default function ODLeaveEntry({ user, onLogout }: ODLeaveEntryProps) {
                     {date ? format(date, 'PPP') : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white border-2 border-slate-300">
+                <PopoverContent className="w-auto p-0 bg-[#f7f3ea] border-2 border-slate-300">
                   <Calendar
                     mode="single"
                     selected={date}
@@ -152,7 +152,7 @@ export default function ODLeaveEntry({ user, onLogout }: ODLeaveEntryProps) {
                             <SelectTrigger className="h-8 border-slate-300 text-xs">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-white border-2 border-slate-300">
+                            <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                               <SelectItem value="P">P</SelectItem>
                               <SelectItem value="A">A</SelectItem>
                               <SelectItem value="OD">OD</SelectItem>

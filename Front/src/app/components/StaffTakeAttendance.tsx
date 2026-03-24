@@ -100,7 +100,7 @@ export default function StaffTakeAttendance({ user, onLogout }: StaffTakeAttenda
                   <SelectTrigger className="mt-2 border-slate-300">
                     <SelectValue placeholder="Select batch" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-slate-300">
+                  <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                     <SelectItem value="A">Batch A</SelectItem>
                     <SelectItem value="B">Batch B</SelectItem>
                     <SelectItem value="C">Batch C</SelectItem>
@@ -116,7 +116,7 @@ export default function StaffTakeAttendance({ user, onLogout }: StaffTakeAttenda
                   <SelectTrigger className="mt-2 border-slate-300">
                     <SelectValue placeholder="Select period" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-slate-300">
+                  <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                     <SelectItem value="1">Period 1</SelectItem>
                     <SelectItem value="2">Period 2</SelectItem>
                     <SelectItem value="3">Period 3</SelectItem>
@@ -133,7 +133,7 @@ export default function StaffTakeAttendance({ user, onLogout }: StaffTakeAttenda
                   <SelectTrigger className="mt-2 border-slate-300">
                     <SelectValue placeholder="Select subject" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-slate-300">
+                  <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                     <SelectItem value="CS101">Computer Science (CS101)</SelectItem>
                     <SelectItem value="MA101">Mathematics (MA101)</SelectItem>
                     <SelectItem value="PH101">Physics (PH101)</SelectItem>
@@ -189,7 +189,7 @@ export default function StaffTakeAttendance({ user, onLogout }: StaffTakeAttenda
                             <SelectTrigger className="border-slate-300">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-white border-2 border-slate-300">
+                            <SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
                               <SelectItem value="Present">Present</SelectItem>
                               <SelectItem value="Absent">Absent</SelectItem>
                             </SelectContent>

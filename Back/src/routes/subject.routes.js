@@ -27,6 +27,8 @@ router.get('/:id', auth, ctrl.getById);
 router.post('/', auth, roleGuard('PRINCIPAL'), subjectValidation, validate, ctrl.create);
 
 router.put('/:id', auth, roleGuard('PRINCIPAL'), subjectValidation, validate, ctrl.update);
+//the below routes has  some issue 
+//
 router.delete('/:id', auth, roleGuard('PRINCIPAL'), ctrl.remove);
 
 module.exports = router;

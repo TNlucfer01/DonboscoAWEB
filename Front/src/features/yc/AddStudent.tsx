@@ -117,28 +117,28 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 	return (
 		<Layout user={user} onLogout={onLogout}>
 			<div className="max-w-4xl mx-auto pb-10">
-				<h1 className="text-2xl font-semibold text-slate-800 mb-6">Student Registration</h1>
-				<Card className="border-2 border-slate-300">
+				<h1 className="text-2xl font-semibold text-foreground mb-6">Student Registration</h1>
+				<Card className="border-2 border-border">
 					<CardHeader>
-						<CardTitle className="text-slate-800">New Student Details</CardTitle>
+						<CardTitle className="text-foreground">New Student Details</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<form onSubmit={handleSubmit} className="space-y-6">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								{/* Basic Info */}
 								<div className="space-y-4">
-									<h3 className="font-medium text-slate-700 border-b pb-1">Academic Information</h3>
+									<h3 className="font-medium text-foreground opacity-90 border-b pb-1">Academic Information</h3>
 									<div>
-										<Label htmlFor="studentName" className="text-slate-700 uppercase text-xs font-bold">Student Name *</Label>
+										<Label htmlFor="studentName" className="text-foreground opacity-90 uppercase text-xs font-bold">Student Name *</Label>
 										<Input id="studentName" value={name} onChange={(e) => setName(e.target.value)}
-											placeholder="Enter student name" className={`mt-1 border-slate-300 ${fieldErrors.name ? 'border-red-500' : ''}`} required />
+											placeholder="Enter student name" className={`mt-1 border-border ${fieldErrors.name ? 'border-red-500' : ''}`} required />
 										{fieldErrors.name && <p className="text-red-600 text-xs mt-1">{fieldErrors.name}</p>}
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<Label htmlFor="rollNumber" className="text-slate-700 uppercase text-xs font-bold">Roll Number *</Label>
+											<Label htmlFor="rollNumber" className="text-foreground opacity-90 uppercase text-xs font-bold">Roll Number *</Label>
 											<Input id="rollNumber" value={roll_number} onChange={(e) => setroll_number(e.target.value)}
-												placeholder="Roll No" className={`mt-1 border-slate-300 ${fieldErrors.roll_number ? 'border-red-500' : ''}`} required />
+												placeholder="Roll No" className={`mt-1 border-border ${fieldErrors.roll_number ? 'border-red-500' : ''}`} required />
 											{fieldErrors.roll_number && <p className="text-red-600 text-xs mt-1">{fieldErrors.roll_number}</p>}
 										</div>
 										<SelectField label="Theory Batch *" value={theory_batch} options={theoryBatches.map(b => ({ value: String(b.batch_id), label: b.name }))} onValueChange={settheory_Batch}
@@ -153,30 +153,30 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 
 								{/* Contact Info */}
 								<div className="space-y-4">
-									<h3 className="font-medium text-slate-700 border-b pb-1">Contact & Personal</h3>
+									<h3 className="font-medium text-foreground opacity-90 border-b pb-1">Contact & Personal</h3>
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<Label htmlFor="phone" className="text-slate-700 uppercase text-xs font-bold">Student Phone</Label>
+											<Label htmlFor="phone" className="text-foreground opacity-90 uppercase text-xs font-bold">Student Phone</Label>
 											<Input id="phone" type="tel" value={phone} onChange={(e) => setphone(e.target.value)}
-												placeholder="10-digit phone" maxLength={10} className="mt-1 border-slate-300" />
+												placeholder="10-digit phone" maxLength={10} className="mt-1 border-border" />
 										</div>
 										<div>
-											<Label htmlFor="parentPhone" className="text-slate-700 uppercase text-xs font-bold">Parent Phone *</Label>
+											<Label htmlFor="parentPhone" className="text-foreground opacity-90 uppercase text-xs font-bold">Parent Phone *</Label>
 											<Input id="parentPhone" type="tel" value={parent_phone} onChange={(e) => setparent_phone(e.target.value)}
-												placeholder="10-digit phone" maxLength={10} className={`mt-1 border-slate-300 ${fieldErrors.parent_phone ? 'border-red-500' : ''}`} required />
+												placeholder="10-digit phone" maxLength={10} className={`mt-1 border-border ${fieldErrors.parent_phone ? 'border-red-500' : ''}`} required />
 											{fieldErrors.parent_phone && <p className="text-red-600 text-xs mt-1">{fieldErrors.parent_phone}</p>}
 										</div>
 									</div>
 									<div>
-										<Label htmlFor="email" className="text-slate-700 uppercase text-xs font-bold">Email Address</Label>
+										<Label htmlFor="email" className="text-foreground opacity-90 uppercase text-xs font-bold">Email Address</Label>
 										<Input id="email" type="email" value={email} onChange={(e) => setemail(e.target.value)}
-											placeholder="student@example.com" className="mt-1 border-slate-300" />
+											placeholder="student@example.com" className="mt-1 border-border" />
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<Label htmlFor="dob" className="text-slate-700 uppercase text-xs font-bold">Date of Birth</Label>
+											<Label htmlFor="dob" className="text-foreground opacity-90 uppercase text-xs font-bold">Date of Birth</Label>
 											<Input id="dob" type="date" value={dob} onChange={(e) => setdob(e.target.value)}
-												className="mt-1 border-slate-300 block w-full" />
+												className="mt-1 border-border block w-full" />
 										</div>
 										<SelectField label="Gender" value={gender} options={GENDER_OPTIONS} onValueChange={setgender}
 											placeholder="Select" />
@@ -185,13 +185,13 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 							</div>
 
 							<div className="space-y-2 border-t pt-4">
-								<Label htmlFor="address" className="text-slate-700 uppercase text-xs font-bold">Residential Address</Label>
+								<Label htmlFor="address" className="text-foreground opacity-90 uppercase text-xs font-bold">Residential Address</Label>
 								<Input id="address" value={address} onChange={(e) => setaddress(e.target.value)}
-									placeholder="Enter full address" className="mt-1 border-slate-300" />
+									placeholder="Enter full address" className="mt-1 border-border" />
 							</div>
 
 							<div className="pt-4 flex justify-end">
-								<Button type="submit" disabled={loading} className="w-full sm:w-48 bg-slate-700 hover:bg-slate-800 text-white font-semibold">
+								<Button type="submit" disabled={loading} className="w-full sm:w-48 bg-primary hover:bg-primary/90 text-primary-foreground hover:bg-primary/90 text-white font-semibold">
 									{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</> : 'Add Student'}
 								</Button>
 							</div>
@@ -200,33 +200,33 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 				</Card>
 
 				<div className="mt-8">
-					<h2 className="text-xl font-semibold text-slate-800 mb-4">Added Students List</h2>
-					<Card className="border-2 border-slate-300">
+					<h2 className="text-xl font-semibold text-foreground mb-4">Added Students List</h2>
+					<Card className="border-2 border-border">
 						<CardContent className="p-0">
 							{initialLoading ? (
-								<div className="p-8 flex justify-center text-slate-500"><Loader2 className="animate-spin mr-2" /> Loading...</div>
+								<div className="p-8 flex justify-center text-muted-foreground"><Loader2 className="animate-spin mr-2" /> Loading...</div>
 							) : students.length === 0 ? (
-								<div className="p-8 text-center text-slate-500 italic">No students added yet.</div>
+								<div className="p-8 text-center text-muted-foreground italic">No students added yet.</div>
 							) : (
-								<div className="overflow-x-auto">
-									<table className="w-full text-sm text-left text-slate-600">
-										<thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b-2 border-slate-200">
+								<div className="overflow-x-auto rounded-lg border border-border bg-background">
+									<table className="w-full text-sm">
+										<thead className="bg-muted/30 border-b border-border">
 											<tr>
-												<th className="px-6 py-3 font-semibold">Roll Number</th>
-												<th className="px-6 py-3 font-semibold">Name</th>
-												<th className="px-6 py-3 font-semibold">Theory Batch</th>
-												<th className="px-6 py-3 font-semibold">Lab Batch</th>
-												<th className="px-6 py-3 font-semibold">Parent Phone</th>
+												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Roll Number</th>
+												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Name</th>
+												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Theory Batch</th>
+												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Lab Batch</th>
+												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Parent Phone</th>
 											</tr>
 										</thead>
-										<tbody>
+										<tbody className="divide-y divide-border/30">
 											{students.map((student) => (
-												<tr key={student.student_id} className="bg-white border-b hover:bg-slate-50">
-													<td className="px-6 py-4 font-medium text-slate-800">{student.roll_number}</td>
-													<td className="px-6 py-4">{student.name}</td>
-													<td className="px-6 py-4">{student.theoryBatch?.name || '-'}</td>
-													<td className="px-6 py-4">{student.labBatch?.name || '-'}</td>
-													<td className="px-6 py-4">{student.parent_phone}</td>
+												<tr key={student.student_id} className="hover:bg-muted/20 transition-colors group">
+													<td className="px-6 py-4 font-mono font-bold text-foreground opacity-90">{student.roll_number}</td>
+													<td className="px-6 py-4 text-foreground font-semibold whitespace-nowrap">{student.name}</td>
+													<td className="px-6 py-4 text-muted-foreground font-medium text-xs">{student.theoryBatch?.name || '-'}</td>
+													<td className="px-6 py-4 text-muted-foreground font-medium text-xs">{student.labBatch?.name || '-'}</td>
+													<td className="px-6 py-4 text-muted-foreground font-medium text-xs">{student.parent_phone}</td>
 												</tr>
 											))}
 										</tbody>

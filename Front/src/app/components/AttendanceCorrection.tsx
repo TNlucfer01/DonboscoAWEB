@@ -84,7 +84,7 @@ export default function AttendanceCorrection({ user, onLogout }: AttendanceCorre
 									<SelectTrigger className="mt-1 border-slate-300">
 										<SelectValue placeholder="Select year" />
 									</SelectTrigger>
-									<SelectContent className="bg-white border-2 border-slate-300">
+									<SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
 										<SelectItem value="1">1st Year</SelectItem>
 										<SelectItem value="2">2nd Year</SelectItem>
 										<SelectItem value="3">3rd Year</SelectItem>
@@ -99,7 +99,7 @@ export default function AttendanceCorrection({ user, onLogout }: AttendanceCorre
 									<SelectTrigger className="mt-1 border-slate-300">
 										<SelectValue placeholder="Select batch" />
 									</SelectTrigger>
-									<SelectContent className="bg-white border-2 border-slate-300">
+									<SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
 										<SelectItem value="A">Batch A</SelectItem>
 										<SelectItem value="B">Batch B</SelectItem>
 										<SelectItem value="C">Batch C</SelectItem>
@@ -114,7 +114,7 @@ export default function AttendanceCorrection({ user, onLogout }: AttendanceCorre
 									<SelectTrigger className="mt-1 border-slate-300">
 										<SelectValue placeholder="Select period" />
 									</SelectTrigger>
-									<SelectContent className="bg-white border-2 border-slate-300">
+									<SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
 										<SelectItem value="1">Period 1</SelectItem>
 										<SelectItem value="2">Period 2</SelectItem>
 										<SelectItem value="3">Period 3</SelectItem>
@@ -136,7 +136,7 @@ export default function AttendanceCorrection({ user, onLogout }: AttendanceCorre
 											{date ? format(date, 'PP') : <span>Pick a date</span>}
 										</Button>
 									</PopoverTrigger>
-									<PopoverContent className="w-auto p-0 bg-white border-2 border-slate-300">
+									<PopoverContent className="w-auto p-0 bg-[#f7f3ea] border-2 border-slate-300">
 										<Calendar
 											mode="single"
 											selected={date}
@@ -192,7 +192,7 @@ export default function AttendanceCorrection({ user, onLogout }: AttendanceCorre
 														<SelectTrigger className="border-slate-300">
 															<SelectValue />
 														</SelectTrigger>
-														<SelectContent className="bg-white border-2 border-slate-300">
+														<SelectContent className="bg-[#f7f3ea] border-2 border-slate-300">
 															<SelectItem value="Present">Present</SelectItem>
 															<SelectItem value="Absent">Absent</SelectItem>
 															<SelectItem value="OD">OD</SelectItem>

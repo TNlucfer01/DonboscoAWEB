@@ -43,6 +43,16 @@ const forgotPassword = async (req, res, next) => {
         next(err);
     }
 };
+// POST /api/auth/verify-otp
+const verifyOTP = async (req, res, next) => {
+    try {
+        const { phone, otp } = req.body;
+        const result = await authService.verifyOTP(phone, otp);
+        return success(res, result);
+    } catch (err) {
+        next(err);
+    }
+};
 // POST /api/auth/reset-password
 const resetPassword = async (req, res, next) => {
     try {
@@ -60,4 +70,4 @@ const logout = (_req, res) => {
     return res.json({ success: true, data: { message: 'Logged out' } });
 };
 
-module.exports = { login, refresh, forgotPassword, resetPassword, logout };
+module.exports = { login, refresh, forgotPassword, verifyOTP, resetPassword, logout };

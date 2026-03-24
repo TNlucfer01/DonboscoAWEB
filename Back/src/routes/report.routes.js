@@ -4,14 +4,8 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const roleGuard = require('../middleware/roleGuard');
 const { success } = require('../utils/apiResponse');
-const { sequelize } = require('../models/index');
-const { QueryTypes } = require('sequelize');
-
-// Helper: build year scope for SQL
-const yearScope = (currentUser, query) => {
-  if (currentUser.role === 'YEAR_COORDINATOR') return currentUser.managedYear;
-  return query.year ? Number(query.year) : null;
-};
+const reportSvc = require('../services/report.service');
+const { yearScope } = reportSvc;
 
 // GET /api/reports/attendance-summary
 // Used by Principal/YC dashboard — summarises each student's attendance %
@@ -20,39 +14,12 @@ router.get('/attendance-summary',
   async (req, res, next) => {
     try {
       const year = yearScope(req.user, req.query);
-      const replacements = {};
-      const conditions = ['1=1'];
-
-      if (year) {
-        conditions.push('s.current_year = :year');
-        replacements.year = year;
-      }
-      if (req.query.semester_id) {
-        conditions.push('ar.semester_id = :semId');
-        replacements.semId = Number(req.query.semester_id);
-      }
-      if (req.query.date_from && req.query.date_to) {
-        conditions.push('ar.date BETWEEN :dateFrom AND :dateTo');
-        replacements.dateFrom = req.query.date_from;
-        replacements.dateTo = req.query.date_to;
-      }
-
-      const results = await sequelize.query(`
-        SELECT
-          s.student_id, s.name, s.roll_number, s.current_year,
-          COUNT(ar.record_id) AS total_periods,
-          SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) AS attended,
-          ROUND(
-            SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) * 100.0
-            / NULLIF(COUNT(ar.record_id), 0), 2
-          ) AS attendance_pct
-        FROM students s
-        LEFT JOIN attendance_records ar ON ar.student_id = s.student_id
-        WHERE ${conditions.join(' AND ')}
-        GROUP BY s.student_id
-        ORDER BY s.current_year, s.roll_number
-      `, { replacements, type: QueryTypes.SELECT });
-
+      const results = await reportSvc.getAttendanceSummary({
+          year,
+          semester_id: req.query.semester_id,
+          date_from: req.query.date_from,
+          date_to: req.query.date_to
+      });
       return success(res, results);
     } catch (e) { next(e); }
   }
@@ -65,34 +32,12 @@ router.get('/below-threshold',
   async (req, res, next) => {
     try {
       const year = yearScope(req.user, req.query);
-      const threshold = Number(req.query.threshold) || 80;
-      const replacements = { threshold };
-      const conditions = ['1=1'];
-
-      if (year) {
-        conditions.push('s.current_year = :year');
-        replacements.year = year;
-      }
-      if (req.query.semester_id) {
-        conditions.push('ar.semester_id = :semId');
-        replacements.semId = Number(req.query.semester_id);
-      }
-
-      const results = await sequelize.query(`
-        SELECT
-          s.student_id, s.name, s.roll_number, s.current_year, s.parent_phone,
-          ROUND(
-            SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) * 100.0
-            / NULLIF(COUNT(ar.record_id), 0), 2
-          ) AS attendance_pct
-        FROM students s
-        JOIN attendance_records ar ON ar.student_id = s.student_id
-        WHERE ${conditions.join(' AND ')}
-        GROUP BY s.student_id
-        HAVING attendance_pct < :threshold
-        ORDER BY attendance_pct ASC
-      `, { replacements, type: QueryTypes.SELECT });
-
+      const threshold = req.query.threshold || 80;
+      const results = await reportSvc.getBelowThreshold({
+          year,
+          semester_id: req.query.semester_id,
+          threshold
+      });
       return success(res, results);
     } catch (e) { next(e); }
   }
@@ -104,17 +49,53 @@ router.get('/by-student/:id',
   auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
   async (req, res, next) => {
     try {
-      const results = await sequelize.query(`
-        SELECT
-          ar.date, ar.slot_id, ar.status, ar.od_reason,
-          sub.subject_name, ts.slot_number, ts.start_time
-        FROM attendance_records ar
-        LEFT JOIN subjects sub ON sub.subject_id = ar.subject_id
-        LEFT JOIN timetable_slots ts ON ts.slot_id = ar.slot_id
-        WHERE ar.student_id = :studentId
-        ORDER BY ar.date DESC, ts.slot_number ASC
-      `, { replacements: { studentId: req.params.id }, type: QueryTypes.SELECT });
+      const results = await reportSvc.getByStudent(req.params.id);
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
 
+// GET /api/reports/by-staff/:id
+// Detailed history of attendance taken by a specific staff member
+router.get('/by-staff/:id',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const results = await reportSvc.getByStaff(req.params.id);
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
+
+// GET /api/reports/by-subject/:id
+// Detailed attendance history for a specific subject
+router.get('/by-subject/:id',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const results = await reportSvc.getBySubject(req.params.id);
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
+
+// GET /api/reports/subject-wise
+// Returns per-student per-subject attendance breakdown for date range + year
+router.get('/subject-wise',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const year = yearScope(req.user, req.query);
+      if (!year) return res.status(400).json({ success: false, error: { message: 'Year is required' } });
+
+      const results = await reportSvc.getSubjectWise({
+          year,
+          semester_id: req.query.semester_id,
+          date_from: req.query.date_from,
+          date_to: req.query.date_to,
+          subject_id: req.query.subject_id
+      });
+      
       return success(res, results);
     } catch (e) { next(e); }
   }

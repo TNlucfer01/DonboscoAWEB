@@ -3,8 +3,8 @@
 // Components stay pure — all fetch logic lives here.
 
 import { useState, useCallback } from 'react';
-import { AttendanceStudent } from '../features/shared/attendance.types';
-import { fetchAttendanceView } from '../api/attendance.api';
+import { AttendanceStudent } from '../../shared/attendance.types';
+import { fetchAttendanceView } from '../../../api/attendance.api';
 import { format } from 'date-fns';
 
 interface UseAttendanceViewReturn {
@@ -22,6 +22,7 @@ export function useAttendanceView(): UseAttendanceViewReturn {
     const fetch = useCallback(async (year: string, date: Date) => {
         setLoading(true);
         setError(null);
+        setStudents([]); // Clear stale data
         try {
             const data = await fetchAttendanceView(year, format(date, 'yyyy-MM-dd'));
             setStudents(data);
