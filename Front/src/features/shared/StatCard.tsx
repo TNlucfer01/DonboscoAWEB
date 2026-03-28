@@ -10,9 +10,10 @@ interface StatCardProps {
     label: string;
     value: string;
     iconVariant?: 'primary' | 'secondary' | 'accent';
+    onClick?: () => void;
 }
 
-export function StatCard({ icon: Icon, label, value, iconVariant = 'primary' }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, iconVariant = 'primary', onClick }: StatCardProps) {
     const iconColor = iconVariant === 'secondary'
         ? 'text-secondary'
         : iconVariant === 'accent'
@@ -20,7 +21,10 @@ export function StatCard({ icon: Icon, label, value, iconVariant = 'primary' }: 
             : 'text-primary';
 
     return (
-        <Card className="border-none shadow-sm shadow-black/5 bg-card hover:shadow-md transition-shadow duration-200">
+        <Card 
+            onClick={onClick}
+            className={`border-none shadow-sm shadow-black/5 bg-card hover:shadow-md transition-all duration-200 ${onClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
+        >
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground font-medium flex items-center gap-2">
                     <span className={`p-1.5 rounded-lg bg-primary/10 inline-flex ${iconColor}`}>

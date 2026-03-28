@@ -7,6 +7,23 @@ const { success } = require('../utils/apiResponse');
 const reportSvc = require('../services/report.service');
 const { yearScope } = reportSvc;
 
+// GET /api/reports/overall-summary
+// Used by Principal/YC dashboard — high level aggregation by year
+router.get('/overall-summary',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const year = yearScope(req.user, req.query);
+      const results = await reportSvc.getOverallSummary({
+          year,
+          date_from: req.query.date_from,
+          date_to: req.query.date_to
+      });
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
+
 // GET /api/reports/attendance-summary
 // Used by Principal/YC dashboard — summarises each student's attendance %
 router.get('/attendance-summary',
@@ -91,6 +108,27 @@ router.get('/subject-wise',
       const results = await reportSvc.getSubjectWise({
           year,
           semester_id: req.query.semester_id,
+          date_from: req.query.date_from,
+          date_to: req.query.date_to,
+          subject_id: req.query.subject_id
+      });
+      
+      return success(res, results);
+    } catch (e) { next(e); }
+  }
+);
+
+// GET /api/reports/daily
+// Detailed attendance grid mirroring a physical daily register
+router.get('/daily',
+  auth, roleGuard('PRINCIPAL', 'YEAR_COORDINATOR'),
+  async (req, res, next) => {
+    try {
+      const year = yearScope(req.user, req.query);
+      if (!year) return res.status(400).json({ success: false, error: { message: 'Year is required' } });
+
+      const results = await reportSvc.getDailyReport({
+          year,
           date_from: req.query.date_from,
           date_to: req.query.date_to,
           subject_id: req.query.subject_id

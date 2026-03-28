@@ -32,6 +32,16 @@ app.use('/api/reports', require('./src/routes/report.routes'));
 app.use('/api/attendance-summary', require('./src/routes/attendanceSummary.routes'));
 app.use('/api/monthly-register', require('./src/routes/monthlyRegister.routes'));
 
+// ── Swagger UI ────────────────────────────────────────────────
+const swaggerUi = require('swagger-ui-express');
+let swaggerFile;
+try {
+  swaggerFile = require('./swagger_output.json');
+} catch (err) {
+  swaggerFile = { info: { title: 'Not Generated Yet', description: 'Run npm run swagger-autogen' } };
+}
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+
 // ── Global Error Handler ─────────────────────────────────────
 app.use(require('./src/middleware/errorHandler'));
 

@@ -76,7 +76,7 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
     const stats = [
         { icon: Users, label: 'Total Students', value: loading ? '...' : String(totalStudents) },
         { icon: Activity, label: 'Year Attendance', value: loading ? '...' : overallAttendance },
-        { icon: AlertTriangle, label: 'Below 80%', value: loading ? '...' : String(belowCount) },
+        { icon: AlertTriangle, label: 'Below 80%', value: loading ? '...' : String(belowCount), onClick: () => navigate('/yc/below-threshold') },
         { icon: TrendingUp, label: 'This Month', value: loading ? '...' : overallAttendance },
     ];
 
@@ -87,11 +87,11 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
                 <p className="text-muted-foreground font-medium">Managing Students</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {stats.map((s) => <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} />)}
+                    {stats.map((s) => <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} onClick={s.onClick} />)}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <ChartCard title="Year-wise Attendance">
+                    {/* <ChartCard title="Year-wise Attendance">
                         <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={batchData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
@@ -114,7 +114,7 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
                             <Line type="monotone" dataKey="attendance" stroke="#475569" strokeWidth={2} name="Attendance %" />
                         </LineChart>
                         </ResponsiveContainer>
-                    </ChartCard>
+                    </ChartCard> */}
                 </div>
 
                 {/* Daily Attendance Summary Table — scoped to this YC's year */}

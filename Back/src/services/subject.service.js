@@ -14,7 +14,7 @@ async function getAll(query) {
 
 async function getById(id) {
     // Looks up by subject_code — the `:id` URL param is the subject code
-    const subject = await Subject.findOne({ where: { subject_code: id } });
+    const subject = await Subject.findOne({ where: { subject_id: id } });
     if (!subject) throw new AppError('NOT_FOUND', 'Subject not found', 404);
     return subject;
 }
@@ -25,7 +25,7 @@ async function create(data) {
 }
 
 async function update(id, data) {
-    const subject = await Subject.findOne({ where: { subject_code: id } });
+    const subject = await Subject.findOne({ where: { subject_id: id } });
     if (!subject) throw new AppError('NOT_FOUND', 'Subject not found', 404);
     await subject.update(data);
     return subject;

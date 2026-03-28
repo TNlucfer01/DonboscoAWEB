@@ -25,6 +25,7 @@ import AddStudent from '../features/yc/AddStudent';
 import ODLeaveEntry from '../features/yc/ODLeaveEntry';
 import YCAttendanceView from '../features/yc/AttendanceView';
 import AttendanceDetailPage from '../features/shared/AttendanceDetailPage';
+import Below80Page from '../features/shared/Below80Page';
 
 // Staff
 import StaffTakeAttendance from '../features/staff/TakeAttendance';
@@ -75,15 +76,17 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 			<Route path="/principal/attendance-view" element={<Protected user={user} requiredRole="principal"><PrincipalAttendanceView {...pp} /></Protected>} />
 			<Route path="/principal/audit-log" element={<Protected user={user} requiredRole="principal"><AuditLog              {...pp} /></Protected>} />
 			<Route path="/principal/attendance-day-detail" element={<Protected user={user} requiredRole="principal"><AttendanceDetailPage  {...pp} /></Protected>} />
+			<Route path="/principal/below-threshold" element={<Protected user={user} requiredRole="principal"><Below80Page       {...pp} /></Protected>} />
 
 			{/* YC Routes */}
 			<Route path="/yc/dashboard" element={<Protected user={user} requiredRole="year_coordinator"><YCDashboard      {...pp} /></Protected>} />
 			<Route path="/yc/add-student" element={<Protected user={user} requiredRole="year_coordinator"><AddStudent       {...pp} /></Protected>} />
 			<Route path="/yc/od-leave" element={<Protected user={user} requiredRole="year_coordinator"><ODLeaveEntry     {...pp} /></Protected>} />
 			<Route path="/yc/attendance-view" element={<Protected user={user} requiredRole="year_coordinator"><YCAttendanceView {...pp} /></Protected>} />
+			<Route path="/yc/academic-report" element={<Protected user={user} requiredRole="year_coordinator"><PrincipalAttendanceView {...pp} /></Protected>} />
 			<Route path="/yc/attendance-day-detail" element={<Protected user={user} requiredRole="year_coordinator"><AttendanceDetailPage {...pp} /></Protected>} />
-			{/*add the following
-												report  extractions page*/}
+			<Route path="/yc/below-threshold" element={<Protected user={user} requiredRole="year_coordinator"><Below80Page {...pp} /></Protected>} />
+			
 			{/* Staff Routes */}
 			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
 			<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />

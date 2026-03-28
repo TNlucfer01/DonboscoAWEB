@@ -24,6 +24,10 @@ async function create(data) {
     if (role === 'YEAR_COORDINATOR' && (!managed_year || managed_year < 1 || managed_year > 4)) {
         throw new AppError('VALIDATION_ERROR', 'Year coordinator must have managed_year between 1 and 4', 400);
     }
+    if (role === 'YEAR_COORDINATOR' && managed_year) {
+        const existingYC = await User.findOne({ where: { role: 'YEAR_COORDINATOR', managed_year } });
+        if (existingYC) throw new AppError('VALIDATION_ERROR', `A Year Coordinator is already assigned to Year ${managed_year}`, 400);
+    }
     if (role !== 'YEAR_COORDINATOR' && managed_year) {
         throw new AppError('VALIDATION_ERROR', 'Only Year Coordinators can have managed_year set', 400);
     }
@@ -38,6 +42,13 @@ async function update(id, data) {
     const user = await User.findByPk(id);
     if (!user) throw new AppError('NOT_FOUND', 'User not found', 404);
     const { name, email, phone_number, role, managed_year } = data;
+    
+    // Validate YC duplicate assignment
+    if (role === 'YEAR_COORDINATOR' && managed_year) {
+        const existingYC = await User.findOne({ where: { role: 'YEAR_COORDINATOR', managed_year } });
+        if (existingYC && existingYC.user_id !== Number(id)) throw new AppError('VALIDATION_ERROR', `A Year Coordinator is already assigned to Year ${managed_year}`, 400);
+    }
+
     await user.update({ name, email, phone_number, role, managed_year });
     const { password_hash: _, ...safe } = user.toJSON();
     return safe;

@@ -52,7 +52,8 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 		{ to: '/yc/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
 		{ to: '/yc/add-student', icon: UserPlus, label: 'Add Student' },
 		{ to: '/yc/od-leave', icon: ClipboardEdit, label: 'OD / Leave Entry' },
-		{ to: '/yc/attendance-view', icon: Eye, label: 'Attendance View' },
+		{ to: '/yc/attendance-view', icon: Eye, label: 'Daily Attendance' },
+		{ to: '/yc/academic-report', icon: FileText, label: 'Academic Report' },
 	];
 
 	const staffLinks = [

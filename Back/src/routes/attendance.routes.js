@@ -174,6 +174,37 @@ router.post('/correct-bulk',
     }
 );
 
+// GET /api/attendance/od-il/students?date=YYYY-MM-DD — YC: load all students for a date
+router.get('/od-il/students',
+    auth, roleGuard('YEAR_COORDINATOR'),
+    async (req, res, next) => {
+        try {
+            const { date } = req.query;
+            if (!date) return res.status(400).json({ success: false, error: { message: 'date query param required' } });
+            return success(res, await svc.fetchStudentsForDate({ date, managedYear: req.user.managedYear }));
+        } catch (e) { next(e); }
+    }
+);
+
+// POST /api/attendance/od-il/bulk — YC: bulk save and lock OD/IL entries
+router.post('/od-il/bulk',
+    auth, roleGuard('YEAR_COORDINATOR'),
+    [
+        body('entries').isArray({ min: 1 }).withMessage('entries array required'),
+        body('entries.*.student_id').isInt({ min: 1 }),
+        body('entries.*.date').isDate(),
+        body('entries.*.status').isIn(['OD', 'INFORMED_LEAVE']),
+        body('semester_id').isInt({ min: 1 }),
+    ],
+    validate,
+    async (req, res, next) => {
+        try {
+            const result = await svc.bulkCreateODIL(req.body, req.user.userId);
+            return success(res, result, 201);
+        } catch (e) { next(e); }
+    }
+);
+
 // OD / IL routes — YC only
 router.get('/od-il', auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'), async (req, res, next) => {
     try { return success(res, await svc.listODIL(req.query, req.user)); }

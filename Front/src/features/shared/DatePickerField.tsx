@@ -11,13 +11,15 @@ interface DatePickerFieldProps {
     onDateChange: (date: Date | undefined) => void;
     label?: string;
     maxDate?: Date;
+    minDate?: Date;
 }
 
 export function DatePickerField({
   date,
   onDateChange,
   label = 'Date',
-  maxDate = new Date(),
+  maxDate,
+  minDate,
 }: DatePickerFieldProps) {
   return (
     <div className="flex flex-col gap-2 w-full sm:min-w-[200px]">  {/* BUG-016: responsive width */}
@@ -42,7 +44,12 @@ export function DatePickerField({
             mode="single"
             selected={date}
             onSelect={onDateChange}
-            disabled={(d) => (maxDate ? isAfter(startOfDay(d), startOfDay(maxDate)) : false)}
+            disabled={(d) => {
+              const day = startOfDay(d);
+              if (minDate && day < startOfDay(minDate)) return true;
+              if (maxDate && isAfter(day, startOfDay(maxDate))) return true;
+              return false;
+            }}
             initialFocus
             className="rounded-2xl p-4 bg-card"
             classNames={{
@@ -52,10 +59,14 @@ export function DatePickerField({
               caption_label: "font-black text-secondary uppercase tracking-widest"
             }}
           />
-          {maxDate && (
+          {(maxDate || minDate) && (
              <div className="p-3 border-t border-border/10 bg-muted/20">
                 <p className="text-[10px] text-center text-muted-foreground font-medium uppercase tracking-tighter italic">
-                  * Future dates beyond {format(maxDate, "MMM d")} are restricted
+                  {minDate && maxDate
+                    ? `* Only dates between ${format(minDate, 'MMM d')} and ${format(maxDate, 'MMM d')} are allowed`
+                    : minDate
+                    ? `* Dates before ${format(minDate, 'MMM d')} are restricted`
+                    : `* Future dates beyond ${format(maxDate!, 'MMM d')} are restricted`}
                 </p>
              </div>
           )}

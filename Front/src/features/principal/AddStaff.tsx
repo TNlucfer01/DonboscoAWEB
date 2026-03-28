@@ -12,6 +12,7 @@ import { StaffMember, fetchStaffMembers, addStaffMember, deleteStaffMember } fro
 import { SelectField } from '../shared/SelectField';
 import { Pencil, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { StaffDetailsDialog } from '../shared/StaffDetailsDialog';
+import { EditStaffDialog } from '../shared/EditStaffDialog';
 import { toast } from 'sonner';
 
 const ROLE_OPTIONS = [
@@ -30,6 +31,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 	// ── Staff List ────────────────────────────────────────────────
 	const [staffList, setStaffList] = useState<StaffMember[]>([]);
 	const [listLoading, setListLoading] = useState(true);
+	const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
 
 	const loadStaff = async () => {
 		setListLoading(true);
@@ -201,7 +203,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 												</td>
 												<td className="px-6 py-4 text-center">
 													<div className="flex justify-center gap-1">
-														<Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+														<Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors" onClick={() => setEditingStaff(s)}>
 															<Pencil className="h-4 w-4" />
 														</Button>
 														<Button 
@@ -223,6 +225,13 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 					</div>
 				</div>
 			</div>
+			
+			<EditStaffDialog 
+				staff={editingStaff} 
+				open={!!editingStaff} 
+				onOpenChange={(open) => !open && setEditingStaff(null)} 
+				onSuccess={loadStaff} 
+			/>
 		</Layout>
 	);
 }

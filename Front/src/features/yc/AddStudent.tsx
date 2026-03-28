@@ -4,22 +4,31 @@ import { Button } from '../../app/components/ui/button';
 import { Input } from '../../app/components/ui/input';
 import { Label } from '../../app/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../../app/components/ui/card';
-import { PageProps } from '../shared/types';
+import { PageProps, User } from '../shared/types';
 import { SelectField } from '../shared/SelectField';
 import { GENDER_OPTIONS, YEAR_OPTIONS } from '../shared/constants';
 import { addStudent, getStudents } from '../../api/student.api';
 import { fetchBatches, Batch } from '../../api/batch.api';
 import { ApiError } from '../../api/apiClient';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil } from 'lucide-react';
+import { EditStudentDialog } from '../shared/EditStudentDialog';
 
 interface StudentData {
 	student_id: number;
 	name: string;
 	roll_number: string;
 	parent_phone: string;
-	theoryBatch?: { name: string };
-	labBatch?: { name: string };
+    phone?: string;
+    email?: string;
+    dob?: string;
+    gender?: string;
+    address?: string;
+    current_year?: number;
+    theory_batch_id?: number | null;
+    lab_batch_id?: number | null;
+	theoryBatch?: { batch_id?: number; name: string };
+	labBatch?: { batch_id?: number; name: string };
 }
 
 // ─── Validation Helpers ──────────────────────────────────────────────────────
@@ -40,6 +49,7 @@ function validateStudentForm(data: {
 }
 
 export default function AddStudent({ user, onLogout }: PageProps) {
+    const managedYear = (user as User & { managedYear?: number })?.managedYear;
 	const [name, setName] = useState('');
 	const [roll_number, setroll_number] = useState('');
 	const [parent_phone, setparent_phone] = useState('');
@@ -51,7 +61,7 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 	const [gender, setgender] = useState('');
 	const [email, setemail] = useState('');
 	const [address, setaddress] = useState('');
-	const [current_year, setcurrent_year] = useState('');
+	const [current_year, setcurrent_year] = useState(managedYear ? String(managedYear) : '');
 	const [loading, setLoading] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -59,6 +69,16 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 	const [labBatches, setLabBatches] = useState<Batch[]>([]);
 	const [students, setStudents] = useState<StudentData[]>([]);
 	const [initialLoading, setInitialLoading] = useState(true);
+    const [editingStudent, setEditingStudent] = useState<StudentData | null>(null);
+
+    const refreshStudents = async () => {
+        try {
+            const updatedStudents = await getStudents();
+            setStudents(updatedStudents);
+        } catch (err) {
+            toast.error('Failed to refresh students list');
+        }
+    };
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -94,13 +114,13 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 		try {
 			await addStudent(name, roll_number, parent_phone, Number(theory_batch), Number(lab_batch), phone, Number(current_year), email, dob, gender, address);
 			toast.success(`Student ${name} (${roll_number}) added successfully!`);
-			setName(''); setroll_number(''); setparent_phone(''); setlab_Batch(''); settheory_Batch(''); setcurrent_year('');
+			setName(''); setroll_number(''); setparent_phone(''); setlab_Batch(''); settheory_Batch(''); 
+            if (!managedYear) setcurrent_year('');
 			setphone(''); setemail(''); setdob(''); setgender(''); setaddress('');
 			setFieldErrors({});
 
 			// Refresh table
-			const updatedStudents = await getStudents();
-			setStudents(updatedStudents);
+			await refreshStudents();
 		} catch (err: any) {
 			if (err instanceof ApiError && err.code === 'VALIDATION_ERROR') {
 				toast.error(err.message || 'Validation failed. Please check your inputs.');
@@ -148,7 +168,7 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 
 									</div>
 									<SelectField label="Current Year *" value={current_year} options={YEAR_OPTIONS} onValueChange={setcurrent_year}
-										placeholder="Select Year" />
+										placeholder="Select Year" disabled={!!managedYear} />
 								</div>
 
 								{/* Contact Info */}
@@ -217,6 +237,7 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Theory Batch</th>
 												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Lab Batch</th>
 												<th className="px-6 py-4 text-left text-muted-foreground font-bold uppercase text-[10px] tracking-wider">Parent Phone</th>
+												<th className="px-6 py-4 text-center text-muted-foreground font-bold uppercase text-[10px] tracking-wider w-24">Actions</th>
 											</tr>
 										</thead>
 										<tbody className="divide-y divide-border/30">
@@ -227,6 +248,11 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 													<td className="px-6 py-4 text-muted-foreground font-medium text-xs">{student.theoryBatch?.name || '-'}</td>
 													<td className="px-6 py-4 text-muted-foreground font-medium text-xs">{student.labBatch?.name || '-'}</td>
 													<td className="px-6 py-4 text-muted-foreground font-medium text-xs">{student.parent_phone}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors" onClick={() => setEditingStudent(student)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    </td>
 												</tr>
 											))}
 										</tbody>
@@ -237,6 +263,15 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 					</Card>
 				</div>
 			</div>
+            <EditStudentDialog 
+                student={editingStudent} 
+                open={!!editingStudent} 
+                onOpenChange={(open) => !open && setEditingStudent(null)} 
+                onSuccess={refreshStudents} 
+                theoryBatches={theoryBatches}
+                labBatches={labBatches}
+                managedYear={managedYear}
+            />
 		</Layout>
 	);
 }

@@ -27,6 +27,11 @@ export async function updateStudent(rollNumber: string, data: {
     current_year?: number;
     theory_batch_id?: number;
     lab_batch_id?: number;
+    phone?: string;
+    email?: string;
+    dob?: string;
+    gender?: string;
+    address?: string;
 }): Promise<void> {
     await apiClient.put(`/students/${rollNumber}`, data);
 }

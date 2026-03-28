@@ -13,6 +13,44 @@ function yearScope(currentUser, query) {
 }
 
 /**
+ * GET /reports/overall-summary
+ * High-level aggregation by year (total periods, present, absent)
+ */
+async function getOverallSummary({ year, date_from, date_to }) {
+    const replacements = {};
+    const whereConditions = [];
+
+    if (year) {
+        whereConditions.push('s.current_year = :year');
+        replacements.year = year;
+    }
+    
+    const joinConditions = [];
+    if (date_from && date_to) {
+        joinConditions.push('ar.date BETWEEN :dateFrom AND :dateTo');
+        replacements.dateFrom = date_from;
+        replacements.dateTo = date_to;
+    }
+
+    const whereString = whereConditions.length ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const joinString = joinConditions.length ? `AND ${joinConditions.join(' AND ')}` : '';
+
+    return sequelize.query(`
+        SELECT
+            s.current_year as year,
+            COUNT(DISTINCT s.student_id) as total_students,
+            COUNT(ar.record_id) as total_periods,
+            COALESCE(SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')), 0) as present_periods,
+            COALESCE(SUM(ar.status = 'ABSENT'), 0) as absent_periods
+        FROM students s
+        LEFT JOIN attendance_records ar ON s.student_id = ar.student_id ${joinString}
+        ${whereString}
+        GROUP BY s.current_year
+        ORDER BY s.current_year ASC
+    `, { replacements, type: QueryTypes.SELECT });
+}
+
+/**
  * GET /reports/attendance-summary
  * Summarises each student's attendance % with optional filters.
  */
@@ -71,6 +109,8 @@ async function getBelowThreshold({ year, semester_id, threshold = 80 }) {
     return sequelize.query(`
         SELECT
             s.student_id, s.name, s.roll_number, s.current_year, s.parent_phone,
+            COUNT(ar.record_id) AS total_periods,
+            SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) AS attended,
             ROUND(
                 SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) * 100.0
                 / NULLIF(COUNT(ar.record_id), 0), 2
@@ -227,4 +267,64 @@ async function getBySubject(subjectId) {
     `, { replacements: { subjectId }, type: QueryTypes.SELECT });
 }
 
-module.exports = { yearScope, getAttendanceSummary, getBelowThreshold, getByStudent, getSubjectWise, getByStaff, getBySubject };
+/**
+ * GET /reports/daily
+ * Detailed attendance grid mirroring a physical daily register.
+ */
+async function getDailyReport({ year, date_from, date_to, subject_id }) {
+    const replacements = { year };
+    const joinConditions = [];
+
+    if (date_from && date_to) {
+        joinConditions.push('AND ar.date BETWEEN :dateFrom AND :dateTo');
+        replacements.dateFrom = date_from;
+        replacements.dateTo = date_to;
+    }
+    if (subject_id) {
+        joinConditions.push('AND ar.subject_id = :subjectId');
+        replacements.subjectId = Number(subject_id);
+    }
+
+    const records = await sequelize.query(`
+        SELECT
+            s.student_id, s.name, s.roll_number, s.current_year,
+            ar.date,
+            ts.slot_number,
+            ar.status
+        FROM students s
+        LEFT JOIN attendance_records ar ON ar.student_id = s.student_id
+            ${joinConditions.join(' ')}
+        LEFT JOIN timetable_slots ts ON ar.slot_id = ts.slot_id
+        WHERE s.current_year = :year
+        ORDER BY s.roll_number, ar.date, ts.slot_number
+    `, { replacements, type: QueryTypes.SELECT });
+
+    const studentMap = {};
+    const daysSet = new Set();
+
+    records.forEach(r => {
+        if (!studentMap[r.student_id]) {
+            studentMap[r.student_id] = {
+                student_id: r.student_id,
+                name: r.name,
+                roll_number: r.roll_number,
+                current_year: r.current_year,
+                dates: {},
+            };
+        }
+        
+        if (r.date && r.slot_number) {
+            daysSet.add(r.date);
+            if (!studentMap[r.student_id].dates[r.date]) {
+                studentMap[r.student_id].dates[r.date] = {};
+            }
+            studentMap[r.student_id].dates[r.date][r.slot_number] = r.status || null;
+        }
+    });
+
+    const sortedDays = Array.from(daysSet).sort();
+
+    return { students: Object.values(studentMap), days: sortedDays };
+}
+
+module.exports = { yearScope, getOverallSummary, getAttendanceSummary, getBelowThreshold, getByStudent, getSubjectWise, getByStaff, getBySubject, getDailyReport };

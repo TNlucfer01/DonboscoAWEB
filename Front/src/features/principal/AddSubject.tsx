@@ -15,7 +15,7 @@ import { Subject, fetchSubjects, addSubject, deleteSubject } from '../../api/sub
 import { toast } from 'sonner';
 import { Pencil, Trash2, Loader2, BookPlus } from 'lucide-react';
 import { SubjectDetailsDialog } from '../shared/SubjectDetailsDialog';
-
+import { EditSubjectDialog } from '../shared/EditSubjectDialog';
 
 export default function AddSubject({ user, onLogout }: PageProps) {
     const [name, setName] = useState('');
@@ -28,7 +28,8 @@ export default function AddSubject({ user, onLogout }: PageProps) {
 
     // ── Subject List ──────────────────────────────────────────────
     const [subjectList, setSubjectList] = useState<Subject[]>([]);
-    const [listLoading, setListLoading] = useState(true);
+	const [listLoading, setListLoading] = useState(true);
+	const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
     const loadSubjects = async () => {
         setListLoading(true);
@@ -189,7 +190,7 @@ export default function AddSubject({ user, onLogout }: PageProps) {
                                                 </td>
                                                 <td className="px-6 py-4 text-center text-foreground font-medium">
                                                     <div className="flex justify-center gap-1">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10 transition-colors" onClick={() => setEditingSubject(s)}>
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
                                                         <Button 
@@ -211,6 +212,12 @@ export default function AddSubject({ user, onLogout }: PageProps) {
 					</div>
 				</div>
 			</div>
+            <EditSubjectDialog 
+                subject={editingSubject} 
+                open={!!editingSubject} 
+                onOpenChange={(open) => !open && setEditingSubject(null)} 
+                onSuccess={loadSubjects} 
+            />
 		</Layout>
     );
 }

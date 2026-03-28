@@ -33,11 +33,25 @@ const studentUpdateValidation = [
 // All student routes — YC and Principal
 router.use(auth, roleGuard('YEAR_COORDINATOR', 'PRINCIPAL'));
 
+// Middleware to restrict YCs so they can only add/edit students for their assigned managedYear
+const restrictYearToYCScope = (req, res, next) => {
+    if (req.user.role === 'YEAR_COORDINATOR') {
+        const targetYear = req.body.current_year ? Number(req.body.current_year) : undefined;
+        if (targetYear && targetYear !== req.user.managedYear) {
+            return res.status(403).json({ success: false, error: { message: `Forbidden: You can only assign students to your assigned Year ${req.user.managedYear}.` } });
+        }
+        if (!targetYear && req.method === 'POST') {
+             req.body.current_year = req.user.managedYear;
+        }
+    }
+    next();
+};
+
 // Students are looked up by roll_number (not student_id) — :id in the URL is the roll number
 router.get('/', ctrl.getAll);
 router.get('/:id', ctrl.getById);
-router.post('/', studentValidation, validate, ctrl.create);
-router.put('/:id', studentUpdateValidation, validate, ctrl.update);
+router.post('/', restrictYearToYCScope, studentValidation, validate, ctrl.create);
+router.put('/:id', restrictYearToYCScope, studentUpdateValidation, validate, ctrl.update);
 router.delete('/:id', ctrl.remove);
 
 // Bulk CSV upload — reserved for future use

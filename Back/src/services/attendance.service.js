@@ -23,6 +23,8 @@ module.exports = {
     getBatch: principalSvc.getBatch,
 
     // YC OD/IL
+    fetchStudentsForDate: odilSvc.fetchStudentsForDate,
+    bulkCreateODIL: odilSvc.bulkCreateODIL,
     createODIL: odilSvc.createODIL,
     updateODIL: odilSvc.updateODIL,
     cancelODIL: odilSvc.cancelODIL,
