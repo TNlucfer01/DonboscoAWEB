@@ -29,6 +29,8 @@ app.use('/api/attendance', require('./src/routes/attendance.routes'));
 app.use('/api/calendar', require('./src/routes/calendar.routes'));
 app.use('/api/audit', require('./src/routes/audit.routes'));
 app.use('/api/reports', require('./src/routes/report.routes'));
+app.use('/api/attendance-summary', require('./src/routes/attendanceSummary.routes'));
+app.use('/api/monthly-register', require('./src/routes/monthlyRegister.routes'));
 
 // ── Global Error Handler ─────────────────────────────────────
 app.use(require('./src/middleware/errorHandler'));
