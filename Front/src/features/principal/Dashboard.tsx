@@ -2,6 +2,7 @@
 // Real data from /api/reports; fallback to defaults if no attendance recorded yet.
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import Layout from '../../app/components/Layout';
 import { Users, TrendingUp, Calendar as CalendarIcon, Activity, AlertTriangle } from 'lucide-react';
 import { StatCard } from '../shared/StatCard';
@@ -11,14 +12,20 @@ import { PageProps } from '../shared/types';
 import { fetchDashboardStats } from '../../api/dashboard.api';
 import { fetchAuditLogs } from '../../api/audit.api';
 import { AuditLogEntry } from '../shared/attendance.types';
+import { AttendanceSummaryTable } from '../shared/AttendanceSummaryTable';
 import {
 	BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 
 export default function PrincipalDashboard({ user, onLogout }: PageProps) {
+	const navigate = useNavigate();
+
+	const handleCellClick = (year: number, status: 'PRESENT' | 'ABSENT', date: string) => {
+		navigate(`/principal/attendance-day-detail?date=${date}&year=${year}&status=${status}`);
+	};
 	const [stats, setStats] = useState({
 		totalStudents: 0,
-		overallAttendance: '0%',
+		overallAttendance: '',
 		belowThreshold: 0,
 		yearWise: [] as { year: string; attendance: number; target: number }[],
 	});
@@ -44,14 +51,14 @@ export default function PrincipalDashboard({ user, onLogout }: PageProps) {
 	}, []);
 
 	const now = new Date();
-	const acadStartYear = now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1; 
+	const acadStartYear = now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1;
 	const academicYear = `${acadStartYear}-${String(acadStartYear + 1).slice(-2)}`;
 
 	const statCards = [
 		{ icon: Users, label: 'Total Students', value: String(stats.totalStudents) },
-		{ icon: Activity, label: 'Overall Attendance', value: stats.overallAttendance },
+		//{ icon: Activity, label: 'Overall Attendance', value: stats.overallAttendance },
 		{ icon: AlertTriangle, label: 'Below 80%', value: String(stats.belowThreshold) },
-		{ icon: CalendarIcon, label: 'Academic Year', value: academicYear },
+	//	{ icon: CalendarIcon, label: 'Academic Year', value: academicYear },
 	];
 
 	return (
@@ -73,15 +80,15 @@ export default function PrincipalDashboard({ user, onLogout }: PageProps) {
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<ChartCard title="Year-wise Attendance">
 						<ResponsiveContainer width="100%" height={300}>
-						<BarChart data={stats.yearWise}>
-							<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-							<XAxis dataKey="year" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-							<YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-							<Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-							<Legend verticalAlign="top" align="right" height={36} />
-							<Bar dataKey="attendance" fill="#9caf88" name="Attendance %" radius={[4, 4, 0, 0]} />
-							<Bar dataKey="target" fill="#d6a75e" opacity={0.3} name="Target %" radius={[4, 4, 0, 0]} />
-						</BarChart>
+							<BarChart data={stats.yearWise}>
+								<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+								<XAxis dataKey="year" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+								<YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+								<Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+								<Legend verticalAlign="top" align="right" height={36} />
+								<Bar dataKey="attendance" fill="#9caf88" name="Attendance %" radius={[4, 4, 0, 0]} />
+								<Bar dataKey="target" fill="#d6a75e" opacity={0.3} name="Target %" radius={[4, 4, 0, 0]} />
+							</BarChart>
 						</ResponsiveContainer>
 					</ChartCard>
 
@@ -121,6 +128,8 @@ export default function PrincipalDashboard({ user, onLogout }: PageProps) {
 						</CardContent>
 					</Card>
 				</div>
+				{/* Daily Attendance Summary Table */}
+				<AttendanceSummaryTable onCellClick={handleCellClick} />
 			</div>
 		</Layout>
 	);

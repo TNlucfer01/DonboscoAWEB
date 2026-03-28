@@ -2,6 +2,7 @@
 // Connected to real backend data from /api/reports endpoints.
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import Layout from '../../app/components/Layout';
 import { Users, Activity, TrendingUp, AlertTriangle } from 'lucide-react';
 import { StatCard } from '../shared/StatCard';
@@ -9,9 +10,16 @@ import { ChartCard, CHART_TOOLTIP_STYLE } from '../shared/ChartCard';
 import { PageProps } from '../shared/types';
 import { fetchAttendanceSummary, fetchBelowThreshold, AttendanceSummary } from '../../api/dashboard.api';
 import { getStudents } from '../../api/student.api';
+import { AttendanceSummaryTable } from '../shared/AttendanceSummaryTable';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function YCDashboard({ user, onLogout }: PageProps) {
+    const navigate = useNavigate();
+    const managedYear = (user as any)?.managedYear as number | undefined;
+
+    const handleCellClick = (year: number, status: 'PRESENT' | 'ABSENT', date: string) => {
+        navigate(`/yc/attendance-day-detail?date=${date}&year=${year}&status=${status}`);
+    };
     const [totalStudents, setTotalStudents] = useState(0);
     const [overallAttendance, setOverallAttendance] = useState('0%');
     const [belowCount, setBelowCount] = useState(0);
@@ -108,6 +116,9 @@ export default function YCDashboard({ user, onLogout }: PageProps) {
                         </ResponsiveContainer>
                     </ChartCard>
                 </div>
+
+                {/* Daily Attendance Summary Table — scoped to this YC's year */}
+                <AttendanceSummaryTable scopedYear={managedYear} onCellClick={handleCellClick} />
             </div>
         </Layout>
     );

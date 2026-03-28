@@ -24,10 +24,12 @@ import YCDashboard from '../features/yc/Dashboard';
 import AddStudent from '../features/yc/AddStudent';
 import ODLeaveEntry from '../features/yc/ODLeaveEntry';
 import YCAttendanceView from '../features/yc/AttendanceView';
+import AttendanceDetailPage from '../features/shared/AttendanceDetailPage';
 
 // Staff
 import StaffTakeAttendance from '../features/staff/TakeAttendance';
 import StaffAttendanceCorrection from '../features/staff/AttendanceCorrection';
+import StaffMonthlyRegister from '../features/staff/MonthlyRegister';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -72,17 +74,20 @@ export default function AppRoutes({ user, onLogin, onLogout }: AppRoutesProps) {
 			<Route path="/principal/attendance-correction" element={<Protected user={user} requiredRole="principal"><AttendanceCorrection {...pp} /></Protected>} />
 			<Route path="/principal/attendance-view" element={<Protected user={user} requiredRole="principal"><PrincipalAttendanceView {...pp} /></Protected>} />
 			<Route path="/principal/audit-log" element={<Protected user={user} requiredRole="principal"><AuditLog              {...pp} /></Protected>} />
+			<Route path="/principal/attendance-day-detail" element={<Protected user={user} requiredRole="principal"><AttendanceDetailPage  {...pp} /></Protected>} />
 
 			{/* YC Routes */}
 			<Route path="/yc/dashboard" element={<Protected user={user} requiredRole="year_coordinator"><YCDashboard      {...pp} /></Protected>} />
 			<Route path="/yc/add-student" element={<Protected user={user} requiredRole="year_coordinator"><AddStudent       {...pp} /></Protected>} />
 			<Route path="/yc/od-leave" element={<Protected user={user} requiredRole="year_coordinator"><ODLeaveEntry     {...pp} /></Protected>} />
 			<Route path="/yc/attendance-view" element={<Protected user={user} requiredRole="year_coordinator"><YCAttendanceView {...pp} /></Protected>} />
+			<Route path="/yc/attendance-day-detail" element={<Protected user={user} requiredRole="year_coordinator"><AttendanceDetailPage {...pp} /></Protected>} />
 			{/*add the following
 												report  extractions page*/}
 			{/* Staff Routes */}
 			<Route path="/staff/attendance" element={<Protected user={user} requiredRole="subject_staff"><StaffTakeAttendance {...pp} /></Protected>} />
 			<Route path="/staff/attendance-correction" element={<Protected user={user} requiredRole="subject_staff"><StaffAttendanceCorrection {...pp} /></Protected>} />
+			<Route path="/staff/monthly-register" element={<Protected user={user} requiredRole="subject_staff"><StaffMonthlyRegister {...pp} /></Protected>} />
 
 			{/* Catch-all redirect to index (which handles login state) */}
 			<Route path="*" element={<Navigate to="/?login=true" replace />} />

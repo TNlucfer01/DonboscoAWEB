@@ -12,7 +12,8 @@ import {
 	LogOut,
 	Menu,
 	X,
-	GraduationCap
+	GraduationCap,
+	CalendarDays,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
@@ -56,7 +57,8 @@ export default function Layout({ children, user, onLogout }: LayoutProps) {
 
 	const staffLinks = [
 		{ to: '/staff/attendance', icon: ClipboardList, label: 'Take Attendance' },
-		{ to: '/staff/attendance-correction', icon: ClipboardEdit, label: 'Attendance Correction' }
+		{ to: '/staff/attendance-correction', icon: ClipboardEdit, label: 'Attendance Correction' },
+		{ to: '/staff/monthly-register', icon: CalendarDays, label: 'Monthly Register' },
 	];
 
 	const links = user.role === 'principal' ? principalLinks : user.role === 'year_coordinator' ? ycLinks : staffLinks;

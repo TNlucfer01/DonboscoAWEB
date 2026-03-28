@@ -11,6 +11,7 @@ export interface AttendanceSummary {
     attended: number;
     attendance_pct: number;
 }
+
 //every thing is good
 /** GET /reports/attendance-summary — Fetch all students with attendance % */ //for each year i think 
 export async function fetchAttendanceSummary(year?: string): Promise<AttendanceSummary[]> {
@@ -18,6 +19,7 @@ export async function fetchAttendanceSummary(year?: string): Promise<AttendanceS
     if (year) params.year = year;
     return apiClient.get<AttendanceSummary[]>('/reports/attendance-summary', Object.keys(params).length ? params : undefined);
 }
+
 
 /** GET /reports/below-threshold?threshold=80 — Students below 80% */
 export async function fetchBelowThreshold(threshold: number = 80): Promise<AttendanceSummary[]> {
