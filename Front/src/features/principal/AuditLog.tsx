@@ -30,7 +30,7 @@ export default function AuditLog({ user, onLogout }: PageProps) {
                 <Card className="border-2 border-border">
                     <CardHeader>
                         <CardTitle className="text-foreground">Attendance Changes Log</CardTitle>
-                        <p className="text-sm text-muted-foreground font-medium">All changes made by Principal — Read only, no undo</p>
+                        <p className="text-sm text-muted-foreground font-medium">All attendance changes by all staff — Read only, no undo</p>
                     </CardHeader>
                     <CardContent>
                         {loading ? (

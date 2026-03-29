@@ -20,6 +20,10 @@ async function getById(id) {
 async function create(data) {
     const { name, email, phone_number, role, managed_year } = data;
 
+    // B01: Validate email uniqueness before creating
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) throw new AppError('VALIDATION_ERROR', `Email '${email}' is already in use`, 400);
+
     // Validate YC must have managed_year 1-4; Principal/Staff must not
     if (role === 'YEAR_COORDINATOR' && (!managed_year || managed_year < 1 || managed_year > 4)) {
         throw new AppError('VALIDATION_ERROR', 'Year coordinator must have managed_year between 1 and 4', 400);
@@ -43,6 +47,12 @@ async function update(id, data) {
     if (!user) throw new AppError('NOT_FOUND', 'User not found', 404);
     const { name, email, phone_number, role, managed_year } = data;
     
+    // B02: Validate email uniqueness on update (exclude self)
+    if (email && email !== user.email) {
+        const existingEmail = await User.findOne({ where: { email } });
+        if (existingEmail) throw new AppError('VALIDATION_ERROR', `Email '${email}' is already in use`, 400);
+    }
+
     // Validate YC duplicate assignment
     if (role === 'YEAR_COORDINATOR' && managed_year) {
         const existingYC = await User.findOne({ where: { role: 'YEAR_COORDINATOR', managed_year } });

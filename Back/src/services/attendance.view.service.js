@@ -22,7 +22,7 @@ async function view({ year, date_from, date_to, semester_id }, currentUser) {
             { model: Subject, as: 'subject', attributes: ['subject_name'] },
         ],
         order: [['date', 'DESC'], [{ model: TimetableSlot, as: 'slot' }, 'slot_number', 'ASC']],
-        limit: 2000,
+        limit: 10000,
     });
 }
 

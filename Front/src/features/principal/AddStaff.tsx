@@ -25,7 +25,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 	const [email, setEmail] = useState('');
 	const [phone, setPhone] = useState('');
 	const [role, setRole] = useState('');
-	const [managed_year, setmanaged_year] = useState(0);
+	const [managed_year, setmanaged_year] = useState<number | null>(null);
 	const [loading, setLoading] = useState(false);
 
 	// ── Staff List ────────────────────────────────────────────────
@@ -124,7 +124,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 										<Label htmlFor="managed_year" className="text-sm font-semibold text-secondary ml-1">Managing Year *</Label>
 										<Input 
 											id="managed_year" 
-											value={managed_year} 
+											value={managed_year ?? ''} 
 											onChange={(e) => setmanaged_year(Number(e.target.value))} 
 											className="h-11 rounded-xl bg-background border-border" 
 											placeholder='Enter year (1-4)' 

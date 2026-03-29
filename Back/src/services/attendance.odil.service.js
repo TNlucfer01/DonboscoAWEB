@@ -1,10 +1,21 @@
-// src/services/attendance.odil.service.js
-// YC OD/IL management: load all students for a date, bulk create, update, cancel, list
-
 const dayjs = require('dayjs');
-const { AttendanceRecord, Student } = require('../models/index');
+const { AttendanceRecord, Student, Semester } = require('../models/index');
+const { Op } = require('sequelize');
 const AppError = require('../utils/AppError');
 const { blockPastDate } = require('../utils/dateHelpers');
+
+// Resolve semester from date range, falling back to active semester
+async function getSemesterForDate(date) {
+    let semester = await Semester.findOne({
+        where: { start_date: { [Op.lte]: date }, end_date: { [Op.gte]: date } }
+    });
+    if (!semester) {
+        // Fallback: use the active semester
+        semester = await Semester.findOne({ where: { is_active: true } });
+    }
+    if (!semester) throw new AppError('NO_ACTIVE_SEMESTER', 'No matching semester found for date', 422);
+    return semester;
+}
 
 // ── Fetch all students for a given date (with their OD/IL state) ──────────────
 async function fetchStudentsForDate({ date, managedYear }) {
@@ -72,11 +83,15 @@ async function fetchStudentsForDate({ date, managedYear }) {
 }
 
 // ── Bulk Create OD/IL Entries ─────────────────────────────────────────────────
-async function bulkCreateODIL({ entries, semester_id }, submitted_by) {
+async function bulkCreateODIL({ entries }, submitted_by) {
     if (!entries || entries.length === 0) return { saved: 0 };
 
     const date = entries[0].date;
     blockPastDate(date, 'Cannot create OD/IL for past dates');
+
+    // K01: Auto-resolve semester from the entry date — frontend no longer sends semester_id
+    const semester = await getSemesterForDate(date);
+    const semester_id = semester.semester_id;
 
     let saved = 0;
     for (const e of entries) {
@@ -113,12 +128,16 @@ async function bulkCreateODIL({ entries, semester_id }, submitted_by) {
 }
 
 // ── Create Single OD/IL Entry ─────────────────────────────────────────────────
-async function createODIL({ student_id, slot_id, date, status, od_reason, semester_id }, submitted_by) {
+async function createODIL({ student_id, slot_id, date, status, od_reason }, submitted_by) {
     if (!['OD', 'INFORMED_LEAVE'].includes(status)) {
         throw new AppError('VALIDATION_ERROR', 'Status must be OD or INFORMED_LEAVE', 400);
     }
 
     blockPastDate(date, 'Cannot create OD/IL for past dates');
+
+    // K01: Auto-resolve semester from date
+    const semester = await getSemesterForDate(date);
+    const semester_id = semester.semester_id;
 
     const [record, created] = await AttendanceRecord.findOrCreate({
         where: { student_id, date, slot_id, semester_id },

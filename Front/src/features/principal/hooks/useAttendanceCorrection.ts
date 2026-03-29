@@ -20,6 +20,7 @@ export interface studentpri {
 
 export interface FetchResponse {
     slot_number: number;
+    slot_id: number | null;
     subject_name: string;
     subject_code: string;
     subject_id?: number;
@@ -108,7 +109,18 @@ export function useAttendanceCorrection() {
                 return;
             }
 
-            await apiClient.post('/attendance/save-student-pri', { records: recordsToSave });
+            if (!meta?.slot_id || !meta?.subject_id) {
+                toast.error('Missing class context (Subject/Slot). Cannot save new unrecorded attendances. Tell Staff to take attendance first.');
+                return;
+            }
+
+            await apiClient.post('/attendance/save-student-pri', { 
+                records: recordsToSave,
+                date: currentDate,
+                slot_id: meta.slot_id,
+                subject_id: meta.subject_id
+            });
+            
             toast.success(`Saved ${recordsToSave.length} attendance records!`);
             setDirtyIds(new Set()); // Clear dirty flags after successful save
         } catch {
@@ -116,7 +128,7 @@ export function useAttendanceCorrection() {
         } finally {
             setSaving(false);
         }
-    }, [students, meta, currentDate]);
+    }, [students, meta, currentDate, dirtyIds]);
 
     return { meta, students, loading, saving, error, fetch, updateStatus, updateODReason, updateIsLocked, updateRemarks, save };
 }

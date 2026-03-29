@@ -9,6 +9,9 @@ const smsService = require('./sms.service');
 // In-memory OTP store (replace with Redis in production)
 const otpStore = new Map(); // phone → { otp, expiresAt }
 
+// In-memory refresh token blacklist (replace with Redis in production)
+const revokedTokens = new Set(); // set of revoked refresh tokens
+
 // ── Login ──────────────────────────────────────────────────────
 async function login(email, password) {
     const user = await User.findOne({ where: { email } });
@@ -34,6 +37,10 @@ async function login(email, password) {
 
 // ── Refresh Token ──────────────────────────────────────────────
 async function refreshAccessToken(refreshToken) {
+    if (revokedTokens.has(refreshToken)) {
+        throw new AppError('AUTH_FAILED', 'Refresh token has been revoked', 401);
+    }
+
     let payload;
     try {
         payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
@@ -49,7 +56,13 @@ async function refreshAccessToken(refreshToken) {
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRY || '15m' }
     );
-    return { accessToken };
+    // A01: Return user object so frontend can restore user state on page reload
+    return { accessToken, user: { id: user.user_id, name: user.name, role: user.role, managedYear: user.managed_year } };
+}
+
+// ── Invalidate Refresh Token (logout) ──────────────────────────
+function invalidateRefreshToken(token) {
+    if (token) revokedTokens.add(token);
 }
 
 // ── Forgot Password (OTP) ──────────────────────────────────────
@@ -101,4 +114,4 @@ async function resetPassword(phone, otp, newPassword) {
     return { message: 'Password reset successful' };
 }
 
-module.exports = { login, refreshAccessToken, sendOTP, verifyOTP, resetPassword };
+module.exports = { login, refreshAccessToken, invalidateRefreshToken, sendOTP, verifyOTP, resetPassword };

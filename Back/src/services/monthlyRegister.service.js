@@ -59,49 +59,80 @@ async function getMonthlyRegister({ subject_id, month, staffUserId }) {
 
     if (!subject) throw new Error('Subject not found');
 
-    // 2. Fetch all attendance records for this subject/month by this staff
-    //    Each row = one period record; we collapse by student+date below.
-    const records = await sequelize.query(`
-        SELECT
-            ar.student_id,
-            s.name,
-            s.roll_number,
-            DAY(ar.date)  AS day_num,
-            ar.status,
-            ar.od_reason
+    // 2. Find which classes (years/batches) were taught for this subject/month
+    const taughtBatches = await sequelize.query(`
+        SELECT DISTINCT s.current_year, s.theory_batch_id, s.lab_batch_id
         FROM attendance_records ar
         JOIN students s ON s.student_id = ar.student_id
         WHERE ar.subject_id = :subject_id
           AND ar.submitted_by = :staffUserId
           AND ar.date BETWEEN :dateFrom AND :dateTo
-        ORDER BY s.roll_number, ar.date, ar.slot_id
     `, { replacements: { subject_id, staffUserId, dateFrom, dateTo }, type: QueryTypes.SELECT });
 
-    // 3. Group by student, then by day
-    //    For a given day, if ANY period is ABSENT → show A
-    //    If ANY is OD / INFORMED_LEAVE → show OD
-    //    Otherwise → P
+    if (taughtBatches.length === 0) return { subject, month, days: [], students: [] };
+
+    // 3. Fetch ALL students belonging to these exact classes so zero-attendance students appear
+    const { Student } = require('../models/index');
+    const { Op } = require('sequelize');
+    const orConditions = taughtBatches.map(b => {
+        const cond = { current_year: b.current_year };
+        // We link by whatever batch type the attendance was originally taken for
+        if (b.theory_batch_id && b.lab_batch_id) {
+             // In reality a class is usually either theory OR lab, but we include both if found
+             cond[Op.or] = [{ theory_batch_id: b.theory_batch_id }, { lab_batch_id: b.lab_batch_id }];
+        } else if (b.theory_batch_id) {
+             cond.theory_batch_id = b.theory_batch_id;
+        } else if (b.lab_batch_id) {
+             cond.lab_batch_id = b.lab_batch_id;
+        }
+        return cond;
+    });
+
+    const allStudents = await Student.findAll({
+        where: { [Op.or]: orConditions },
+        attributes: ['student_id', 'name', 'roll_number'],
+        order: [['roll_number', 'ASC']],
+        raw: true
+    });
+
+    // 4. Fetch the attendance records across those dates
+    const records = await sequelize.query(`
+        SELECT
+            ar.student_id,
+            ar.date,
+            ar.status,
+            ar.od_reason
+        FROM attendance_records ar
+        WHERE ar.subject_id = :subject_id
+          AND ar.submitted_by = :staffUserId
+          AND ar.date BETWEEN :dateFrom AND :dateTo
+    `, { replacements: { subject_id, staffUserId, dateFrom, dateTo }, type: QueryTypes.SELECT });
+
+    // 5. Group by student, then by day. Pre-fill map with all students.
     const studentMap = {};
+    allStudents.forEach(s => {
+        studentMap[s.student_id] = {
+            student_id: s.student_id,
+            name: s.name,
+            roll_number: s.roll_number,
+            dayMap: {},
+        };
+    });
 
     records.forEach(r => {
         const sid = r.student_id;
-        if (!studentMap[sid]) {
-            studentMap[sid] = {
-                student_id: sid,
-                name: r.name,
-                roll_number: r.roll_number,
-                dayMap: {},    // day_num → dominant status
-            };
-        }
+        if (!studentMap[sid]) return; // Edge case: student deleted or transferred out entirely
 
-        const existing = studentMap[sid].dayMap[r.day_num];
+        const day_num = new Date(r.date).getDate(); // Dialect agnostic day extraction
+        const existing = studentMap[sid].dayMap[day_num];
+        
         // Priority: ABSENT > OD/IL > PRESENT
         if (!existing) {
-            studentMap[sid].dayMap[r.day_num] = r.status;
+            studentMap[sid].dayMap[day_num] = r.status;
         } else if (r.status === 'ABSENT') {
-            studentMap[sid].dayMap[r.day_num] = 'ABSENT';
+            studentMap[sid].dayMap[day_num] = 'ABSENT';
         } else if (['OD', 'INFORMED_LEAVE'].includes(r.status) && existing === 'PRESENT') {
-            studentMap[sid].dayMap[r.day_num] = r.status;
+            studentMap[sid].dayMap[day_num] = r.status;
         }
     });
 

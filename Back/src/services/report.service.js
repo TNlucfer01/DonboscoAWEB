@@ -40,8 +40,8 @@ async function getOverallSummary({ year, date_from, date_to }) {
             s.current_year as year,
             COUNT(DISTINCT s.student_id) as total_students,
             COUNT(ar.record_id) as total_periods,
-            COALESCE(SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')), 0) as present_periods,
-            COALESCE(SUM(ar.status = 'ABSENT'), 0) as absent_periods
+            COALESCE(SUM(CASE WHEN ar.status IN ('PRESENT','OD','INFORMED_LEAVE') THEN 1 ELSE 0 END), 0) as present_periods,
+            COALESCE(SUM(CASE WHEN ar.status = 'ABSENT' THEN 1 ELSE 0 END), 0) as absent_periods
         FROM students s
         LEFT JOIN attendance_records ar ON s.student_id = ar.student_id ${joinString}
         ${whereString}
@@ -76,9 +76,9 @@ async function getAttendanceSummary({ year, semester_id, date_from, date_to }) {
         SELECT
             s.student_id, s.name, s.roll_number, s.current_year,
             COUNT(ar.record_id) AS total_periods,
-            SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) AS attended,
+            SUM(CASE WHEN ar.status IN ('PRESENT','OD','INFORMED_LEAVE') THEN 1 ELSE 0 END) AS attended,
             ROUND(
-                SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) * 100.0
+                SUM(CASE WHEN ar.status IN ('PRESENT','OD','INFORMED_LEAVE') THEN 1 ELSE 0 END) * 100.0
                 / NULLIF(COUNT(ar.record_id), 0), 2
             ) AS attendance_pct
         FROM students s
@@ -110,13 +110,13 @@ async function getBelowThreshold({ year, semester_id, threshold = 80 }) {
         SELECT
             s.student_id, s.name, s.roll_number, s.current_year, s.parent_phone,
             COUNT(ar.record_id) AS total_periods,
-            SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) AS attended,
+            SUM(CASE WHEN ar.status IN ('PRESENT','OD','INFORMED_LEAVE') THEN 1 ELSE 0 END) AS attended,
             ROUND(
-                SUM(ar.status IN ('PRESENT','OD','INFORMED_LEAVE')) * 100.0
+                SUM(CASE WHEN ar.status IN ('PRESENT','OD','INFORMED_LEAVE') THEN 1 ELSE 0 END) * 100.0
                 / NULLIF(COUNT(ar.record_id), 0), 2
             ) AS attendance_pct
         FROM students s
-        JOIN attendance_records ar ON ar.student_id = s.student_id
+        LEFT JOIN attendance_records ar ON ar.student_id = s.student_id
         WHERE ${conditions.join(' AND ')}
         GROUP BY s.student_id
         HAVING attendance_pct < :threshold

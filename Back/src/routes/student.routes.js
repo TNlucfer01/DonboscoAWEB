@@ -55,7 +55,7 @@ router.put('/:id', restrictYearToYCScope, studentUpdateValidation, validate, ctr
 router.delete('/:id', ctrl.remove);
 
 // Bulk CSV upload — reserved for future use
-router.post('/bulk', async (req, res, next) => {
+router.post('/bulk', restrictYearToYCScope, async (req, res, next) => {
     try {
         const { students, current_year, theory_batch_id, lab_batch_id } = req.body;
         if (!Array.isArray(students) || !current_year || !theory_batch_id || !lab_batch_id) {

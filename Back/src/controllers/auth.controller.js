@@ -27,6 +27,7 @@ const refresh = async (req, res, next) => {
     try {
         const refreshToken = req.cookies?.refreshToken;
         if (!refreshToken) return res.status(401).json({ success: false, error: { code: 'AUTH_FAILED', message: 'No refresh token' } });
+        // A01: result now includes user object
         const result = await authService.refreshAccessToken(refreshToken);
         return success(res, result);
     } catch (err) {
@@ -65,7 +66,10 @@ const resetPassword = async (req, res, next) => {
 };
 
 // POST /api/auth/logout
-const logout = (_req, res) => {
+const logout = (req, res) => {
+    // A02: Invalidate refresh token server-side so it cannot be reused
+    const refreshToken = req.cookies?.refreshToken;
+    authService.invalidateRefreshToken(refreshToken);
     res.clearCookie('refreshToken');
     return res.json({ success: true, data: { message: 'Logged out' } });
 };

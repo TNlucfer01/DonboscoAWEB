@@ -5,7 +5,8 @@ const { Op } = require('sequelize');
 async function getLogs(query) {
     const where = {};
     if (query.date_from && query.date_to) {
-        where.changed_at = { [Op.between]: [query.date_from, query.date_to] };
+        // F03: Pad date_to to end of day so single-day filters work correctly
+        where.changed_at = { [Op.between]: [`${query.date_from} 00:00:00`, `${query.date_to} 23:59:59`] };
     }
 
     return AttendanceAuditLog.findAll({
@@ -19,7 +20,7 @@ async function getLogs(query) {
             { model: User, as: 'changedBy', attributes: ['name', 'role'] },
         ],
         order: [['changed_at', 'DESC']],
-        limit: 500,
+        limit: 2000, // F01: Increased from 500
     });
 }
 

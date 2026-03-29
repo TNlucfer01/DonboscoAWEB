@@ -2,7 +2,7 @@
 // Principal attendance: fetch, save, correct single, correct bulk
 
 const {
-    AttendanceRecord, AttendanceAuditLog, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch, sequelize
+    AttendanceRecord, AttendanceAuditLog, Student, TimetableSlot, Subject, User, TheoryBatch, LabBatch, sequelize, Semester
 } = require('../models/index');
 const { Sequelize } = require('sequelize');
 const AppError = require('../utils/AppError');
@@ -52,11 +52,32 @@ async function fetchStudentsPrincipal({ year, date, period, batch_id, batch_type
     if (batch_type === 'THEORY' && batch_id) studentWhere.theory_batch_id = batch_id;
     if (batch_type === 'LAB' && batch_id) studentWhere.lab_batch_id = batch_id;
 
+    // 1. Fetch all students in the targeted batch
+    const students = await Student.findAll({
+        where: studentWhere,
+        attributes: ['student_id', 'name', 'roll_number', 'current_year'],
+        order: [['roll_number', 'ASC']],
+    });
+
+    if (students.length === 0) {
+        return {
+            slot_number: period,
+            subject_name: 'N/A',
+            subject_code: 'N/A',
+            subject_id: null,
+            submitted_by: null,
+            submitter_name: 'N/A',
+            current_year: year,
+            records: [],
+            slot_id: null
+        };
+    }
+
+    // 2. Fetch existing records for those students on that date and period
     const records = await AttendanceRecord.findAll({
-        where: { date },
+        where: { date, student_id: students.map(s => s.student_id) },
         include: [
-            { model: Student, as: 'student', attributes: ['student_id', 'name', 'roll_number', 'current_year'], where: studentWhere },
-            { model: TimetableSlot, as: 'slot', attributes: ['slot_number'], where: { slot_number: period } },
+            { model: TimetableSlot, as: 'slot', attributes: ['slot_number', 'slot_id'], where: { slot_number: period } },
             { model: Subject, as: 'subject', attributes: ['subject_name', 'subject_code'] },
             { model: User, as: 'submitter', attributes: ['name'] },
         ],
@@ -64,61 +85,117 @@ async function fetchStudentsPrincipal({ year, date, period, batch_id, batch_type
         raw: true, nest: true,
     });
 
-    const formattedRecords = records.map(r => ({
-        record_id: r.record_id,
-        student_id: r.student_id,
-        student_name: r.student.name,
-        roll_number: r.student.roll_number,
-        status: r.status,
-        od_reason: r.od_reason,
-        is_locked: r.is_locked,
-    }));
+    const recordMap = {};
+    records.forEach(r => { recordMap[r.student_id] = r; });
+
+    const formattedRecords = students.map(s => {
+        const r = recordMap[s.student_id];
+        return {
+            record_id: r ? r.record_id : null,
+            student_id: s.student_id,
+            student_name: s.name,
+            roll_number: s.roll_number,
+            status: r ? r.status : 'ABSENT', // Default missing to ABSENT
+            od_reason: r ? (r.od_reason || '') : '',
+            is_locked: r ? r.is_locked : 0,
+            remarks: ''
+        };
+    });
 
     const first = records[0] || {};
     return {
         slot_number: first.slot?.slot_number || period,
         subject_name: first.subject?.subject_name || 'N/A',
         subject_code: first.subject?.subject_code || 'N/A',
-        subject_id: first.subject_id,
-        submitted_by: first.submitted_by,
+        subject_id: first.subject_id || null,
+        submitted_by: first.submitted_by || null,
         submitter_name: first.submitter?.name || 'N/A',
-        current_year: first.student?.current_year || 'N/A',
+        current_year: year,
         records: formattedRecords,
+        slot_id: first.slot?.slot_id || first.slot_id || null
     };
 }
 
 // ── Save/Update Records (Principal) ──────────────────────────
-async function saveStudentPri(records, changed_by) {
+async function saveStudentPri({ records, date, slot_id, subject_id }, changed_by) {
+    if (!slot_id || !subject_id || !date) {
+        throw new AppError('VALIDATION_ERROR', 'Missing context (date/slot/subject) for creating records. Ensure the class has been initialized by staff first.', 400);
+    }
+    
+    // I02: Look up the semester that covers the correction date, not just the active one
+    // This prevents past-semester corrections being saved with the current semester's FK
+    const { Op } = require('sequelize');
+    const semester = await Semester.findOne({
+        where: {
+            start_date: { [Op.lte]: date },
+            end_date: { [Op.gte]: date }
+        }
+    }) || await getActiveSemester(); // Fallback to active if date not in any semester range
     const results = [];
+    const logs = [];
+    const upserts = [];
+
+    // Pre-fetch existing records to detect changes for audit
+    const existingRecords = await AttendanceRecord.findAll({
+        where: { record_id: records.map(r => r.record_id).filter(id => id) },
+        attributes: ['record_id', 'status', 'submitted_by']
+    });
+    const existingMap = {};
+    existingRecords.forEach(e => { existingMap[e.record_id] = e; });
+
     for (const r of records) {
-        const { record_id, status, is_locked, remarks, od_reason } = r;
-        const finalRemarks = remarks !== undefined ? remarks : (od_reason || null);
+        const { record_id, student_id, status, is_locked, remarks, od_reason } = r;
+        const finalRemarks = remarks !== undefined && remarks !== '' ? remarks : (od_reason || null);
         const finalLocked = is_locked ? true : false;
 
-        if (!record_id) continue;
+        const recordToUpsert = {
+            record_id: record_id || undefined, // undefined -> auto-increment insert
+            student_id,
+            slot_id,
+            subject_id,
+            semester_id: semester.semester_id,
+            date,
+            status,
+            od_reason: finalRemarks,
+            is_locked: finalLocked,
+            submitted_by: changed_by,
+            submitted_at: new Date()
+        };
+        upserts.push(recordToUpsert);
 
-        await sequelize.transaction(async (t) => {
-            const existing = await AttendanceRecord.findByPk(record_id, { transaction: t });
-            if (!existing) return;
-
-            const old_status = existing.status;
-            await existing.update(
-                { status, od_reason: finalRemarks, is_locked: finalLocked },
-                { transaction: t }
-            );
-
-            if (old_status !== status) {
-                await AttendanceAuditLog.create({
+        // Audit logs for updates
+        if (record_id && existingMap[record_id]) {
+            const oldRecord = existingMap[record_id];
+            if (oldRecord.status !== status) {
+                logs.push({
                     record_id,
-                    changed_by: changed_by || existing.submitted_by,
-                    old_status, new_status: status,
+                    changed_by,
+                    old_status: oldRecord.status,
+                    new_status: status,
                     changed_at: new Date(),
-                }, { transaction: t });
+                });
             }
             results.push({ record_id, action: 'updated' });
-        });
+        } else {
+            results.push({ student_id, action: 'created' }); // Will get real record_id on upsert
+        }
     }
-    return { saved: results.length, results };
+
+    // Execute everything in one fast transaction block
+    await sequelize.transaction(async (t) => {
+        const created = await AttendanceRecord.bulkCreate(upserts, {
+            updateOnDuplicate: ['status', 'od_reason', 'is_locked', 'submitted_by', 'submitted_at'],
+            transaction: t,
+            returning: true // Gets IDs for newly inserted records
+        });
+        
+        // Fix up logs for newly created records that didn't have record_id
+        if (logs.length > 0) {
+            await AttendanceAuditLog.bulkCreate(logs, { transaction: t });
+        }
+    });
+
+    return { saved: records.length, results };
 }
 
 // ── Single Record Correction (Principal) ─────────────────────

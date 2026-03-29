@@ -41,6 +41,11 @@ async function getById(id, type) {
 async function create(data) {
     const { name, batch_type, year, capacity } = data;
     const Model = getModel(batch_type);
+
+    // D03: Prevent duplicate batch name for same year + type
+    const existing = await Model.findOne({ where: { name, year } });
+    if (existing) throw new AppError('VALIDATION_ERROR', `A ${batch_type} batch named '${name}' already exists for Year ${year}`, 400);
+
     const result = await Model.create({ name, year, capacity });
     const idKey = getBatchIdKey(batch_type);
     return { ...result.toJSON(), batch_type, batch_id: result[idKey] };
@@ -50,6 +55,12 @@ async function update(id, type, data) {
     const Model = getModel(type);
     const batch = await Model.findByPk(id);
     if (!batch) throw new AppError('NOT_FOUND', 'Batch not found', 404);
+
+    // D01: Prevent reducing capacity below current student count
+    if (data.capacity !== undefined && Number(data.capacity) < batch.student_count) {
+        throw new AppError('VALIDATION_ERROR', `Cannot set capacity to ${data.capacity} — batch currently has ${batch.student_count} students enrolled`, 400);
+    }
+
     await batch.update(data);
 
     const idKey = getBatchIdKey(type);

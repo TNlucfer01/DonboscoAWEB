@@ -57,6 +57,22 @@ async function fetchStudents({ year, batch_id, batch_type, slot_id, date }) {
 async function submit({ records, slot_id, date, subject_id, submitted_by }) {
     requireToday(date);
 
+    /* ── TIMER ENFORCEMENT (COMMENTED OUT FOR DEVELOPMENT) ──
+    const slot = await TimetableSlot.findByPk(slot_id);
+    if (!slot) throw new AppError('NOT_FOUND', 'Timetable slot not found', 404);
+    
+    // Parse slot start time assuming format 'HH:mm:ss'
+    const [hours, minutes] = slot.start_time.split(':').map(Number);
+    const slotStart = new Date(date);
+    slotStart.setHours(hours, minutes, 0, 0);
+    
+    const diffMins = (new Date() - slotStart) / (1000 * 60);
+    // Allows submission from 10 mins before slot starts up to 20 mins after it starts
+    if (diffMins < -10 || diffMins > 20) {
+        throw new AppError('TIMEOUT', 'Attendance submission window (20 mins from slot start) has expired or not yet open', 403);
+    }
+    ────────────────────────────────────────────────────────── */
+
     const semester = await getActiveSemester();
     const now = new Date();
     const studentIds = records.map(r => r.student_id);
@@ -163,8 +179,33 @@ async function fetchStaffCorrectionStudents({ year, batch_id, batch_type, slot_i
 async function correctStaffSubmit({ records, slot_id, date, subject_id, submitted_by }) {
     blockFutureDate(date, 'Cannot correct attendance for future dates');
 
-    const semester = await getActiveSemester();
+    // ── 7-DAY CORRECTION HORIZON LIMIT ──
+    const recordDate = new Date(date);
     const now = new Date();
+    // Calculate difference in days (ignoring time of day)
+    const normalizedRecordDate = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+    const normalizedNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((normalizedNow - normalizedRecordDate) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 7) {
+        throw new AppError('VALIDATION_ERROR', 'Cannot correct attendance records older than 7 days', 400);
+    }
+
+    /* ── TIMER ENFORCEMENT (COMMENTED OUT FOR DEVELOPMENT) ──
+    const slot = await TimetableSlot.findByPk(slot_id);
+    if (slot) {
+        const [hours, minutes] = slot.start_time.split(':').map(Number);
+        const slotStart = new Date(date);
+        slotStart.setHours(hours, minutes, 0, 0);
+        
+        const diffMins = (new Date() - slotStart) / (1000 * 60);
+        if (diffMins < -10 || diffMins > 20) {
+            throw new AppError('TIMEOUT', 'Correction submission window has expired', 403);
+        }
+    }
+    ────────────────────────────────────────────────────────── */
+
+    const semester = await getActiveSemester();
     const toInsert = [];
 
     for (const r of records) {
