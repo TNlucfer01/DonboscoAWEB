@@ -8,6 +8,7 @@ import AppRoutes from '../routes/routes';
 import { User } from '../features/shared/types';
 import { getToken, clearToken } from '../api/apiClient';
 import { logout as apiLogout } from '../api/auth.api';
+import { PageCacheProvider } from './PageCache';
 
 const USER_KEY = 'dbcas_user';
 
@@ -47,9 +48,11 @@ export default function App() {
   return (
     <>
       <Toaster position="top-right"  />
-      <BrowserRouter>
-        <AppRoutes user={user} onLogin={handleLogin} onLogout={handleLogout} />
-      </BrowserRouter>
+      <PageCacheProvider>
+        <BrowserRouter>
+          <AppRoutes user={user} onLogin={handleLogin} onLogout={handleLogout} />
+        </BrowserRouter>
+      </PageCacheProvider>
     </>
   );
 }

@@ -16,8 +16,12 @@ import { toast } from 'sonner';
 import { Pencil, Trash2, Loader2, BookPlus } from 'lucide-react';
 import { SubjectDetailsDialog } from '../shared/SubjectDetailsDialog';
 import { EditSubjectDialog } from '../shared/EditSubjectDialog';
+import { usePageCache } from '../../app/PageCache';
+
+const SUBJECT_CACHE_KEY = 'subject-list';
 
 export default function AddSubject({ user, onLogout }: PageProps) {
+    const cache = usePageCache();
     const [name, setName] = useState('');
     const [code, setCode] = useState('');
     const [year, setYear] = useState('');
@@ -27,8 +31,8 @@ export default function AddSubject({ user, onLogout }: PageProps) {
     const [loading, setLoading] = useState(false);
 
     // ── Subject List ──────────────────────────────────────────────
-    const [subjectList, setSubjectList] = useState<Subject[]>([]);
-	const [listLoading, setListLoading] = useState(true);
+    const [subjectList, setSubjectList] = useState<Subject[]>(cache.get<Subject[]>(SUBJECT_CACHE_KEY) ?? []);
+	const [listLoading, setListLoading] = useState(!cache.get(SUBJECT_CACHE_KEY));
 	const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
     const loadSubjects = async () => {
@@ -36,6 +40,7 @@ export default function AddSubject({ user, onLogout }: PageProps) {
         try {
             const data = await fetchSubjects();
             setSubjectList(data);
+            cache.set(SUBJECT_CACHE_KEY, data);
         } catch {
             toast.error('Failed to load subject list');
         } finally {
@@ -43,7 +48,9 @@ export default function AddSubject({ user, onLogout }: PageProps) {
         }
     };
 
-    useEffect(() => { loadSubjects(); }, []);
+    useEffect(() => {
+        if (!cache.get(SUBJECT_CACHE_KEY)) loadSubjects();
+    }, []);
 
     // ── Add Subject ───────────────────────────────────────────────
     const handleSubmit = async (e: React.FormEvent) => {

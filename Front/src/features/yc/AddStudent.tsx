@@ -13,6 +13,7 @@ import { ApiError } from '../../api/apiClient';
 import { toast } from 'sonner';
 import { Loader2, Pencil } from 'lucide-react';
 import { EditStudentDialog } from '../shared/EditStudentDialog';
+import { usePageCache } from '../../app/PageCache';
 
 interface StudentData {
 	student_id: number;
@@ -49,6 +50,9 @@ function validateStudentForm(data: {
 }
 
 export default function AddStudent({ user, onLogout }: PageProps) {
+    const cache = usePageCache();
+    const STUDENT_CACHE_KEY = 'student-list';
+    const BATCH_CACHE_KEY = 'batch-list';
     const managedYear = (user as User & { managedYear?: number })?.managedYear;
 	const [name, setName] = useState('');
 	const [roll_number, setroll_number] = useState('');
@@ -65,22 +69,25 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 	const [loading, setLoading] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-	const [theoryBatches, setTheoryBatches] = useState<Batch[]>([]);
-	const [labBatches, setLabBatches] = useState<Batch[]>([]);
-	const [students, setStudents] = useState<StudentData[]>([]);
-	const [initialLoading, setInitialLoading] = useState(true);
+    const cachedBatches = cache.get<Batch[]>(BATCH_CACHE_KEY);
+	const [theoryBatches, setTheoryBatches] = useState<Batch[]>(cachedBatches?.filter(b => b.batch_type === 'THEORY') ?? []);
+	const [labBatches, setLabBatches] = useState<Batch[]>(cachedBatches?.filter(b => b.batch_type === 'LAB') ?? []);
+	const [students, setStudents] = useState<StudentData[]>(cache.get<StudentData[]>(STUDENT_CACHE_KEY) ?? []);
+	const [initialLoading, setInitialLoading] = useState(!cache.get(STUDENT_CACHE_KEY));
     const [editingStudent, setEditingStudent] = useState<StudentData | null>(null);
 
     const refreshStudents = async () => {
         try {
             const updatedStudents = await getStudents();
             setStudents(updatedStudents);
+            cache.set(STUDENT_CACHE_KEY, updatedStudents);
         } catch (err) {
             toast.error('Failed to refresh students list');
         }
     };
 
 	useEffect(() => {
+		if (cache.get(STUDENT_CACHE_KEY)) return; // skip if cache is warm
 		const loadData = async () => {
 			try {
 				const [batchesData, studentsData] = await Promise.all([
@@ -90,6 +97,8 @@ export default function AddStudent({ user, onLogout }: PageProps) {
 				setTheoryBatches(batchesData.filter(b => b.batch_type === 'THEORY'));
 				setLabBatches(batchesData.filter(b => b.batch_type === 'LAB'));
 				setStudents(studentsData);
+				cache.set(BATCH_CACHE_KEY, batchesData);
+				cache.set(STUDENT_CACHE_KEY, studentsData);
 			} catch (err) {
 				toast.error('Failed to load initial data');
 			} finally {

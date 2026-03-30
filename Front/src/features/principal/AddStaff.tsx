@@ -14,6 +14,9 @@ import { Pencil, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { StaffDetailsDialog } from '../shared/StaffDetailsDialog';
 import { EditStaffDialog } from '../shared/EditStaffDialog';
 import { toast } from 'sonner';
+import { usePageCache } from '../../app/PageCache';
+
+const STAFF_CACHE_KEY = 'staff-list';
 
 const ROLE_OPTIONS = [
 	{ value: 'YEAR_COORDINATOR', label: 'Year Co-ordinator' },
@@ -21,6 +24,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function AddStaff({ user, onLogout }: PageProps) {
+	const cache = usePageCache();
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [phone, setPhone] = useState('');
@@ -29,8 +33,8 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 	const [loading, setLoading] = useState(false);
 
 	// ── Staff List ────────────────────────────────────────────────
-	const [staffList, setStaffList] = useState<StaffMember[]>([]);
-	const [listLoading, setListLoading] = useState(true);
+	const [staffList, setStaffList] = useState<StaffMember[]>(cache.get<StaffMember[]>(STAFF_CACHE_KEY) ?? []);
+	const [listLoading, setListLoading] = useState(!cache.get(STAFF_CACHE_KEY));
 	const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
 
 	const loadStaff = async () => {
@@ -38,6 +42,7 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 		try {
 			const data = await fetchStaffMembers();
 			setStaffList(data);
+			cache.set(STAFF_CACHE_KEY, data);
 		} catch {
 			toast.error('Failed to load staff list');
 		} finally {
@@ -45,7 +50,9 @@ export default function AddStaff({ user, onLogout }: PageProps) {
 		}
 	};
 
-	useEffect(() => { loadStaff(); }, []);
+	useEffect(() => {
+		if (!cache.get(STAFF_CACHE_KEY)) loadStaff();
+	}, []);
 
 	// ── Add Staff ─────────────────────────────────────────────────
 	const handleSubmit = async (e: React.FormEvent) => {

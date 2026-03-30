@@ -17,6 +17,9 @@ import {
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { Loader2, Trash2 } from 'lucide-react';
+import { usePageCache } from '../../app/PageCache';
+
+const HOLIDAY_CACHE_KEY = 'holiday-entries';
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -28,20 +31,22 @@ const MODIFIERS_STYLES = {
 };
 
 export default function HolidayMarking({ user, onLogout }: PageProps) {
+    const cache = usePageCache();
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [holidayName, setHolidayName] = useState('');
     const [holidayDescription, setHolidayDescription] = useState('');
     const [loading, setLoading] = useState(false);
 
     // ── Calendar Data ─────────────────────────────────────────────
-    const [entries, setEntries] = useState<CalendarEntry[]>([]);
-    const [listLoading, setListLoading] = useState(true);
+    const [entries, setEntries] = useState<CalendarEntry[]>(cache.get<CalendarEntry[]>(HOLIDAY_CACHE_KEY) ?? []);
+    const [listLoading, setListLoading] = useState(!cache.get(HOLIDAY_CACHE_KEY));
 
     const loadEntries = async () => {
         setListLoading(true);
         try {
             const data = await fetchCalendarEntries();
             setEntries(data);
+            cache.set(HOLIDAY_CACHE_KEY, data);
         } catch {
             // Silently fail — calendar just shows no markings
         } finally {
@@ -49,7 +54,9 @@ export default function HolidayMarking({ user, onLogout }: PageProps) {
         }
     };
 
-    useEffect(() => { loadEntries(); }, []);
+    useEffect(() => {
+        if (!cache.get(HOLIDAY_CACHE_KEY)) loadEntries();
+    }, []);
 
     // Derive Date[] arrays for calendar modifiers
     const holidayDates = entries
